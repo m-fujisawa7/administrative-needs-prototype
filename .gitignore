@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.local
+
+# ローカル永続化（§21）— 処理履歴・キャッシュ・ログはコミットしない
+data/app.db
+data/app.db-journal
+data/app.db-wal
+data/app.db-shm
+data/raw/
+data/logs/
+
+.DS_Store
+*.log
+coverage/
+.vitest/
