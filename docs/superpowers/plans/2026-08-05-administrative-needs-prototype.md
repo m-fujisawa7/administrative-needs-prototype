@@ -4279,7 +4279,7 @@ describe('buildUserMessage', () => {
     expect(m).toContain('優先');
   });
 
-  it('ヒントがなければヒスト行を出さない', () => {
+  it('ヒントがなければヒント行を出さない', () => {
     expect(buildUserMessage(input)).not.toContain('優先');
   });
 });
@@ -4509,7 +4509,7 @@ const SAMPLES: Sample[] = [
       document_type: 'プロポーザル',
       need_title: '観光ポータルサイトの構築と継続的な運用',
       problem_summary: '観光情報が複数サイトに分散し、更新も滞っている',
-      background: '観光need客の回復に合わせた情報発信の強化',
+      background: '観光客の回復に合わせた情報発信の強化',
       desired_state: '職員が自ら更新できる観光情報基盤',
       request_to_private_sector: 'サイト構築・CMS導入・運用支援の企画提案',
       categories: ['ポータルサイト', '観光情報発信', 'CMS', 'コンテンツ制作'],
