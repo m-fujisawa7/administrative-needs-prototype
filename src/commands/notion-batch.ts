@@ -3,19 +3,28 @@ import { checkAdministrativeNeed } from '../ai/check.ts';
 import { loadCompanyFitCriteria } from '../ai/company-fit-criteria.ts';
 import { createAnalyzer } from '../ai/create-analyzer.ts';
 import { aiInputLimitsFromEnvironment } from '../ai/input.ts';
-import type { AiInputLimits } from '../ai/input.ts';
 import { loadAiCheckPrompt } from '../ai/prompt.ts';
 import type {
   AdministrativeNeedAnalyzer,
   CompanyFitCriteria,
 } from '../ai/types.ts';
+import { processSelectedUrls } from '../notion-batch/batch.ts';
+import { NotionBatchConfigurationError } from '../notion-batch/errors.ts';
+import {
+  formatNotionBatchItem,
+  formatNotionBatchSummary,
+} from '../notion-batch/format.ts';
+import { readSelectedUrlFile } from '../notion-batch/input.ts';
+import type {
+  NotionBatchCliOptions,
+  ParsedSelectedUrls,
+} from '../notion-batch/types.ts';
 import { checkNotionConnection } from '../notion-check/check.ts';
 import { createNotionRegistrationClient } from '../notion-check/client.ts';
 import {
   loadRepositoryEnvironment,
   requireNotionToken,
 } from '../notion-check/environment.ts';
-import { NotionConfigurationError } from '../notion-check/errors.ts';
 import {
   extractNotionDatabaseId,
   normalizeNotionDatabaseId,
@@ -24,22 +33,21 @@ import type {
   NotionConnectionReport,
   NotionRegistrationClient,
 } from '../notion-check/types.ts';
+import { safeNotionRegistrationErrorMessage } from '../notion-register/error-format.ts';
 import {
-  isNotionRegistrationConfigurationError,
-  safeNotionRegistrationErrorMessage,
-} from '../notion-register/error-format.ts';
-import {
-  formatNotionRegistrationCompleted,
-  formatNotionDuplicateSkip,
-  formatNotionRegistrationPreview,
-} from '../notion-register/format.ts';
-import { registerOneAdministrativeNeed } from '../notion-register/register-one.ts';
-import type { NotionRegisterCliOptions } from '../notion-register/types.ts';
+  registerOneAdministrativeNeed,
+  type RegisterOneInput,
+} from '../notion-register/register-one.ts';
+import type {
+  NotionRegistrationAnalysisContext,
+  RegisterOneResult,
+} from '../notion-register/types.ts';
 import { loadSourceRegistry } from '../source-registry/load.ts';
 import type { SourceRegistry } from '../source-registry/schema.ts';
 
-export type NotionRegisterCommandDependencies = {
+export type NotionBatchCommandDependencies = {
   env?: NodeJS.ProcessEnv;
+  readSelectedUrls?: (path: string) => Promise<ParsedSelectedUrls>;
   loadEnvironment?: () => void;
   loadRegistry?: () => Promise<SourceRegistry>;
   loadFitCriteria?: () => Promise<CompanyFitCriteria>;
@@ -51,13 +59,20 @@ export type NotionRegisterCommandDependencies = {
     client: NotionRegistrationClient,
     databaseId: string,
   ) => Promise<NotionConnectionReport>;
+  registerOne?: (
+    input: RegisterOneInput,
+    dependencies: {
+      loadAnalysisContext: () => Promise<NotionRegistrationAnalysisContext>;
+      checkNeed?: typeof checkAdministrativeNeed;
+    },
+  ) => Promise<RegisterOneResult>;
   stdout?: (message: string) => void;
   stderr?: (message: string) => void;
 };
 
-export function parseNotionRegisterArgs(argv: string[]): NotionRegisterCliOptions {
+export function parseNotionBatchArgs(argv: string[]): NotionBatchCliOptions {
   let sourceId: string | undefined;
-  let url: string | undefined;
+  let file: string | undefined;
   let databaseUrl: string | undefined;
   let databaseId: string | undefined;
   let write = false;
@@ -65,15 +80,15 @@ export function parseNotionRegisterArgs(argv: string[]): NotionRegisterCliOption
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--write') {
-      if (write) throw new NotionConfigurationError('--write may only be specified once.');
+      if (write) throw new NotionBatchConfigurationError('--write may only be specified once.');
       write = true;
       continue;
     }
     const parsed = parseValueOption(argv, index, argument);
-    if (parsed === null) throw new NotionConfigurationError(`Unknown option: ${argument}`);
+    if (parsed === null) throw new NotionBatchConfigurationError(`Unknown option: ${argument}`);
     index += parsed.consumedNext ? 1 : 0;
     if (parsed.name === '--source') sourceId = setOnce(sourceId, parsed.value, parsed.name);
-    if (parsed.name === '--url') url = setOnce(url, parsed.value, parsed.name);
+    if (parsed.name === '--file') file = setOnce(file, parsed.value, parsed.name);
     if (parsed.name === '--database-url') {
       databaseUrl = setOnce(databaseUrl, parsed.value, parsed.name);
     }
@@ -82,20 +97,19 @@ export function parseNotionRegisterArgs(argv: string[]): NotionRegisterCliOption
     }
   }
 
-  if (sourceId === undefined) throw new NotionConfigurationError('--source is required.');
-  if (url === undefined) throw new NotionConfigurationError('--url is required.');
-  validateHttpUrl(url);
+  if (sourceId === undefined) throw new NotionBatchConfigurationError('--source is required.');
+  if (file === undefined) throw new NotionBatchConfigurationError('--file is required.');
   if (databaseUrl !== undefined && databaseId !== undefined) {
-    throw new NotionConfigurationError(
+    throw new NotionBatchConfigurationError(
       'Specify either --database-url or --database-id, not both.',
     );
   }
   if (databaseUrl === undefined && databaseId === undefined) {
-    throw new NotionConfigurationError('Specify either --database-url or --database-id.');
+    throw new NotionBatchConfigurationError('Specify either --database-url or --database-id.');
   }
   return {
     sourceId,
-    url,
+    file,
     databaseId: databaseUrl === undefined
       ? normalizeNotionDatabaseId(databaseId!)
       : extractNotionDatabaseId(databaseUrl),
@@ -103,70 +117,67 @@ export function parseNotionRegisterArgs(argv: string[]): NotionRegisterCliOption
   };
 }
 
-export async function runNotionRegister(
+export async function runNotionBatch(
   argv = process.argv.slice(2),
-  dependencies: NotionRegisterCommandDependencies = {},
+  dependencies: NotionBatchCommandDependencies = {},
 ): Promise<number> {
   const stdout = dependencies.stdout ?? console.log;
   const stderr = dependencies.stderr ?? console.error;
   const env = dependencies.env ?? process.env;
 
-  let options: NotionRegisterCliOptions;
+  let options: NotionBatchCliOptions;
+  let selectedUrls: ParsedSelectedUrls;
+  try {
+    options = parseNotionBatchArgs(argv);
+    selectedUrls = await (
+      dependencies.readSelectedUrls ?? readSelectedUrlFile
+    )(options.file);
+  } catch (error) {
+    stderr(safeNotionRegistrationErrorMessage(error));
+    return 1;
+  }
+
   let registry: SourceRegistry;
   let client: NotionRegistrationClient;
   try {
-    options = parseNotionRegisterArgs(argv);
     (dependencies.loadEnvironment ?? loadRepositoryEnvironment)();
     const token = requireNotionToken(env);
     registry = await (dependencies.loadRegistry ?? loadSourceRegistry)();
     client = (dependencies.createClient ?? createNotionRegistrationClient)(token);
   } catch (error) {
     stderr(safeNotionRegistrationErrorMessage(error));
-    return 2;
+    return 1;
   }
 
   const source = registry.sources.find((candidate) => candidate.id === options.sourceId);
   if (source === undefined) {
     stderr(`Source not found: ${options.sourceId}`);
-    return 2;
+    return 1;
   }
   const organization = registry.organizations.find(
     (candidate) => candidate.id === source.organization_id,
   );
   if (organization === undefined) {
     stderr(`Organization not found: ${source.organization_id}`);
-    return 2;
+    return 1;
   }
 
   let report: NotionConnectionReport;
+  let limits: ReturnType<typeof aiInputLimitsFromEnvironment>;
   try {
+    limits = aiInputLimitsFromEnvironment(env);
     report = await (
       dependencies.checkConnection
       ?? ((notionClient, databaseId) => checkNotionConnection(notionClient, databaseId))
     )(client, options.databaseId);
   } catch (error) {
     stderr(safeNotionRegistrationErrorMessage(error));
-    return isNotionRegistrationConfigurationError(error) ? 2 : 1;
+    return 1;
   }
 
-  let limits: AiInputLimits;
-  try {
-    limits = aiInputLimitsFromEnvironment(env);
-  } catch (error) {
-    stderr(safeNotionRegistrationErrorMessage(error));
-    return 2;
-  }
-
-  const result = await registerOneAdministrativeNeed({
-    source,
-    organization,
-    officialUrl: options.url,
-    write: options.write,
-    client,
-    report,
-    limits,
-  }, {
-    loadAnalysisContext: async () => {
+  let analysisContext: Promise<NotionRegistrationAnalysisContext> | undefined;
+  const loadAnalysisContext = (): Promise<NotionRegistrationAnalysisContext> => {
+    analysisContext ??= (async () => {
       const companyFitCriteria = await (
         dependencies.loadFitCriteria ?? loadCompanyFitCriteria
       )();
@@ -174,41 +185,34 @@ export async function runNotionRegister(
       const analyzer = dependencies.analyzerFactory?.(systemPrompt)
         ?? createAnalyzer({ systemPrompt, env });
       return { analyzer, companyFitCriteria };
+    })();
+    return analysisContext;
+  };
+  const registerOne = dependencies.registerOne ?? registerOneAdministrativeNeed;
+  const batchReport = await processSelectedUrls(
+    selectedUrls,
+    options.write,
+    (officialUrl) => registerOne({
+      source,
+      organization,
+      officialUrl,
+      write: options.write,
+      client,
+      report,
+      limits,
+    }, {
+      loadAnalysisContext,
+      checkNeed: dependencies.checkNeed,
+    }),
+    (result, index, total) => {
+      for (const warning of result.warnings) {
+        stderr(`[${index}/${total}] [WARNING] [${warning.code}] ${warning.message}`);
+      }
+      stdout(formatNotionBatchItem(result, index, total));
     },
-    checkNeed: dependencies.checkNeed,
-  });
-
-  for (const warning of result.warnings) {
-    stderr(`[WARNING] [${warning.code}] ${warning.message}`);
-  }
-  if (result.status === 'duplicate') {
-    if (result.preview !== undefined) {
-      stdout(formatNotionRegistrationPreview(result.preview));
-    } else {
-      stdout(formatNotionDuplicateSkip(options.url, {
-        id: result.existingPageId,
-        url: result.existingPageUrl,
-      }));
-    }
-    return 0;
-  }
-  if (result.status === 'previewed') {
-    stdout(formatNotionRegistrationPreview(result.preview));
-    return 0;
-  }
-  if (result.status === 'created') {
-    stdout(formatNotionRegistrationPreview(result.preview));
-    stdout(formatNotionRegistrationCompleted(result.preview, {
-      id: result.notionPageId,
-      url: result.notionPageUrl,
-    }));
-    return 0;
-  }
-  if (result.preview !== undefined) {
-    stdout(formatNotionRegistrationPreview(result.preview));
-  }
-  stderr(result.message);
-  return result.configurationError ? 2 : 1;
+  );
+  stdout(formatNotionBatchSummary(batchReport));
+  return batchReport.results.some((result) => result.status === 'failed') ? 1 : 0;
 }
 
 function parseValueOption(
@@ -216,19 +220,19 @@ function parseValueOption(
   index: number,
   argument: string | undefined,
 ): { name: string; value: string; consumedNext: boolean } | null {
-  const names = ['--source', '--url', '--database-url', '--database-id'];
+  const names = ['--source', '--file', '--database-url', '--database-id'];
   for (const name of names) {
     if (argument === name) {
       const value = argv[index + 1];
       if (value === undefined || value.startsWith('--')) {
-        throw new NotionConfigurationError(`${name} requires a value.`);
+        throw new NotionBatchConfigurationError(`${name} requires a value.`);
       }
       return { name, value, consumedNext: true };
     }
     const prefix = `${name}=`;
     if (argument?.startsWith(prefix)) {
       const value = argument.slice(prefix.length);
-      if (value === '') throw new NotionConfigurationError(`${name} requires a value.`);
+      if (value === '') throw new NotionBatchConfigurationError(`${name} requires a value.`);
       return { name, value, consumedNext: false };
     }
   }
@@ -237,25 +241,13 @@ function parseValueOption(
 
 function setOnce(current: string | undefined, value: string, option: string): string {
   if (current !== undefined) {
-    throw new NotionConfigurationError(`${option} may only be specified once.`);
+    throw new NotionBatchConfigurationError(`${option} may only be specified once.`);
   }
   return value;
 }
 
-function validateHttpUrl(value: string): void {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new NotionConfigurationError('--url must be a valid HTTP or HTTPS URL.');
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new NotionConfigurationError('--url must be a valid HTTP or HTTPS URL.');
-  }
-}
-
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runNotionRegister().then((exitCode) => {
+  runNotionBatch().then((exitCode) => {
     process.exitCode = exitCode;
   });
 }

@@ -1,7 +1,41 @@
 import type {
   CreatedNotionPage,
+  ExistingNotionPage,
   NotionRegistrationPreview,
 } from './types.ts';
+
+export function formatNotionDuplicateSkip(
+  officialUrl: string,
+  page: ExistingNotionPage,
+): string {
+  return [
+    'Duplicate page found.',
+    '',
+    'Duplicate:',
+    'Yes',
+    '',
+    'Official URL:',
+    officialUrl,
+    '',
+    'Existing page ID:',
+    page.id,
+    '',
+    'Existing page URL:',
+    page.url,
+    '',
+    'Content fetch:',
+    'Skipped',
+    '',
+    'PDF extraction:',
+    'Skipped',
+    '',
+    'Claude analysis:',
+    'Skipped',
+    '',
+    'Registration:',
+    'Skipped',
+  ].join('\n');
+}
 
 export function formatNotionRegistrationPreview(
   preview: NotionRegistrationPreview,

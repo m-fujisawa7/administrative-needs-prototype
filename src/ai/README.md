@@ -105,13 +105,15 @@ Claude CLIはシェルを経由せず引数配列で起動し、システム指�
 - `is_target`
 - `document_type`: `rfi`、`sounding`、`proposal`、`bid`など
 - `problem_summary`、`desired_state`、`request_to_private_sector`
-- `categories`: 定義済みカテゴリIDの配列
+- `categories`: 12種類の固定された日本語カテゴリ名から1〜3件（対象外は空配列）
 - `company_relevance`: `A`、`B`、`C`、`out_of_scope`
 - `contact_recommendation`: `high`、`medium`、`low`、`none`
 - `reason`
 - `evidence_quotes`: `source_type`、`source_url`、`quote`を持つ配列
 
 対象外の場合は `company_relevance=out_of_scope`、`contact_recommendation=none` を必須とします。未知キー、未知の列挙値、空の根拠引用はZodで拒否します。
+
+カテゴリ候補は `src/ai/categories.ts` の共通定義だけで管理します。プロンプト読み込み時に `{{CATEGORY_OPTIONS}}` を候補名と判断基準へ置換し、固定候補外、4件以上、重複、「その他」と他カテゴリの併用をZodで拒否します。AIのカテゴリ名は変換せず、そのままNotionの`multi_select`名として使用します。
 
 ## 終了コード
 

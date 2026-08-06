@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { ADMINISTRATIVE_NEED_CATEGORIES } from './categories.ts';
 import {
-  AI_CATEGORIES,
   COMPANY_RELEVANCE_VALUES,
   CONTACT_RECOMMENDATION_VALUES,
   DOCUMENT_TYPES,
@@ -24,12 +24,40 @@ export const administrativeNeedAnalysisSchema = z.strictObject({
   problem_summary: z.string().trim().max(2_000),
   desired_state: z.string().trim().max(2_000),
   request_to_private_sector: z.string().trim().max(2_000),
-  categories: z.array(z.enum(AI_CATEGORIES)).max(10),
+  categories: z.array(z.enum(ADMINISTRATIVE_NEED_CATEGORIES)).max(3),
   company_relevance: z.enum(COMPANY_RELEVANCE_VALUES),
   contact_recommendation: z.enum(CONTACT_RECOMMENDATION_VALUES),
   reason: z.string().trim().min(1).max(2_000),
   evidence_quotes: z.array(evidenceQuoteSchema).min(1).max(5),
 }).superRefine((analysis, context) => {
+  if (analysis.is_target && analysis.categories.length === 0) {
+    context.addIssue({
+      code: 'custom',
+      path: ['categories'],
+      message: '対象案件は1件以上のカテゴリを必要とします。',
+    });
+  }
+  if (!analysis.is_target && analysis.categories.length > 0) {
+    context.addIssue({
+      code: 'custom',
+      path: ['categories'],
+      message: '対象外案件のカテゴリは空配列にしてください。',
+    });
+  }
+  if (new Set(analysis.categories).size !== analysis.categories.length) {
+    context.addIssue({
+      code: 'custom',
+      path: ['categories'],
+      message: '同じカテゴリを重複して指定できません。',
+    });
+  }
+  if (analysis.categories.includes('その他') && analysis.categories.length > 1) {
+    context.addIssue({
+      code: 'custom',
+      path: ['categories'],
+      message: '「その他」は他のカテゴリと併用できません。',
+    });
+  }
   if (!analysis.is_target) {
     if (analysis.company_relevance !== 'out_of_scope') {
       context.addIssue({

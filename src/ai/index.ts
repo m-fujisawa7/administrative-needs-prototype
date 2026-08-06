@@ -14,3 +14,9 @@ export type {
   AiCheckResult,
   CompanyFitCriteria,
 } from './types.ts';
+export {
+  ADMINISTRATIVE_NEED_CATEGORIES,
+  formatAdministrativeNeedCategoryOptions,
+  isAdministrativeNeedCategory,
+  type AdministrativeNeedCategory,
+} from './categories.ts';

@@ -1,9 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import {
+  formatAdministrativeNeedCategoryOptions,
+} from './categories.ts';
 import { AiConfigurationError } from './errors.ts';
 import type { AdministrativeNeedAnalysisInput } from './types.ts';
 
 export const DEFAULT_AI_PROMPT_PATH = 'prompts/ai-check.md';
+export const CATEGORY_OPTIONS_PLACEHOLDER = '{{CATEGORY_OPTIONS}}';
 
 export async function loadAiCheckPrompt(
   path = process.env.AI_CHECK_PROMPT_PATH ?? DEFAULT_AI_PROMPT_PATH,
@@ -19,7 +23,24 @@ export async function loadAiCheckPrompt(
   if (prompt.trim() === '') {
     throw new AiConfigurationError(`AIプロンプトが空です: ${absolutePath}`);
   }
-  return prompt.trim();
+  return renderAiCheckPrompt(prompt, absolutePath);
+}
+
+export function renderAiCheckPrompt(
+  template: string,
+  source = 'AIプロンプト',
+): string {
+  if (!template.includes(CATEGORY_OPTIONS_PLACEHOLDER)) {
+    throw new AiConfigurationError(
+      `${source}にカテゴリ候補のプレースホルダー ${CATEGORY_OPTIONS_PLACEHOLDER} がありません。`,
+    );
+  }
+  return template
+    .replaceAll(
+      CATEGORY_OPTIONS_PLACEHOLDER,
+      formatAdministrativeNeedCategoryOptions(),
+    )
+    .trim();
 }
 
 export function formatAnalysisInput(input: AdministrativeNeedAnalysisInput): string {

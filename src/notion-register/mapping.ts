@@ -1,3 +1,7 @@
+import {
+  isAdministrativeNeedCategory,
+  type AdministrativeNeedCategory,
+} from '../ai/categories.ts';
 import type { AiCheckResult } from '../ai/types.ts';
 import type { NotionPageProperties } from '../notion-check/types.ts';
 import { NotionRegistrationError } from './errors.ts';
@@ -16,33 +20,6 @@ const DOCUMENT_TYPE_LABELS: Record<AiCheckResult['analysis']['document_type'], s
   budget: '予算',
   committee: '審議会',
   administrative_evaluation: '行政評価',
-  other: 'その他',
-};
-
-const CATEGORY_LABELS: Record<AiCheckResult['analysis']['categories'][number], string> = {
-  website: 'Webサイト',
-  cms: 'CMS',
-  ui_ux: 'UI・UX',
-  cx_service_design: 'CX・サービスデザイン',
-  online_application: 'オンライン申請',
-  administrative_dx: '行政DX',
-  bpr: 'BPR・業務改善',
-  ai: 'AI・生成AI',
-  data_utilization: 'データ活用',
-  open_data: 'オープンデータ',
-  citizen_digital_service: '市民向けデジタルサービス',
-  app: 'アプリ',
-  digital_communication: 'デジタル広報・コミュニケーション',
-  digital_marketing: 'デジタルマーケティング',
-  content: 'コンテンツ制作・運用',
-  tourism_regional_promotion: '観光・移住・企業誘致',
-  business_support: '地域事業者支援',
-  digital_skills: 'デジタル人材育成',
-  in_house_support: '内製化支援',
-  public_private_partnership: '官民連携',
-  digital_pilot: 'デジタル実証',
-  enterprise_system: '大規模・基幹システム',
-  security_cloud_network: 'セキュリティ・クラウド・通信',
   other: 'その他',
 };
 
@@ -82,11 +59,7 @@ export function mapAnalysisToNotionValues(result: AiCheckResult): NotionRegistra
     problem: result.analysis.problem_summary,
     desiredState: result.analysis.desired_state,
     requestToPrivateSector: result.analysis.request_to_private_sector,
-    categories: [...new Set(result.analysis.categories.map((category) => mappedValue(
-      CATEGORY_LABELS,
-      category,
-      'category',
-    )))],
+    categories: validateCategories(result.analysis.categories),
     companyRelevance: mappedValue(
       COMPANY_RELEVANCE_LABELS,
       result.analysis.company_relevance,
@@ -103,6 +76,17 @@ export function mapAnalysisToNotionValues(result: AiCheckResult): NotionRegistra
       .join('\n'),
     confirmationStatus: target === '対象' ? '未確認' : '対象外',
   };
+}
+
+function validateCategories(categories: readonly string[]): AdministrativeNeedCategory[] {
+  for (const category of categories) {
+    if (!isAdministrativeNeedCategory(category)) {
+      throw new NotionRegistrationError(
+        `Unsupported category value for Notion: ${category}`,
+      );
+    }
+  }
+  return [...categories] as AdministrativeNeedCategory[];
 }
 
 export function buildNotionPageProperties(

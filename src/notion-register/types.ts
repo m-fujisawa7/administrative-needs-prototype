@@ -1,4 +1,10 @@
-import type { AiCheckResult } from '../ai/types.ts';
+import type { AdministrativeNeedCategory } from '../ai/categories.ts';
+import type {
+  AdministrativeNeedAnalyzer,
+  AiCheckResult,
+  AiCheckWarning,
+  CompanyFitCriteria,
+} from '../ai/types.ts';
 import type {
   NotionDataSourceInfo,
   NotionPageProperties,
@@ -21,7 +27,7 @@ export type NotionRegistrationValues = {
   problem: string;
   desiredState: string;
   requestToPrivateSector: string;
-  categories: string[];
+  categories: AdministrativeNeedCategory[];
   companyRelevance: 'A' | 'B' | 'C' | '対象外';
   contactRecommendation: '高' | '中' | '低' | '不要';
   reason: string;
@@ -55,3 +61,51 @@ export type CreatedNotionPage = {
   id: string;
   url: string;
 };
+
+export type NotionRegistrationAnalysisContext = {
+  analyzer: AdministrativeNeedAnalyzer;
+  companyFitCriteria: CompanyFitCriteria;
+};
+
+export type RegisterOneFailureStage =
+  | 'duplicate_check'
+  | 'html_fetch'
+  | 'pdf_extraction'
+  | 'ai_analysis'
+  | 'ai_validation'
+  | 'notion_schema'
+  | 'notion_select_options'
+  | 'notion_create';
+
+type RegisterOneBaseResult = {
+  officialUrl: string;
+  warnings: AiCheckWarning[];
+};
+
+export type RegisterOneResult =
+  | RegisterOneBaseResult & {
+    status: 'created';
+    title: string;
+    notionPageId: string;
+    notionPageUrl: string;
+    preview: NotionRegistrationPreview;
+  }
+  | RegisterOneBaseResult & {
+    status: 'previewed';
+    title: string;
+    preview: NotionRegistrationPreview;
+  }
+  | RegisterOneBaseResult & {
+    status: 'duplicate';
+    existingPageId: string;
+    existingPageUrl: string;
+    phase: 'preflight' | 'before_create';
+    preview?: NotionRegistrationPreview;
+  }
+  | RegisterOneBaseResult & {
+    status: 'failed';
+    stage: RegisterOneFailureStage;
+    message: string;
+    configurationError: boolean;
+    preview?: NotionRegistrationPreview;
+  };

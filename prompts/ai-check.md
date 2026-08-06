@@ -57,31 +57,17 @@
 - `problem_summary`: 行政が解決しようとしている課題。明記がなければ空文字列。
 - `desired_state`: 行政が実現したい状態。明記がなければ空文字列。
 - `request_to_private_sector`: 民間事業者に求める情報・提案・役割。明記がなければ空文字列。
-- `categories`: JSON Schemaで許可されたカテゴリだけを使用。主な対応は以下。
-  - `website`: Webサイト・ポータル
-  - `cms`: CMS
-  - `ui_ux`: UI・UX
-  - `cx_service_design`: CX・サービスデザイン
-  - `online_application`: オンライン申請
-  - `administrative_dx`: 行政DX
-  - `bpr`: BPR・業務改善
-  - `ai`: AI・生成AI
-  - `data_utilization`: データ活用
-  - `open_data`: オープンデータ
-  - `citizen_digital_service`: 市民向けデジタルサービス
-  - `app`: アプリ
-  - `digital_communication`: LINE・チャットボット・SNS・デジタル広報
-  - `digital_marketing`: デジタルマーケティング
-  - `content`: コンテンツ制作・運用
-  - `tourism_regional_promotion`: 観光・移住・企業誘致などの地域情報発信
-  - `business_support`: 地域事業者支援
-  - `digital_skills`: デジタル人材育成
-  - `in_house_support`: 内製化支援
-  - `public_private_partnership`: 官民連携
-  - `digital_pilot`: デジタル実証
-  - `enterprise_system`: 大規模・基幹システム
-  - `security_cloud_network`: セキュリティ・クラウド・通信
-  - `other`: その他
+
+# 分野カテゴリ
+
+`categories`は次の固定候補からだけ選び、候補にない文字列を新しく作らないでください。類似する用語が本文にある場合も、最も近い固定候補の名称へ置き換えてください。
+
+{{CATEGORY_OPTIONS}}
+
+- `is_target=true`の場合は、案件との関連が強い順に1件以上3件以下を選んでください。
+- `is_target=false`の場合は空配列にしてください。
+- 同じカテゴリを重複させないでください。
+- 「その他」は他の11種類に当てはまらない対象案件にだけ、単独で使用してください。
 
 # 自社関連度
 

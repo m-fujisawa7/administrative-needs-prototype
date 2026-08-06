@@ -16,7 +16,7 @@ export class MockAnalyzer implements AdministrativeNeedAnalyzer {
       problem_summary: '市民向け行政サービスを利用者視点で改善するための知見や実施方法が不足している。',
       desired_state: '利用者視点で行政サービスを継続的に設計・改善できる状態。',
       request_to_private_sector: 'サービスデザインの手法、事例、実施体制などに関する情報提供。',
-      categories: ['administrative_dx', 'ui_ux', 'cx_service_design'],
+      categories: ['サービスデザイン', '行政DX', 'UI・UX'],
       company_relevance: 'A',
       contact_recommendation: 'high',
       reason: '民間事業者から情報提供を求めている段階であり、対話や提案の余地がある。',

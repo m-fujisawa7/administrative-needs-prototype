@@ -1,0 +1,8 @@
+# 登録済みURL（事前重複スキップ確認）
+https://www.city.osaka.lg.jp/ictsenryakushitsu/page/0000684546.html
+
+# 未登録候補（対象・対象外・判断が難しい案件を実AIで確認）
+https://www.city.osaka.lg.jp/ictsenryakushitsu/page/0000684013.html
+https://www.city.osaka.lg.jp/ictsenryakushitsu/page/0000372454.html
+https://www.city.osaka.lg.jp/ictsenryakushitsu/page/0000622670.html
+https://www.city.osaka.lg.jp/ictsenryakushitsu/page/0000662196.html

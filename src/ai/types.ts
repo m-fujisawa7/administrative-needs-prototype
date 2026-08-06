@@ -1,3 +1,9 @@
+import type { AdministrativeNeedCategory } from './categories.ts';
+export {
+  ADMINISTRATIVE_NEED_CATEGORIES as AI_CATEGORIES,
+  type AdministrativeNeedCategory,
+} from './categories.ts';
+
 export const AI_PROVIDERS = ['claude_cli', 'mock'] as const;
 export type AiProvider = (typeof AI_PROVIDERS)[number];
 
@@ -17,34 +23,6 @@ export const DOCUMENT_TYPES = [
   'other',
 ] as const;
 export type AdministrativeDocumentType = (typeof DOCUMENT_TYPES)[number];
-
-export const AI_CATEGORIES = [
-  'website',
-  'cms',
-  'ui_ux',
-  'cx_service_design',
-  'online_application',
-  'administrative_dx',
-  'bpr',
-  'ai',
-  'data_utilization',
-  'open_data',
-  'citizen_digital_service',
-  'app',
-  'digital_communication',
-  'digital_marketing',
-  'content',
-  'tourism_regional_promotion',
-  'business_support',
-  'digital_skills',
-  'in_house_support',
-  'public_private_partnership',
-  'digital_pilot',
-  'enterprise_system',
-  'security_cloud_network',
-  'other',
-] as const;
-export type AdministrativeNeedCategory = (typeof AI_CATEGORIES)[number];
 
 export const COMPANY_RELEVANCE_VALUES = ['A', 'B', 'C', 'out_of_scope'] as const;
 export type CompanyRelevance = (typeof COMPANY_RELEVANCE_VALUES)[number];

@@ -2,7 +2,7 @@
 
 自治体の行政ニーズを収集する前段として、**どの自治体の、どの公式ページを監視候補にするか**を管理する最小実装です。
 
-現段階では通常の収集処理、複数件のNotion登録・更新、定期実行は行いません。`config/sources.yaml` の編集・検証・一覧表示に加え、登録したRSS・一覧ページの技術的な疎通、候補抽出、個別ページとPDFの本文抽出、取得本文1件のAI判定、Notionデータベース構成の読み取り確認、選定済み1件のNotion登録チェックを手動実行できます。
+現段階では通常の収集処理、Notionの既存ページ更新、定期実行は行いません。`config/sources.yaml` の編集・検証・一覧表示に加え、登録したRSS・一覧ページの技術的な疎通、候補抽出、個別ページとPDFの本文抽出、取得本文1件のAI判定、Notionデータベース構成の読み取り確認、選定済み1件のNotion登録、選定URLファイル最大20件の直列バッチを手動実行できます。
 
 ## セットアップ
 
@@ -28,6 +28,7 @@ src/pdf-check/      PDF本文抽出
 src/ai/             Claude CLI／Mockによる判定・構造化
 src/notion-check/   Notion接続とスキーマの読み取り確認
 src/notion-register Notionへの1件登録プレビュー・重複防止
+src/notion-batch    選定URLファイルの直列プレビュー・登録
 test/               外部アクセスを行わない単体テストとfixture
 docs/               初期設計・将来構想の資料
 ```
@@ -113,6 +114,17 @@ npm run notion:register -- \
 ```
 
 デフォルトでは書き込みません。`--write`を明示した場合だけ、スキーマ、既存のselect選択肢、公式URL重複を確認して1ページを作成します。詳細は `src/notion-register/README.md` を参照してください。
+
+人が選定したURLファイルを1件ずつ直列に処理します。
+
+```bash
+AI_PROVIDER=claude_cli npm run notion:batch -- \
+  --source osaka-digital-rss \
+  --file "./data/selected-urls.txt" \
+  --database-url "https://app.notion.com/p/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?v=..."
+```
+
+デフォルトは全件プレビューです。プレビュー確認後に`--write`を明示した場合だけ未登録URLを作成し、重複URLはHTML・PDF取得とClaude解析の前にスキップします。詳細は `src/notion-batch/README.md` を参照してください。
 
 品質チェックは以下で実行できます。
 

@@ -1,5 +1,6 @@
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
+import { ADMINISTRATIVE_NEED_CATEGORIES } from '../src/ai/categories.ts';
 import { checkAdministrativeNeed } from '../src/ai/check.ts';
 import { ClaudeCliAnalyzer, parseClaudeOutput } from '../src/ai/claude-cli.ts';
 import { loadCompanyFitCriteria } from '../src/ai/company-fit-criteria.ts';
@@ -12,7 +13,11 @@ import {
   validateEvidenceQuotes,
 } from '../src/ai/input.ts';
 import { MockAnalyzer } from '../src/ai/mock.ts';
-import { formatAnalysisInput, loadAiCheckPrompt } from '../src/ai/prompt.ts';
+import {
+  formatAnalysisInput,
+  loadAiCheckPrompt,
+  renderAiCheckPrompt,
+} from '../src/ai/prompt.ts';
 import { runChildProcess, type ChildProcessRequest } from '../src/ai/process.ts';
 import {
   administrativeNeedJsonSchema,
@@ -43,8 +48,16 @@ const PDF_B = 'https://www.city.osaka.lg.jp/files/b.pdf';
 const PDF_C = 'https://www.city.osaka.lg.jp/files/c.pdf';
 
 describe('AI出力スキーマ', () => {
-  it('正常な対象案件と対象外案件を受理する', () => {
-    expect(parseAdministrativeNeedAnalysis(validAnalysis()).document_type).toBe('rfi');
+  it('対象案件で固定カテゴリ1件と3件を受理する', () => {
+    expect(parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: ['行政DX'],
+    })).categories).toEqual(['行政DX']);
+    expect(parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: ['サービスデザイン', '行政DX', 'AI・生成AI'],
+    })).categories).toHaveLength(3);
+  });
+
+  it('対象外の空配列と対象案件の「その他」単独を受理する', () => {
     expect(parseAdministrativeNeedAnalysis(validAnalysis({
       is_target: false,
       problem_summary: '',
@@ -54,6 +67,9 @@ describe('AI出力スキーマ', () => {
       company_relevance: 'out_of_scope',
       contact_recommendation: 'none',
     })).is_target).toBe(false);
+    expect(parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: ['その他'],
+    })).categories).toEqual(['その他']);
   });
 
   it('不正な列挙値、配列型、未知キーを拒否する', () => {
@@ -69,6 +85,43 @@ describe('AI出力スキーマ', () => {
       ...validAnalysis(),
       unknown: true,
     })).toThrow();
+  });
+
+  it.each([
+    'Webサイト',
+    'CX・サービスデザイン',
+    'オンライン申請',
+    '市民向けデジタルサービス',
+    'デジタル広報・コミュニケーション',
+  ])('固定候補外のカテゴリ「%s」を拒否する', (category) => {
+    expect(() => parseAdministrativeNeedAnalysis({
+      ...validAnalysis(),
+      categories: [category],
+    })).toThrow();
+  });
+
+  it('カテゴリの対象整合性と最大3件を検証する', () => {
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: [],
+    }))).toThrow('1件以上');
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: ['Web・CMS', 'UI・UX', '行政DX', 'AI・生成AI'],
+    }))).toThrow();
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      is_target: false,
+      categories: ['行政DX'],
+      company_relevance: 'out_of_scope',
+      contact_recommendation: 'none',
+    }))).toThrow('空配列');
+  });
+
+  it('カテゴリの重複と「その他」の併用を拒否する', () => {
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: ['行政DX', '行政DX'],
+    }))).toThrow('重複');
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      categories: ['その他', '行政DX'],
+    }))).toThrow('併用');
   });
 
   it('対象外・自社関連度・コンタクト推奨度の整合性を検証する', () => {
@@ -88,7 +141,14 @@ describe('AI出力スキーマ', () => {
     expect(schema).toMatchObject({
       type: 'object',
       additionalProperties: false,
-      properties: expect.objectContaining({ is_target: { type: 'boolean' } }),
+      properties: expect.objectContaining({
+        is_target: { type: 'boolean' },
+        categories: {
+          type: 'array',
+          items: { type: 'string', enum: [...ADMINISTRATIVE_NEED_CATEGORIES] },
+          maxItems: 3,
+        },
+      }),
     });
   });
 });
@@ -104,6 +164,16 @@ describe('AI入力組み立て', () => {
       .toContain('Webサイト・CMS刷新の構想・調査・計画段階');
     expect(prompt).toContain('最重要の安全ルール');
     expect(prompt).toContain('strategic_interest');
+    expect(ADMINISTRATIVE_NEED_CATEGORIES).toHaveLength(12);
+    for (const category of ADMINISTRATIVE_NEED_CATEGORIES) {
+      expect(prompt).toContain(`- ${category}:`);
+    }
+    expect(prompt).not.toContain('{{CATEGORY_OPTIONS}}');
+  });
+
+  it('カテゴリプレースホルダーがないプロンプトを拒否する', () => {
+    expect(() => renderAiCheckPrompt('# プレースホルダーなし'))
+      .toThrow('{{CATEGORY_OPTIONS}}');
   });
 
   it('HTML、複数PDF、自社適合度判定基準を信頼できない文書として区切る', () => {
@@ -206,6 +276,7 @@ describe('Analyzer', () => {
     expect(result).toMatchObject({
       is_target: true,
       document_type: 'rfi',
+      categories: ['サービスデザイン', '行政DX', 'UI・UX'],
       company_relevance: 'A',
       contact_recommendation: 'high',
     });
@@ -500,7 +571,7 @@ function validAnalysis(
     problem_summary: '行政サービスを利用者視点で改善する知見が不足している。',
     desired_state: '利用者視点で継続的に改善できる状態。',
     request_to_private_sector: 'サービスデザインの手法と事例に関する情報提供。',
-    categories: ['administrative_dx', 'ui_ux'],
+    categories: ['行政DX', 'UI・UX'],
     company_relevance: 'A',
     contact_recommendation: 'high',
     reason: '情報提供依頼段階で対話の余地がある。',
