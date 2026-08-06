@@ -1,0 +1,658 @@
+import { tmpdir } from 'node:os';
+import { describe, expect, it } from 'vitest';
+import { checkAdministrativeNeed } from '../src/ai/check.ts';
+import { ClaudeCliAnalyzer, parseClaudeOutput } from '../src/ai/claude-cli.ts';
+import { loadCompanyFitCriteria } from '../src/ai/company-fit-criteria.ts';
+import { createAnalyzer } from '../src/ai/create-analyzer.ts';
+import { AiAnalyzerError, AiConfigurationError } from '../src/ai/errors.ts';
+import {
+  aiInputLimitsFromEnvironment,
+  prepareAnalysisInput,
+  truncateHeadTail,
+  validateEvidenceQuotes,
+} from '../src/ai/input.ts';
+import { MockAnalyzer } from '../src/ai/mock.ts';
+import { formatAnalysisInput, loadAiCheckPrompt } from '../src/ai/prompt.ts';
+import { runChildProcess, type ChildProcessRequest } from '../src/ai/process.ts';
+import {
+  administrativeNeedJsonSchema,
+  parseAdministrativeNeedAnalysis,
+} from '../src/ai/schema.ts';
+import type {
+  AdministrativeNeedAnalysis,
+  AdministrativeNeedAnalysisInput,
+  AiCheckResult,
+  CompanyFitCriteria,
+} from '../src/ai/types.ts';
+import {
+  formatAiCheckResult,
+  parseAiCheckArgs,
+  runAiCheck,
+} from '../src/commands/ai-check.ts';
+import type { ExtractedDocument } from '../src/content-check/types.ts';
+import type { ExtractedPdf } from '../src/pdf-check/types.ts';
+import type {
+  Organization,
+  Source,
+  SourceRegistry,
+} from '../src/source-registry/schema.ts';
+
+const DOCUMENT_URL = 'https://www.city.osaka.lg.jp/page/document.html';
+const PDF_A = 'https://www.city.osaka.lg.jp/files/a.pdf';
+const PDF_B = 'https://www.city.osaka.lg.jp/files/b.pdf';
+const PDF_C = 'https://www.city.osaka.lg.jp/files/c.pdf';
+
+describe('AI出力スキーマ', () => {
+  it('正常な対象案件と対象外案件を受理する', () => {
+    expect(parseAdministrativeNeedAnalysis(validAnalysis()).document_type).toBe('rfi');
+    expect(parseAdministrativeNeedAnalysis(validAnalysis({
+      is_target: false,
+      problem_summary: '',
+      desired_state: '',
+      request_to_private_sector: '',
+      categories: [],
+      company_relevance: 'out_of_scope',
+      contact_recommendation: 'none',
+    })).is_target).toBe(false);
+  });
+
+  it('不正な列挙値、配列型、未知キーを拒否する', () => {
+    expect(() => parseAdministrativeNeedAnalysis({
+      ...validAnalysis(),
+      document_type: '情報提供依頼',
+    })).toThrow();
+    expect(() => parseAdministrativeNeedAnalysis({
+      ...validAnalysis(),
+      categories: '行政DX',
+    })).toThrow();
+    expect(() => parseAdministrativeNeedAnalysis({
+      ...validAnalysis(),
+      unknown: true,
+    })).toThrow();
+  });
+
+  it('対象外・自社関連度・コンタクト推奨度の整合性を検証する', () => {
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      is_target: false,
+      company_relevance: 'A',
+      contact_recommendation: 'high',
+    }))).toThrow('out_of_scope');
+    expect(() => parseAdministrativeNeedAnalysis(validAnalysis({
+      company_relevance: 'C',
+      contact_recommendation: 'high',
+    }))).toThrow('A または B');
+  });
+
+  it('Claude CLIへ渡せるJSON Schemaを生成する', () => {
+    const schema = administrativeNeedJsonSchema();
+    expect(schema).toMatchObject({
+      type: 'object',
+      additionalProperties: false,
+      properties: expect.objectContaining({ is_target: { type: 'boolean' } }),
+    });
+  });
+});
+
+describe('AI入力組み立て', () => {
+  it('リポジトリの自社適合度判定基準と外部プロンプトを読み込める', async () => {
+    const [companyFitCriteria, prompt] = await Promise.all([
+      loadCompanyFitCriteria(),
+      loadAiCheckPrompt(),
+    ]);
+    expect(companyFitCriteria.directFit).toContain('Webサイト・ポータル構築');
+    expect(companyFitCriteria.strategicInterest)
+      .toContain('Webサイト・CMS刷新の構想・調査・計画段階');
+    expect(prompt).toContain('最重要の安全ルール');
+    expect(prompt).toContain('strategic_interest');
+  });
+
+  it('HTML、複数PDF、自社適合度判定基準を信頼できない文書として区切る', () => {
+    const prompt = formatAnalysisInput(makeInput({
+      pdfDocuments: [
+        { url: PDF_A, text: 'PDF A本文' },
+        { url: PDF_B, text: 'PDF B本文' },
+      ],
+    }));
+
+    expect(prompt).toContain('## 自社適合度判定基準');
+    expect(prompt).toContain('strategic_interest（将来に向けて継続確認したい領域・段階');
+    expect(prompt).toContain('SOURCE_TYPE: html');
+    expect(prompt).toContain(`SOURCE_URL: ${PDF_A}`);
+    expect(prompt.match(/<UNTRUSTED_DOCUMENT>/gu)).toHaveLength(3);
+  });
+
+  it('PDFが0件でも動作し、長文は先頭と末尾を残して切り詰める', () => {
+    const value = `先頭${'中'.repeat(100)}末尾`;
+    const truncated = truncateHeadTail(value, 40);
+    expect(truncated.truncated).toBe(true);
+    expect(truncated.text).toHaveLength(40);
+    expect(truncated.text).toContain('先頭');
+    expect(truncated.text).toContain('末尾');
+    expect(truncated.text).toContain('中間部分を省略');
+
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      htmlText: value,
+      pdfDocuments: [],
+      pdfDiscovered: 0,
+      pdfAttempted: 0,
+      limits: { htmlCharacters: 40, pdfCharacters: 40, maxPdfs: 3 },
+    });
+    expect(prepared.input.pdfDocuments).toEqual([]);
+    expect(prepared.warnings.map((warning) => warning.code)).toContain('html_truncated');
+  });
+
+  it('PDF本文合計の上限を複数PDFへ配分する', () => {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [
+        { url: PDF_A, text: 'A'.repeat(80) },
+        { url: PDF_B, text: 'B'.repeat(80) },
+      ],
+      pdfDiscovered: 2,
+      pdfAttempted: 2,
+      limits: { htmlCharacters: 1_000, pdfCharacters: 60, maxPdfs: 3 },
+    });
+    expect(prepared.summary.pdfSentCharacters).toBe(60);
+    expect(prepared.input.pdfDocuments).toHaveLength(2);
+    expect(prepared.warnings.map((warning) => warning.code)).toContain('pdf_truncated');
+  });
+
+  it('PDF本文合計が上限内なら文書間の配分で切り詰めない', () => {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [
+        { url: PDF_A, text: 'A'.repeat(31_731) },
+        { url: PDF_B, text: 'B'.repeat(4_924) },
+      ],
+      pdfDiscovered: 2,
+      pdfAttempted: 2,
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    });
+    expect(prepared.summary.pdfSentCharacters).toBe(36_655);
+    expect(prepared.warnings.map((warning) => warning.code)).not.toContain('pdf_truncated');
+  });
+
+  it('環境変数の入力上限を検証する', () => {
+    expect(aiInputLimitsFromEnvironment({ AI_MAX_PDFS: '5' })).toMatchObject({ maxPdfs: 5 });
+    expect(() => aiInputLimitsFromEnvironment({ AI_MAX_PDFS: '0' }))
+      .toThrow(AiConfigurationError);
+  });
+});
+
+describe('根拠照合', () => {
+  it('出典URLと原文を照合し、不一致をWarningにする', () => {
+    const input = makeInput();
+    const matched = validateEvidenceQuotes(validAnalysis(), input);
+    expect(matched.matched).toBe(1);
+    expect(matched.warnings).toEqual([]);
+
+    const missing = validateEvidenceQuotes(validAnalysis({
+      evidence_quotes: [{
+        source_type: 'html',
+        source_url: DOCUMENT_URL,
+        quote: '入力に存在しない引用',
+      }],
+    }), input);
+    expect(missing.matched).toBe(0);
+    expect(missing.warnings[0]?.code).toBe('evidence_not_found');
+  });
+});
+
+describe('Analyzer', () => {
+  it('Mock AnalyzerはClaude CLIを呼ばず固定形式を返す', async () => {
+    const analyzer = new MockAnalyzer();
+    const result = await analyzer.analyze(makeInput());
+    expect(result).toMatchObject({
+      is_target: true,
+      document_type: 'rfi',
+      company_relevance: 'A',
+      contact_recommendation: 'high',
+    });
+  });
+
+  it('環境変数でMockとClaude CLIを選択し、未対応Providerを拒否する', () => {
+    expect(createAnalyzer({ systemPrompt: 'prompt', env: { AI_PROVIDER: 'mock' } }).provider)
+      .toBe('mock');
+    expect(createAnalyzer({
+      systemPrompt: 'prompt',
+      env: { AI_PROVIDER: 'claude_cli' },
+    }).provider).toBe('claude_cli');
+    expect(() => createAnalyzer({
+      systemPrompt: 'prompt',
+      env: { AI_PROVIDER: 'unsupported' },
+    })).toThrow('Unsupported AI_PROVIDER');
+  });
+
+  it('Claude CLIを最小引数で起動し、指示・スキーマ・本文をstdinで渡す', async () => {
+    let request: ChildProcessRequest | undefined;
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: '/path/to/claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async (candidate) => {
+        request = candidate;
+        return {
+          stdout: JSON.stringify({
+            type: 'result',
+            subtype: 'success',
+            is_error: false,
+            result: `\`\`\`json\n${JSON.stringify(validAnalysis())}\n\`\`\``,
+          }),
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+        };
+      },
+    });
+    const result = await analyzer.analyze(makeInput());
+
+    expect(result.document_type).toBe('rfi');
+    expect(analyzer.model).toBeNull();
+    expect(request?.executable).toBe('/path/to/claude');
+    expect(request?.cwd).toBe(tmpdir());
+    expect(request?.args).toEqual(['-p', '--output-format', 'json', '--max-turns', '1']);
+    expect(request?.stdin).toContain('system prompt');
+    expect(request?.stdin).toContain('# 出力JSON Schema');
+    expect(request?.stdin).toContain('<UNTRUSTED_DOCUMENT>');
+  });
+
+  it('Claudeの外側JSONとresult文字列を順番に解析する', () => {
+    expect(parseClaudeOutput(JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      is_error: false,
+      result: `\`\`\`json\n${JSON.stringify(validAnalysis())}\n\`\`\``,
+    })).is_target).toBe(true);
+    expect(() => parseClaudeOutput('not-json')).toThrow('outer JSON');
+    expect(() => parseClaudeOutput(JSON.stringify({
+      type: 'assistant', subtype: 'success', is_error: false, result: '{}',
+    }))).toThrow('stage 2');
+    expect(() => parseClaudeOutput(JSON.stringify({
+      type: 'result', subtype: 'error', is_error: true, result: '{}',
+    }))).toThrow('stage 3');
+    expect(() => parseClaudeOutput(JSON.stringify({
+      type: 'result', subtype: 'success', is_error: true, result: '{}',
+    }))).toThrow('stage 4');
+    expect(() => parseClaudeOutput(JSON.stringify({
+      type: 'result', subtype: 'success', is_error: false, result: {},
+    }))).toThrow('stage 5');
+    expect(() => parseClaudeOutput(JSON.stringify({
+      type: 'result', subtype: 'success', is_error: false, result: 'not-json',
+    }))).toThrow('stage 7');
+    expect(() => parseClaudeOutput(JSON.stringify({
+      type: 'result', subtype: 'success', is_error: false,
+      result: JSON.stringify({ is_target: true }),
+    }))).toThrow('stage 8');
+  });
+
+  it('Claude CLIの空出力を認証と決めつけず実行診断付きエラーにする', async () => {
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: 'claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async () => ({
+        stdout: '', stderr: 'diagnostic stderr', exitCode: 0, signal: null,
+      }),
+    });
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow(
+      'exit=0, signal=none, stdoutCharacters=0',
+    );
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow('diagnostic stderr');
+  });
+
+  it('Claude CLIの非0終了を終了コード・出力長・標準エラー全文付きで報告する', async () => {
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: 'claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async () => ({
+        stdout: 'partial',
+        stderr: 'first line\nsecond line',
+        exitCode: 7,
+        signal: null,
+      }),
+    });
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow(
+      'exit=7, signal=none, stdoutCharacters=7',
+    );
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow('first line\nsecond line');
+  });
+
+  it('子プロセスをタイムアウトで終了する', async () => {
+    await expect(runChildProcess({
+      executable: process.execPath,
+      args: ['-e', 'setTimeout(() => undefined, 10000)'],
+      stdin: '',
+      cwd: tmpdir(),
+      timeoutMs: 20,
+      maxStdoutBytes: 1_024,
+      maxStderrBytes: 1_024,
+    })).rejects.toThrow(AiAnalyzerError);
+  });
+
+  it('子プロセスの非0終了コードと標準エラーを呼び出し側へ返す', async () => {
+    const result = await runChildProcess({
+      executable: process.execPath,
+      args: ['-e', 'process.stderr.write("line 1\\nline 2"); process.exit(3)'],
+      stdin: '',
+      cwd: tmpdir(),
+      timeoutMs: 10_000,
+      maxStdoutBytes: 1_024,
+      maxStderrBytes: 1_024,
+    });
+    expect(result).toMatchObject({
+      exitCode: 3,
+      signal: null,
+      stdout: '',
+      stderr: 'line 1\nline 2',
+    });
+  });
+});
+
+describe('HTML・PDF・AI連携', () => {
+  it('PDFを重複除外・件数制限し、1件失敗してもHTMLでAI解析を続ける', async () => {
+    let analyzerInput: AdministrativeNeedAnalysisInput | undefined;
+    const analyzer = {
+      provider: 'mock' as const,
+      model: null,
+      analyze: async (input: AdministrativeNeedAnalysisInput) => {
+        analyzerInput = input;
+        return validAnalysis();
+      },
+    };
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer,
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 2 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfUrls: [PDF_A, `${PDF_A}#page=2`, PDF_B, PDF_C],
+      }),
+      extractPdf: async ({ url }) => {
+        if (url === PDF_B) throw new Error('fixture PDF failure');
+        return makePdf(url);
+      },
+    });
+
+    expect(analyzerInput?.pdfDocuments).toHaveLength(1);
+    expect(result.inputSummary).toMatchObject({
+      pdfDiscovered: 3,
+      pdfAttempted: 2,
+      pdfIncluded: 1,
+    });
+    expect(result.warnings.map((warning) => warning.code)).toContain('pdf_limit');
+    expect(result.warnings.map((warning) => warning.code)).toContain('pdf_failed');
+  });
+
+  it('--no-pdfではPDF取得を行わない', async () => {
+    let pdfCalled = false;
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: true,
+      analyzer: new MockAnalyzer(),
+      companyFitCriteria: fitCriteria(),
+    }, {
+      extractContent: async () => makeDocument({ pdfUrls: [PDF_A] }),
+      extractPdf: async () => {
+        pdfCalled = true;
+        return makePdf(PDF_A);
+      },
+    });
+    expect(pdfCalled).toBe(false);
+    expect(result.inputSummary.pdfAttempted).toBe(0);
+  });
+});
+
+describe('ai:checkコマンド', () => {
+  it('--source、--url、--json、--no-pdfを解釈する', () => {
+    expect(parseAiCheckArgs([
+      '--source=osaka-digital-rss',
+      `--url=${DOCUMENT_URL}`,
+      '--json',
+      '--no-pdf',
+    ])).toEqual({
+      sourceId: 'osaka-digital-rss',
+      url: DOCUMENT_URL,
+      json: true,
+      noPdf: true,
+    });
+  });
+
+  it('必須引数の欠落、重複、不正URLを拒否する', () => {
+    expect(() => parseAiCheckArgs([])).toThrow('--source');
+    expect(() => parseAiCheckArgs(['--source', 'source'])).toThrow('--url');
+    expect(() => parseAiCheckArgs([
+      '--source', 'source', '--url', DOCUMENT_URL, '--json', '--json',
+    ])).toThrow('--json は1回');
+    expect(() => parseAiCheckArgs([
+      '--source', 'source', '--url', 'file:///tmp/document.html',
+    ])).toThrow('http または https');
+  });
+
+  it('--jsonは解析JSONだけを標準出力し、Warningを標準エラーへ出す', async () => {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const result = makeAiCheckResult({
+      warnings: [{ code: 'pdf_failed', message: 'PDF失敗' }],
+    });
+    const exitCode = await runAiCheck([
+      '--source', 'source', '--url', DOCUMENT_URL, '--json',
+    ], {
+      env: { AI_PROVIDER: 'mock' },
+      loadRegistry: async () => registry(),
+      loadFitCriteria: async () => fitCriteria(),
+      loadPrompt: async () => 'prompt',
+      analyzerFactory: () => new MockAnalyzer(),
+      checkNeed: async () => result,
+      stdout: (message) => stdout.push(message),
+      stderr: (message) => stderr.push(message),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(JSON.parse(stdout[0] ?? '')).toEqual(result.analysis);
+    expect(stdout[0]).not.toContain('inputSummary');
+    expect(stderr.join('\n')).toContain('pdf_failed');
+  });
+
+  it('HTML取得などの実行失敗は終了コード1、情報源不明は2にする', async () => {
+    const common = {
+      env: { AI_PROVIDER: 'mock' },
+      loadRegistry: async () => registry(),
+      loadFitCriteria: async () => fitCriteria(),
+      loadPrompt: async () => 'prompt',
+      analyzerFactory: () => new MockAnalyzer(),
+      stdout: () => undefined,
+      stderr: () => undefined,
+    };
+    expect(await runAiCheck([
+      '--source', 'source', '--url', DOCUMENT_URL,
+    ], {
+      ...common,
+      checkNeed: async () => { throw new Error('HTML fixture failure'); },
+    })).toBe(1);
+    expect(await runAiCheck([
+      '--source', 'missing', '--url', DOCUMENT_URL,
+    ], common)).toBe(2);
+  });
+
+  it('通常表示に判定、入力件数、根拠照合数を含める', () => {
+    const formatted = formatAiCheckResult(makeAiCheckResult());
+    expect(formatted).toContain('Target: Yes');
+    expect(formatted).toContain('Company relevance: A');
+    expect(formatted).toContain('Evidence matched: 1/1');
+    expect(formatted).toContain('PDF documents: 0/0');
+  });
+});
+
+function validAnalysis(
+  overrides: Partial<AdministrativeNeedAnalysis> = {},
+): AdministrativeNeedAnalysis {
+  return {
+    is_target: true,
+    document_type: 'rfi',
+    problem_summary: '行政サービスを利用者視点で改善する知見が不足している。',
+    desired_state: '利用者視点で継続的に改善できる状態。',
+    request_to_private_sector: 'サービスデザインの手法と事例に関する情報提供。',
+    categories: ['administrative_dx', 'ui_ux'],
+    company_relevance: 'A',
+    contact_recommendation: 'high',
+    reason: '情報提供依頼段階で対話の余地がある。',
+    evidence_quotes: [{
+      source_type: 'html',
+      source_url: DOCUMENT_URL,
+      quote: '行政サービスを改善するための情報提供を募集します。',
+    }],
+    ...overrides,
+  };
+}
+
+function fitCriteria(): CompanyFitCriteria {
+  return {
+    version: 1,
+    name: '自社',
+    directFit: ['Webサイト構築'],
+    partnerFit: ['大規模システム開発'],
+    strategicInterest: ['Webサイト刷新の構想段階'],
+    outOfScope: ['物品購入'],
+  };
+}
+
+function makeInput(
+  overrides: Partial<AdministrativeNeedAnalysisInput> = {},
+): AdministrativeNeedAnalysisInput {
+  return {
+    title: '情報提供依頼',
+    officialUrl: DOCUMENT_URL,
+    organizationName: '大阪市',
+    sourceName: 'デジタル統括室 RSS',
+    htmlText: '行政サービスを改善するための情報提供を募集します。\n追加本文です。',
+    pdfDocuments: [],
+    companyFitCriteria: fitCriteria(),
+    ...overrides,
+  };
+}
+
+function basePrepareOptions() {
+  return {
+    title: '情報提供依頼',
+    officialUrl: DOCUMENT_URL,
+    organizationName: '大阪市',
+    sourceName: 'デジタル統括室 RSS',
+    htmlText: '行政サービスを改善するための情報提供を募集します。',
+    pdfDocuments: [],
+    pdfDiscovered: 0,
+    pdfAttempted: 0,
+    companyFitCriteria: fitCriteria(),
+  };
+}
+
+function makeSource(overrides: Partial<Source> = {}): Source {
+  return {
+    id: 'source',
+    organization_id: 'osaka-city',
+    name: 'デジタル統括室 RSS',
+    url: 'https://www.city.osaka.lg.jp/rss.xml',
+    collector_type: 'rss',
+    source_category: 'digital_news',
+    priority: 'high',
+    enabled: true,
+    content_selector: 'main',
+    ...overrides,
+  };
+}
+
+function makeOrganization(): Organization {
+  return {
+    id: 'osaka-city',
+    name: '大阪市',
+    organization_type: 'designated_city',
+    official_domain: 'city.osaka.lg.jp',
+    enabled: true,
+  };
+}
+
+function registry(): SourceRegistry {
+  return { version: 1, organizations: [makeOrganization()], sources: [makeSource()] };
+}
+
+function makeDocument(overrides: Partial<ExtractedDocument> = {}): ExtractedDocument {
+  const bodyText = '行政サービスを改善するための情報提供を募集します。'.repeat(20);
+  return {
+    sourceId: 'source',
+    sourceEnabled: true,
+    requestedUrl: DOCUMENT_URL,
+    url: DOCUMENT_URL,
+    httpStatus: 200,
+    contentType: 'text/html',
+    responseBytes: 2_000,
+    durationMs: 1,
+    redirectCount: 0,
+    title: '情報提供依頼',
+    bodyText,
+    bodyLength: bodyText.length,
+    publishedAtCandidate: '2026-08-06',
+    publishedAtSource: 'time',
+    pdfUrls: [],
+    contentSelectorConfigured: 'main',
+    contentSelectorUsed: 'main',
+    usedFallback: false,
+    warnings: [],
+    ...overrides,
+  };
+}
+
+function makePdf(url: string): ExtractedPdf {
+  const text = 'PDFから抽出した本文です。';
+  return {
+    parser: 'unpdf',
+    pageCount: 1,
+    pageTexts: [text],
+    text,
+    characterCount: text.length,
+    pagesWithText: 1,
+    emptyPageCount: 0,
+    warnings: [],
+    sourceId: 'source',
+    sourceEnabled: true,
+    requestedUrl: url,
+    url,
+    httpStatus: 200,
+    contentType: 'application/pdf',
+    responseBytes: 1_000,
+    durationMs: 1,
+    redirectCount: 0,
+  };
+}
+
+function makeAiCheckResult(overrides: Partial<AiCheckResult> = {}): AiCheckResult {
+  return {
+    sourceId: 'source',
+    sourceName: 'デジタル統括室 RSS',
+    organizationName: '大阪市',
+    title: '情報提供依頼',
+    requestedUrl: DOCUMENT_URL,
+    officialUrl: DOCUMENT_URL,
+    provider: 'mock',
+    model: null,
+    analysis: validAnalysis(),
+    inputSummary: {
+      htmlOriginalCharacters: 500,
+      htmlSentCharacters: 500,
+      pdfDiscovered: 0,
+      pdfAttempted: 0,
+      pdfIncluded: 0,
+      pdfOriginalCharacters: 0,
+      pdfSentCharacters: 0,
+    },
+    evidenceMatched: 1,
+    warnings: [],
+    ...overrides,
+  };
+}

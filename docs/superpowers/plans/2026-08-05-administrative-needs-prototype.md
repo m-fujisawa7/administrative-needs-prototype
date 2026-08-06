@@ -1,5 +1,8 @@
 # 行政ニーズ収集プロトタイプ Implementation Plan
 
+> [!NOTE]
+> この文書は初期の将来構想を含む実装計画です。現在のミニマム実装とは機能名・構成・スコープが異なる箇所があります。現行機能と実行方法はリポジトリ直下の`README.md`、運用ルールは`AGENTS.md`を正としてください。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 大阪市の公式サイトから Web・DX・デジタル領域の行政ニーズを収集し、AIで構造化して Notion データベースへ登録するローカル実行スクリプトを作る。
@@ -7786,12 +7789,26 @@ Notion の URL からもページ/DB の ID を取り出せる。"
 **Interfaces:**
 - Consumes: すべての前タスク
 - Produces:
-  - `type CollectDeps = { config: AppConfig; store: Store; provider: AiProvider; notion: NotionClient | null; logger: Logger; fetchPage: typeof fetchPage; recordNonTarget: boolean; today: string; now: () => string }`
+  - `type NotionGate = { verifySchema(): Promise<void>; findPageByUrl(u: string): Promise<string | null>; createPage(a: { properties: Record<string, unknown>; children: unknown[] }): Promise<string>; updatePage(a: { pageId: string; properties: Record<string, unknown> }): Promise<void> }` — `collect` が必要とする Notion 操作だけに絞った型。`verifySchema` は**引数を取らない**（databaseId は生成時に束縛する）
+  - `type CollectDeps = { config: AppConfig; store: Store; provider: AiProvider; notion: NotionGate | null; logger: Logger; fetchPage: typeof fetchPage; readFile?: (p: string) => Uint8Array; recordNonTarget: boolean; today: string; now: () => string; dryRunLog?: (url: string, cls: Classification, analysis: NeedAnalysis | null) => void }`
   - `type CollectOptions = { only?: string[]; limit?: number; dryRun?: boolean }`
+  - `type SyncOutcome = 'synced' | 'skipped' | 'failed' | 'dry'`
+  - `type PreparedDocument = { key: string; sourceUrl: string; title: string; bodyText: string; pdfUrls: string[]; publishedAtCandidate: string | null; departmentCandidate: string | null; organization: string; documentTypeHint: string | null; sourceId: string; contentChanged: boolean; knownPageId: string | null }`
   - `parseCollectArgs(argv: string[]): CollectOptions`
-  - `processCandidate(c: Candidate, source: SourceConfig, deps: CollectDeps): Promise<'synced' | 'skipped' | 'failed' | 'dry'>`
+  - `analyzeAndSync(doc: PreparedDocument, deps: CollectDeps): Promise<SyncOutcome>` — 本文が用意できた状態から AI 解析 → SQLite → Notion まで流す。**`collect` と `import` と `seed` が共有する**
+  - `processCandidate(c: Candidate, source: SourceConfig, deps: CollectDeps): Promise<SyncOutcome>` — 取得と抽出だけを行い、以降は `analyzeAndSync` へ委譲する
   - `flushPendingNotion(deps: CollectDeps): Promise<{ synced: number; failed: number }>`
   - `runCollect(deps: CollectDeps, options: CollectOptions): Promise<RunSummary>`
+
+**このタスクの構造上の要点（Task 21 / 22 が依存する）**
+
+AI 解析と Notion 書き込みは `analyzeAndSync` に**最初から切り出す**。`processCandidate` は
+取得・抽出・重複判定までを担当し、`analyzeAndSync` を呼ぶだけにする。手動投入（Task 21）と
+サンプル投入（Task 22）は本文の用意の仕方だけが違い、以降は同じ経路を通るため、
+ここで分けておかないと同じ処理が3箇所に複製される。
+
+`recordNonTarget = false` で対象外を Notion へ送らない場合は、`markSynced(key, '')` で
+空の page id を書き込まず、`store.upsert({ ..., status: 'skipped' })` にして `'skipped'` を返す。
 
 - [ ] **Step 1: 失敗するテストを書く**
 
@@ -8190,33 +8207,6 @@ describe('runCollect: --dry-run', () => {
 });
 
 describe('runCollect: 更新検知', () => {
-  it('本文が変わったら 更新あり を true にする', async () => {
-    const d = deps({ notion: { ...notion, findPageByUrl: vi.fn(async () => 'existing-page') } });
-    await runCollect(d, { limit: 1 });
-    updated.length = 0;
-
-    // 本文を変えて再実行。処理済みでも Notion 側に既存があるため更新経路を通す
-    store.upsert({
-      urlNormalized: RFI_URL, url: RFI_URL, contentHash: contentHash('以前の本文'),
-      status: 'synced', organization: '大阪市', title: 'CX情報提供', notionPageId: 'existing-page',
-    });
-    store.markSynced(RFI_URL, 'existing-page');
-
-    const d2 = deps({
-      notion: { ...notion, findPageByUrl: vi.fn(async () => 'existing-page') },
-      config: CONFIG,
-    });
-    await runCollect(d2, { limit: 1, forceReprocess: true } as never);
-    // forceReprocess を実装しない場合は、このケースを updated.length === 0 で確認する
-    expect(updated.length + created.length).toBeGreaterThanOrEqual(0);
-  });
-});
-```
-
-**注意:** 最後の「更新検知」ブロックは `forceReprocess` に依存している。実装では `--force` オプションを設けないため、このテストは次の形に置き換える。
-
-```ts
-describe('runCollect: 更新検知', () => {
   it('本文ハッシュが変わっていれば 更新あり を true にして更新する', async () => {
     // 1回目
     const d1 = deps({ notion: { ...notion, findPageByUrl: vi.fn(async () => null) } });
@@ -8387,14 +8377,111 @@ async function writeToNotion(
 }
 
 /**
- * 1件の候補を処理する。
+ * 本文が用意できた状態から AI 解析 → SQLite → Notion まで流す。
+ *
+ * collect（自動収集）・import（手動投入）・seed（サンプル投入）が共有する。
+ * 3つの違いは「本文をどう用意するか」だけなので、ここから先を1箇所に集める。
+ */
+export async function analyzeAndSync(doc: PreparedDocument, deps: CollectDeps): Promise<SyncOutcome> {
+  const hash = contentHash(doc.bodyText);
+  deps.store.cacheRaw(hash, doc.bodyText);
+
+  deps.store.upsert({
+    urlNormalized: doc.key, url: doc.sourceUrl, sourceId: doc.sourceId,
+    organization: doc.organization, title: doc.title,
+    contentHash: hash, status: 'pending_analysis',
+  });
+
+  const aiInput = {
+    title: doc.title,
+    bodyText: doc.bodyText,
+    sourceUrl: doc.sourceUrl,
+    organizationHint: doc.organization,
+    documentTypeHint: doc.documentTypeHint,
+    publishedAtHint: doc.publishedAtCandidate,
+  };
+
+  // ---- AI ① 対象判定 ----
+  const cls = await deps.provider.classify(aiInput);
+
+  // ---- AI ② 構造化解析（対象のみ。対象外は詳細解析しない）----
+  let analysis: NeedAnalysis | null = null;
+  let evidence: ReturnType<typeof checkEvidence> | null = null;
+  let analyzeRaw: string | null = null;
+
+  if (cls.data.is_target) {
+    const ana = await deps.provider.analyze(aiInput);
+    analysis = ana.data;
+    analyzeRaw = ana.raw;
+    evidence = checkEvidence(ana.data.evidence_quotes, doc.bodyText);
+    if (!evidence.ok) {
+      deps.logger.warn(`根拠の引用が原文に見つかりませんでした: ${doc.key}`, {
+        code: 'EVIDENCE_MISMATCH', count: evidence.mismatched.length,
+      });
+    }
+  }
+
+  const analyzedAt = deps.now();
+
+  // ---- ★ Notion より先に SQLite へ確定させる（設計書 §13）----
+  deps.store.upsert({
+    urlNormalized: doc.key, url: doc.sourceUrl, sourceId: doc.sourceId,
+    organization: analysis?.organization_name ?? doc.organization,
+    title: doc.title, contentHash: hash,
+    isTarget: cls.data.is_target ? 1 : 0, status: 'analyzed',
+    aiProvider: deps.provider.name, aiModel: deps.provider.model,
+    aiClassifyJson: cls.raw, aiAnalyzeJson: analyzeRaw, analyzedAt,
+  });
+
+  if (deps.dryRunLog !== undefined) deps.dryRunLog(doc.key, cls.data, analysis);
+
+  if (deps.notion === null) return 'dry';
+
+  if (!cls.data.is_target && !deps.recordNonTarget) {
+    // 空の page id を書き込まない。Notion へ送らなかったことを status で表す
+    deps.store.upsert({
+      urlNormalized: doc.key, url: doc.sourceUrl, contentHash: hash, status: 'skipped',
+    });
+    return 'skipped';
+  }
+
+  try {
+    const pageId = await writeToNotion({
+      notion: deps.notion,
+      officialUrl: doc.key,
+      analysis,
+      classification: cls.data,
+      organizationFallback: doc.organization,
+      departmentFallback: analysis?.department_name ?? doc.departmentCandidate,
+      evidence,
+      contentChanged: doc.contentChanged,
+      pdfUrls: doc.pdfUrls,
+      bodyText: doc.bodyText,
+      detectedAt: deps.today,
+      analyzedAt,
+      knownPageId: doc.knownPageId,
+    });
+    deps.store.markSynced(doc.key, pageId);
+    return 'synced';
+  } catch (e) {
+    const err = toAppError(e, 'NOTION_WRITE_FAILED');
+    if (err.code === 'NOTION_SCHEMA_MISMATCH') throw err;
+    // AI 結果は既に保存済み。次回実行の冒頭で再送する（設計書 §13）
+    deps.store.markPendingNotion(doc.key, err.code, err.internalDetail ?? err.userMessage);
+    deps.logger.error(`Notion への書き込みに失敗しました（次回再送します）: ${doc.key}`, { code: err.code });
+    return 'failed';
+  }
+}
+
+/**
+ * 1件の候補を取得・抽出し、PreparedDocument にして analyzeAndSync へ渡す。
  * 例外を外に投げず、結果を返り値で表す。1件の失敗で全体を止めない（設計書 §14）。
  */
 export async function processCandidate(
   c: Candidate,
   source: SourceConfig,
   deps: CollectDeps,
-): Promise<'synced' | 'skipped' | 'failed' | 'dry' | 'non_target_skipped'> {
+): Promise<SyncOutcome> {
   const key = (() => {
     try { return normalizeUrl(c.url); } catch { return null; }
   })();
@@ -8437,7 +8524,6 @@ export async function processCandidate(
 
     const bodyText = appendPdfSections(page.bodyText, pdfSections);
     const hash = contentHash(bodyText);
-    deps.store.cacheRaw(hash, bodyText);
 
     // ---- 重複と更新の判定 ----
     const existing = deps.store.getByUrl(key);
@@ -8449,91 +8535,21 @@ export async function processCandidate(
       });
       return 'skipped';
     }
-    const contentChanged = existing !== null && isContentChanged(existing, hash);
 
-    deps.store.upsert({
-      urlNormalized: key, url: res.finalUrl, sourceId: source.id,
-      organization: c.organization, title: page.title,
-      contentHash: hash, status: 'pending_analysis',
-    });
-
-    // ---- AI ① 対象判定 ----
-    const aiInput = {
+    return await analyzeAndSync({
+      key,
+      sourceUrl: res.finalUrl,
       title: page.title,
       bodyText,
-      sourceUrl: res.finalUrl,
-      organizationHint: c.organization,
+      pdfUrls: page.pdfUrls,
+      publishedAtCandidate: page.publishedAtCandidate ?? c.listDate,
+      departmentCandidate: page.departmentCandidate ?? c.categoryHint,
+      organization: c.organization,
       documentTypeHint: null,
-      publishedAtHint: page.publishedAtCandidate ?? c.listDate,
-    };
-
-    const cls = await deps.provider.classify(aiInput);
-
-    // ---- AI ② 構造化解析（対象のみ）----
-    let analysis: NeedAnalysis | null = null;
-    let evidence: ReturnType<typeof checkEvidence> | null = null;
-    let analyzeRaw: string | null = null;
-
-    if (cls.data.is_target) {
-      const ana = await deps.provider.analyze(aiInput);
-      analysis = ana.data;
-      analyzeRaw = ana.raw;
-      evidence = checkEvidence(ana.data.evidence_quotes, bodyText);
-      if (!evidence.ok) {
-        deps.logger.warn(`根拠の引用が原文に見つかりませんでした: ${key}`, {
-          code: 'EVIDENCE_MISMATCH', count: evidence.mismatched.length,
-        });
-      }
-    }
-
-    const analyzedAt = deps.now();
-
-    // ---- ★ Notion より先に SQLite へ確定させる（設計書 §13）----
-    deps.store.upsert({
-      urlNormalized: key, url: res.finalUrl, sourceId: source.id,
-      organization: analysis?.organization_name ?? c.organization,
-      title: page.title, contentHash: hash,
-      isTarget: cls.data.is_target ? 1 : 0,
-      status: 'analyzed',
-      aiProvider: deps.provider.name, aiModel: deps.provider.model,
-      aiClassifyJson: cls.raw, aiAnalyzeJson: analyzeRaw, analyzedAt,
-    });
-
-    if (deps.dryRunLog !== undefined) deps.dryRunLog(key, cls.data, analysis);
-
-    // ---- Notion ----
-    if (deps.notion === null) return 'dry';
-    if (!cls.data.is_target && !deps.recordNonTarget) {
-      deps.store.markSynced(key, '');
-      return 'non_target_skipped';
-    }
-
-    try {
-      const pageId = await writeToNotion({
-        notion: deps.notion,
-        officialUrl: key,
-        analysis,
-        classification: cls.data,
-        organizationFallback: c.organization,
-        departmentFallback: analysis?.department_name ?? page.departmentCandidate ?? c.categoryHint,
-        evidence,
-        contentChanged,
-        pdfUrls: page.pdfUrls,
-        bodyText,
-        detectedAt: deps.today,
-        analyzedAt,
-        knownPageId: existing?.notionPageId ?? null,
-      });
-      deps.store.markSynced(key, pageId);
-      return 'synced';
-    } catch (e) {
-      const err = toAppError(e, 'NOTION_WRITE_FAILED');
-      if (err.code === 'NOTION_SCHEMA_MISMATCH') throw err;
-      // AI 結果は既に保存済み。次回実行の冒頭で再送する（設計書 §13）
-      deps.store.markPendingNotion(key, err.code, err.internalDetail ?? err.userMessage);
-      deps.logger.error(`Notion への書き込みに失敗しました（次回再送します）: ${key}`, { code: err.code });
-      return 'failed';
-    }
+      sourceId: source.id,
+      contentChanged: existing !== null && isContentChanged(existing, hash),
+      knownPageId: existing?.notionPageId ?? null,
+    }, deps);
   } catch (e) {
     const err = toAppError(e, 'URL_FETCH_FAILED');
     if (isFatal(err.code)) throw err;
@@ -8603,9 +8619,10 @@ export async function runCollect(deps: CollectDeps, options: CollectOptions): Pr
   const notion = dryRun ? null : deps.notion;
   const d: CollectDeps = { ...deps, notion };
 
-  // 1〜2. 設定の検証は loadConfig 側。Notion スキーマ検証はここで一度だけ
+  // 1〜2. 設定の検証は loadConfig 側。Notion スキーマ検証はここで一度だけ。
+  // NotionGate.verifySchema は引数を取らない（databaseId は生成時に束縛済み）。
   if (notion !== null) {
-    await notion.verifySchema('');
+    await notion.verifySchema();
   }
 
   // 3. 未同期分の再送
@@ -8749,13 +8766,7 @@ if (process.argv[1]?.endsWith('collect.ts') === true) {
 }
 ```
 
-**実装上の注意（テスト作成時に判明する点）:**
-
-1. `CollectDeps` に `dryRunLog?: (url: string, cls: unknown, analysis: unknown) => void` を追加し、`--dry-run` 時に解析結果を標準出力へ出す。型定義に含めること。
-2. `verifySchema('')` の空文字渡しは不自然なので、`CollectDeps.notion` の `verifySchema` は引数なしで呼べるようラップする。`main()` の実装がそれを行っている。テスト側のスタブも引数を無視する形にする。
-3. `markSynced(key, '')` で空の page id を入れると `notion_page_id` が空文字になる。`recordNonTarget=false` の場合は `markSynced` ではなく専用の `status='skipped'` にする方が正しい。`store.upsert({ ..., status: 'skipped' })` を使う。
-
-- [ ] **Step 4: 上記の注意点を反映してテストを通す**
+- [ ] **Step 4: テストが通ることを確認**
 
 ```bash
 npx vitest run test/collect.test.ts
@@ -10330,4 +10341,3 @@ Integration の作成と親ページへの接続、6ビューの手動作成手�
 
 23タスク、1エントリポイントあたり1タスク＋純粋関数層。1つの実装計画として妥当。
 T1〜T19 は外部通信ゼロでテストが完結し、T20〜T23 で結線する。
-

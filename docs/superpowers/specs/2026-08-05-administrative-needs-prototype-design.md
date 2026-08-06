@@ -1,13 +1,16 @@
 # 行政ニーズ収集プロトタイプ 設計書
 
+> [!NOTE]
+> この文書は初期設計と将来構想を記録したものです。現在のミニマム実装とは機能名・構成・スコープが異なる箇所があります。現行機能と実行方法はリポジトリ直下の`README.md`、運用ルールは`AGENTS.md`を正としてください。
+
 - 作成日: 2026-08-05
 - 元指示書: `行政ニーズ収集プロトタイプ Claude Code実装指示書`（PDF, 22ページ）
-- 実装場所: `/Users/m-fujisawa/claudecode/administrative-needs-prototype`（独立gitリポジトリ）
+- 実装場所: このGitリポジトリのルート
 - 本文中の「§N」は元指示書の節番号を指す
 
 ## 0. 先行作業との関係
 
-隣接する `/Users/m-fujisawa/claudecode/gyosei-needs-db` に別PRD（「行政ニーズシグナルDB」）由来の設計書が1本ある。
+別PRD（「行政ニーズシグナルDB」）由来の先行設計案がある。
 そちらは **Next.js + SQLite の専用Webアプリ**構成であり、本指示書 §6 / §24 の「専用Webアプリ・独自DB・認証・Supabaseは作らない」「Notionを画面として使う」と正面から矛盾する。
 
 **本設計書が対象とするのは本指示書（Notion構成）のみ。** `gyosei-needs-db` は変更せず放置する。

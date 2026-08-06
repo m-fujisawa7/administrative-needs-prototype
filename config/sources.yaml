@@ -1,0 +1,86 @@
+version: 1
+
+organizations:
+  - id: osaka-city
+    name: 大阪市
+    organization_type: designated_city
+    prefecture: 大阪府
+    official_domain: city.osaka.lg.jp
+    enabled: true
+    notes: 初期検証の対象自治体
+
+sources:
+  - id: osaka-digital-rss
+    organization_id: osaka-city
+    name: デジタル統括室 RSS
+    url: https://www.city.osaka.lg.jp/ictsenryakushitsu/rss/rss.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: high
+    enabled: true
+    content_selector: "#mol_contents"
+    category_includes:
+      - 入札契約情報
+      - DX・デジタル化・スマートシティ
+      - 主要な計画、指針・施策
+    title_excludes:
+      - 入札結果
+      - 随意契約結果
+      - 選定結果
+      - 再委託状況
+      - 要綱・要領等
+    document_type_hints:
+      - RFI
+      - 情報提供依頼
+      - 計画
+    notes: デジタル統括室が公開する新着情報。RSSカテゴリで対象候補を絞る。
+    last_verified_at: "2026-08-05"
+    verification_status: verified
+
+  - id: osaka-proposal-list
+    organization_id: osaka-city
+    name: プロポーザル方式等発注案件
+    url: https://www.city.osaka.lg.jp/templates/proposal_hattyuuannkenn/0-Curr.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#koji_wrap .sec_01 h2 a[href*='/templates/proposal_hattyuuannkenn/']"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - プロポーザル
+      - 企画提案募集
+    notes: 大阪市全体のプロポーザル方式等発注案件。一覧には対象外案件も含まれる。
+    last_verified_at: "2026-08-05"
+    verification_status: verified
+
+  - id: osaka-digital-press
+    organization_id: osaka-city
+    name: デジタル統括室 報道発表資料
+    url: https://www.city.osaka.lg.jp/hodoshiryo/98-Curr.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#hdo_wrap .hdo_sub_lower a[href*='/hodoshiryo/ictsenryakushitsu/']"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - 政策方針
+      - 計画
+    notes: DX方針や上流の政策シグナル候補。
+    last_verified_at: "2026-08-05"
+    verification_status: verified
+
+  - id: osaka-shitei-kanri
+    organization_id: osaka-city
+    name: 指定管理者 募集・選定状況
+    url: https://www.city.osaka.lg.jp/keiyakukanzai/page/0000181355.html
+    collector_type: list_page
+    source_category: procurement
+    priority: low
+    enabled: false
+    link_selector: "#mol_contents a[href*='/page/']"
+    content_selector: "#mol_contents"
+    notes: 施設運営中心でWeb・DX関連度が低いため、参考情報源として無効状態で保持する。
+    last_verified_at: "2026-08-05"
+    verification_status: verified
