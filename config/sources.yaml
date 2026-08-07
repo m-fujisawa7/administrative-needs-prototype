@@ -95,6 +95,60 @@ sources:
     last_verified_at: "2026-08-05"
     verification_status: verified
 
+  - id: osaka-digital-procurement-list
+    organization_id: osaka-city
+    name: デジタル統括室 入札・契約のお知らせ
+    url: https://www.city.osaka.lg.jp/ictsenryakushitsu/category/3047-9-5-1-0-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: ".cat_topics_lower ul.icon04_cat > li > a"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - RFI
+      - プロポーザル
+      - 業務委託
+    notes: デジタル統括室の情報提供依頼、プロポーザル、業務委託などを集約する入札・契約情報一覧。発注予定や取止めも含むため、後続のAI判定で選別する。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: osaka-dx-practice-list
+    organization_id: osaka-city
+    name: DXの実践
+    url: https://www.city.osaka.lg.jp/shisei/category/3054-1-2-32-8-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: ".cat_topics_lower ul.icon04_cat > li > a"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - DX施策
+      - 官民連携
+      - 提案募集
+    notes: 全庁のDX実践、デジタル技術を活用した提案募集、グランドデザインや計画の策定を集約する一覧。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: osaka-public-private-platform
+    organization_id: osaka-city
+    name: 官民連携プラットフォームの構築
+    url: https://www.city.osaka.lg.jp/shiseikaikakushitsu/page/0000624777.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "#mol_contents a[href*='/shimin/page/0000613281.html']"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - 官民連携
+      - 民間提案
+      - 協働団体募集
+    notes: 官民連携プラットフォームの公式説明ページを入口に、地域・社会課題と民間提案を結びつける協働団体の随時募集ページを取得する。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
   - id: osaka-shitei-kanri
     organization_id: osaka-city
     name: 指定管理者 募集・選定状況
