@@ -37,6 +37,8 @@ AI_PROVIDER=claude_cli npm run notion:batch -- \
   --write
 ```
 
+Codex実行環境で実Claude CLIが応答しない場合は、結合確認を無理に待機せず、外部アクセスを行わないMockテストまでで停止します。実Claude・実Notionのプレビューと登録コマンドを提示し、ユーザーがローカルターミナルから実行します。
+
 ## 処理と安全策
 
 入力ファイル全体を検証してからNotionへ接続します。各URLは、既存の`registerOneAdministrativeNeed`を次の順で直列実行します。

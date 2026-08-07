@@ -2,7 +2,7 @@
 
 自治体の行政ニーズを収集する前段として、**どの自治体の、どの公式ページを監視候補にするか**を管理する最小実装です。
 
-現段階では通常の収集処理、Notionの既存ページ更新、定期実行は行いません。`config/sources.yaml` の編集・検証・一覧表示に加え、登録したRSS・一覧ページの技術的な疎通、候補抽出、個別ページとPDFの本文抽出、取得本文1件のAI判定、Notionデータベース構成の読み取り確認、選定済み1件のNotion登録、選定URLファイル最大20件の直列バッチを手動実行できます。
+現段階では定期収集、Notionの既存ページ更新、定期実行は行いません。`config/sources.yaml` の編集・検証・一覧表示に加え、登録したRSS・一覧ページの技術的な疎通、候補抽出、個別ページとPDFの本文抽出、取得本文1件のAI判定、Notionデータベース構成の読み取り確認、選定済み1件のNotion登録、選定URLファイルまたは情報源候補から最大20件を直列処理する手動コマンドを実行できます。
 
 ## セットアップ
 
@@ -14,6 +14,8 @@ cp .env.example .env
 ```
 
 台帳の検証とMockテストだけなら認証情報は不要です。実AI判定には認証済みのClaude CLI、Notion接続・登録には`.env`の`NOTION_TOKEN`が必要です。`.env`はGit管理対象外です。
+
+Codex実行環境で実Claude CLIが応答しない場合は長時間待機せず、外部アクセスを行わないMockテストまで実施します。実Claude・実Notionの結合確認は表示されたコマンドをローカルターミナルから実行してください。
 
 ## ディレクトリ構成
 
@@ -29,6 +31,7 @@ src/ai/             Claude CLI／Mockによる判定・構造化
 src/notion-check/   Notion接続とスキーマの読み取り確認
 src/notion-register Notionへの1件登録プレビュー・重複防止
 src/notion-batch    選定URLファイルの直列プレビュー・登録
+src/collection-run  情報源候補の直列プレビュー・登録
 test/               外部アクセスを行わない単体テストとfixture
 docs/               初期設計・将来構想の資料
 ```
@@ -126,6 +129,17 @@ AI_PROVIDER=claude_cli npm run notion:batch -- \
 
 デフォルトは全件プレビューです。プレビュー確認後に`--write`を明示した場合だけ未登録URLを作成し、重複URLはHTML・PDF取得とClaude解析の前にスキップします。詳細は `src/notion-batch/README.md` を参照してください。
 
+登録済み情報源から候補を直接取得し、1件ずつ直列に処理します。
+
+```bash
+AI_PROVIDER=claude_cli npm run collect:run -- \
+  --source osaka-digital-rss \
+  --limit 10 \
+  --database-url "https://app.notion.com/p/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?v=..."
+```
+
+デフォルトはプレビューです。候補URLの文字列重複を除いてから最大20件に制限し、Notion登録済みURLは後続取得とClaude解析の前にスキップします。`--write`を明示した場合だけ未登録URLを作成します。詳細は `src/collection-run/README.md` を参照してください。
+
 品質チェックは以下で実行できます。
 
 ```bash
@@ -200,4 +214,4 @@ const enabledSources = getEnabledSources(registry);
 const osakaSources = getSourcesByOrganization(registry, 'osaka-city');
 ```
 
-後続の収集処理は `collector_type` を見て取得方式を選べます。現段階の取得とAI判定は、入口ページ、指定した個別ページ、そのページのPDF、1案件のAI解析を手動確認する範囲だけです。Notionは接続・構成確認と、明示的な`--write`による選定済み1件の新規登録だけです。候補の継続収集、一括AI処理、結果保存、既存Notionページの更新・削除は実装していません。
+後続の収集処理は `collector_type` を見て取得方式を選べます。現段階の取得とAI判定は、入口ページ、指定した個別ページ、そのページのPDF、1案件のAI解析、および人が指定した最大20件を手動で直列実行する範囲です。Notionは接続・構成確認と、明示的な`--write`による新規登録だけです。候補の継続収集、結果保存、既存Notionページの更新・削除は実装していません。

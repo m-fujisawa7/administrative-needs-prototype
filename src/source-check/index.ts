@@ -8,6 +8,8 @@ import { analyzeListPage } from './list-page-checker.ts';
 import { analyzeRss } from './rss-checker.ts';
 import type {
   FetchedText,
+  SourceCheckSample,
+  SourceContentAnalysis,
   SourceCheckResult,
   SourceCheckRunOptions,
   SourceCheckSelection,
@@ -33,6 +35,29 @@ type SelectedSource = {
   source: Source;
   organization: Organization;
 };
+
+type CollectedSourceContent = {
+  fetched: FetchedText;
+  analysis: SourceContentAnalysis;
+};
+
+export async function collectSourceCandidates(
+  source: Source,
+  organization: Organization,
+  dependencies: SourceCheckDependencies = {},
+  limit = Number.MAX_SAFE_INTEGER,
+): Promise<SourceCheckSample[]> {
+  if (source.collector_type !== 'rss' && source.collector_type !== 'list_page') {
+    throw new Error(`collector_type「${source.collector_type}」は現在未対応です。`);
+  }
+  const { analysis } = await fetchAndAnalyzeSource(
+    source,
+    organization,
+    limit,
+    dependencies,
+  );
+  return analysis.samples;
+}
 
 export async function checkSourceRegistry(
   registry: SourceRegistry,
@@ -128,23 +153,9 @@ async function checkOneSource(
 
   let fetched: FetchedText | undefined;
   try {
-    const fetchSource = dependencies.fetchSource ?? defaultFetchSource;
-    fetched = await fetchSource({
-      url: source.url,
-      officialDomain: organization.official_domain,
-      accept: source.collector_type === 'rss'
-        ? 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1'
-        : 'text/html, application/xhtml+xml;q=0.9, */*;q=0.1',
-    });
-    const analysis = source.collector_type === 'rss'
-      ? analyzeRss(fetched.text, source, organization.official_domain, limit)
-      : analyzeListPage(
-          fetched.text,
-          source,
-          organization.official_domain,
-          limit,
-          fetched.finalUrl,
-        );
+    const collected = await fetchAndAnalyzeSource(source, organization, limit, dependencies);
+    fetched = collected.fetched;
+    const { analysis } = collected;
     const contentTypeWarnings = contentTypeWarningsFor(source, fetched.contentType);
     const warnings = [...analysis.warnings, ...contentTypeWarnings];
 
@@ -179,6 +190,32 @@ async function checkOneSource(
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+async function fetchAndAnalyzeSource(
+  source: Source,
+  organization: Organization,
+  limit: number,
+  dependencies: SourceCheckDependencies,
+): Promise<CollectedSourceContent> {
+  const fetchSource = dependencies.fetchSource ?? defaultFetchSource;
+  const fetched = await fetchSource({
+    url: source.url,
+    officialDomain: organization.official_domain,
+    accept: source.collector_type === 'rss'
+      ? 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1'
+      : 'text/html, application/xhtml+xml;q=0.9, */*;q=0.1',
+  });
+  const analysis = source.collector_type === 'rss'
+    ? analyzeRss(fetched.text, source, organization.official_domain, limit)
+    : analyzeListPage(
+        fetched.text,
+        source,
+        organization.official_domain,
+        limit,
+        fetched.finalUrl,
+      );
+  return { fetched, analysis };
 }
 
 async function defaultFetchSource(request: SourceFetchRequest): Promise<FetchedText> {

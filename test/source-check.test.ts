@@ -17,6 +17,7 @@ import {
 } from '../src/source-check/fetch.ts';
 import {
   checkSourceRegistry,
+  collectSourceCandidates,
   selectSources,
   type SourceFetcher,
 } from '../src/source-check/index.ts';
@@ -36,6 +37,25 @@ const OFFICIAL_DOMAIN = 'city.osaka.lg.jp';
 const PUBLIC_RESOLVER = async () => [{ address: '8.8.8.8', family: 4 as const }];
 
 describe('RSSチェック', () => {
+  it('共通Collectorが既存RSS解析を使って全候補を返す', async () => {
+    const source = makeSource({ collector_type: 'rss' });
+    const candidates = await collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+      {
+        fetchSource: async ({ url }) => fetched(
+          '<rss version="2.0"><channel>'
+          + '<item><title>案件1</title><link>https://www.city.osaka.lg.jp/page/1</link></item>'
+          + '<item><title>案件2</title><link>https://www.city.osaka.lg.jp/page/2</link></item>'
+          + '</channel></rss>',
+          url,
+          'application/rss+xml',
+        ),
+      },
+    );
+    expect(candidates.map(({ title }) => title)).toEqual(['案件1', '案件2']);
+  });
+
   it('実取得fixtureを解析し、台帳フィルター適用前後の件数とサンプルを返す', async () => {
     const xml = await fixture('ict-rss.xml');
     const result = analyzeRss(xml, makeSource({

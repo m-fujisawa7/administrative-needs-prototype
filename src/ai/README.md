@@ -29,6 +29,8 @@ npm run ai:check -- \
   --url "https://www.city.osaka.lg.jp/ictsenryakushitsu/page/0000684546.html"
 ```
 
+Codex実行環境でClaude CLIが応答しない場合は、結合確認のために長時間待機や繰り返し実行をしません。fixture・Mock・疑似子プロセスを使う自動テストまで完了し、上記の実行コマンドをユーザーへ提示して、ローカルターミナルで実Claudeの結果を確認してもらいます。Mock成功を実Claude成功として扱いません。
+
 Mockで取得・入力組み立て・表示だけを確認:
 
 ```bash

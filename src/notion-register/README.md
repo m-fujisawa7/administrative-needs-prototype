@@ -29,6 +29,8 @@ npm run notion:register -- \
 
 `--database-id`も使用できます。`--database-url`との同時指定はエラーです。`--write`時は実Claude CLIだけを許可し、`AI_PROVIDER=mock`の解析結果は登録しません。
 
+Codex実行環境で実Claude CLIが応答しない場合は、結合確認を無理に待機せず、外部アクセスを行わないMockテストまでで停止します。実Claude・実Notionのプレビューと登録コマンドを提示し、ユーザーがローカルターミナルから実行します。
+
 ## 処理
 
 1. 引数、`.env`、情報源台帳を読み込む
