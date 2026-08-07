@@ -2,7 +2,7 @@
 
 自治体の行政ニーズを収集する前段として、**どの自治体の、どの公式ページを監視候補にするか**を管理する最小実装です。
 
-現段階では定期収集、Notionの既存ページ更新、定期実行は行いません。`config/sources.yaml` の編集・検証・一覧表示に加え、登録したRSS・一覧ページの技術的な疎通、候補抽出、個別ページとPDFの本文抽出、取得本文1件のAI判定、Notionデータベース構成の読み取り確認、選定済み1件のNotion登録、選定URLファイルまたは情報源候補から最大20件を直列処理する手動コマンドを実行できます。
+現段階では定期収集、Notionの既存ページ更新、定期実行は行いません。`config/sources.yaml` の編集・検証・一覧表示に加え、登録したRSS・一覧ページの技術的な疎通、候補抽出、個別ページとPDFの本文抽出、取得本文のAI判定、新規Sourceの候補からAI判定までの一括確認、Notionデータベース構成の読み取り確認、選定済み1件のNotion登録、選定URLファイルまたは情報源候補から最大20件を直列処理する手動コマンドを実行できます。
 
 ## セットアップ
 
@@ -25,6 +25,7 @@ prompts/            AI判定プロンプト
 src/commands/       手動実行するCLIエントリーポイント
 src/source-registry 台帳の読み込み・検証
 src/source-check/   情報源の疎通・候補抽出
+src/source-verify/  新規Sourceの取得・AI判定をまとめた読み取り確認
 src/content-check/  個別HTMLページの本文抽出
 src/pdf-check/      PDF本文抽出
 src/ai/             Claude CLI／Mockによる判定・構造化
@@ -96,6 +97,16 @@ npm run ai:check -- \
 ```
 
 初期ProviderはClaude CLIです。テスト用Mockは `AI_PROVIDER=mock`、JSONだけを標準出力する場合は `--json`、PDFを送信しない場合は `--no-pdf` を指定します。AI結果は保存しません。実行前に公開文書であることと `config/company-fit-criteria.yaml` を確認してください。詳細は `src/ai/README.md` を参照してください。
+
+新しく追加したSourceについて、候補取得から本文・PDF取得、AI判定までを1コマンドで確認します。
+
+```bash
+AI_PROVIDER=claude_cli npm run source:verify -- \
+  --source ishikawa-digital-office-news \
+  --limit 3
+```
+
+`--limit`は省略時3件、最大5件です。候補ごとの失敗後も残りを直列処理します。このコマンドはNotion APIを呼ばず、AI結果を保存せず、`data/collection-state.json`も読み書きしません。詳細は `src/source-verify/README.md` を参照してください。
 
 Notionデータベースと配下のデータソース構成を読み取り確認します。
 
@@ -173,12 +184,13 @@ sources:
     enabled: true
 ```
 
-現在は大阪市のみを対象とし、次の4情報源を登録しています。
+現在は大阪市、名古屋市、石川県の計11情報源を登録しています。Hatch Technology NAGOYAは名古屋市事業ですが、独自公式ドメインへの安全なアクセス制限のため、名古屋市を親に持つ外部サイト用組織として管理します。
 
-- デジタル統括室 RSS（有効）
-- プロポーザル方式等発注案件（有効）
-- デジタル統括室 報道発表資料（有効）
-- 指定管理者 募集・選定状況（参考・無効）
+- 大阪市：4件（有効3件、参考・無効1件）
+- 名古屋市：NAGOYA FRONTIER、Hatch Technology NAGOYA、RFI・RFCの3件（すべて有効）
+- 石川県：デジタル推進監室、創造的復興推進課、DX推進本部、産業政策課の4件（有効3件、参考・無効1件）
+
+石川県DX推進本部は更新内容が単一ページ内に蓄積される形式で、現在のCollectorが`single_page`に未対応のため無効状態です。デジタル推進監室の新着情報から関連更新を取得できます。
 
 `enabled: false` は削除ではありません。監視候補として記録を残しつつ、後続処理の対象外にできます。
 

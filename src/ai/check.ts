@@ -107,6 +107,13 @@ export async function checkAdministrativeNeed(
   });
   warnings.push(...prepared.warnings);
   const analysis = await input.analyzer.analyze(prepared.input);
+  const analyzerRunInfo = input.analyzer.getLastRunInfo?.();
+  if ((analyzerRunInfo?.jsonParseRetryCount ?? 0) > 0) {
+    warnings.push({
+      code: 'ai_json_parse_retry',
+      message: '初回の行政ニーズJSONを解析できなかったため、Claude CLIを1回再試行して成功しました。',
+    });
+  }
   const evidence = validateEvidenceQuotes(analysis, prepared.input);
   warnings.push(...evidence.warnings);
 

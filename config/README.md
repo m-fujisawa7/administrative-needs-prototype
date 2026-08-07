@@ -182,6 +182,10 @@ CSSセレクターが分からない場合は、推測で `link_selector` や `c
 
 続けて `sources` へ1件以上の情報源を追加し、`organization_id` に新しい組織IDを指定します。
 
+### 自治体事業が独自公式ドメインを使う場合
+
+情報源チェックは、所属組織の`official_domain`とそのサブドメインだけへアクセスします。同じ自治体の公式事業でも別ドメインを使う場合は、この制限を広げず、自治体を`parent_organization_id`に持つ`external_organization`を追加してください。自治体名として扱う必要がある場合は子組織の`name`も自治体名とし、`notes`に事業名と分離理由を記載します。Hatch Technology NAGOYAはこの方式で管理しています。
+
 ## AIへ追加を依頼する場合
 
 次の依頼文をコピーし、対象自治体や情報源を具体化してAIへ渡してください。
@@ -205,6 +209,7 @@ config/README.md のルールに従い、config/sources.yaml に情報源を追�
 - 候補個別ページとcontent_selectorを確認する場合は npm run content:check を実行する
 - 個別ページで見つけたPDFのテキスト取得を確認する場合は npm run pdf:check を実行する
 - 取得本文のAI判定を確認する場合は config/company-fit-criteria.yaml を確認して npm run ai:check を実行する
+- 新規SourceをNotion書き込み直前までまとめて確認する場合は npm run source:verify -- --source <source-id> を実行する
 - 追加・変更時の詳細結果が必要なら --output で情報源ごとの最新結果を上書き保存する
 - 保存したJSONはGitへコミットせず、結果の要約をPull Requestへ記載する
 - 最後に、追加内容、確認根拠、検証結果、不明点を報告する
@@ -285,6 +290,16 @@ npm run ai:check -- \
 ```
 
 AI結果は保存されません。公開文書だけを対象にし、自社適合度判定基準とAIの根拠引用を人が確認してください。詳細は `../src/ai/README.md` を参照してください。
+
+新規Sourceの候補取得、HTML・PDF本文取得、AI判定をまとめて確認する場合:
+
+```bash
+AI_PROVIDER=claude_cli npm run source:verify -- \
+  --source osaka-digital-rss \
+  --limit 3
+```
+
+`--limit`は省略時3件、最大5件です。Notion APIやcollection stateは使用せず、結果も保存しません。詳細は `../src/source-verify/README.md` を参照してください。
 
 チェック機能は外部サイトへアクセスします。実行できない環境では、fixtureテストの成功を実アクセス成功として報告しないでください。詳細は `../src/source-check/README.md` を参照してください。
 

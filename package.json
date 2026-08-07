@@ -10,6 +10,7 @@
     "sources:validate": "node src/source-registry/validate.ts",
     "sources:list": "node src/source-registry/list.ts",
     "sources:check": "node src/commands/sources-check.ts",
+    "source:verify": "node src/commands/source-verify.ts",
     "content:check": "node src/commands/content-check.ts",
     "pdf:check": "node src/commands/pdf-check.ts",
     "ai:check": "node src/commands/ai-check.ts",

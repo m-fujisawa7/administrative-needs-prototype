@@ -164,6 +164,7 @@ describe('AI入力組み立て', () => {
       .toContain('Webサイト・CMS刷新の構想・調査・計画段階');
     expect(prompt).toContain('最重要の安全ルール');
     expect(prompt).toContain('strategic_interest');
+    expect(prompt).toContain('Markdownコードフェンスを付けず、JSONオブジェクトだけ');
     expect(ADMINISTRATIVE_NEED_CATEGORIES).toHaveLength(12);
     for (const category of ADMINISTRATIVE_NEED_CATEGORIES) {
       expect(prompt).toContain(`- ${category}:`);
@@ -297,11 +298,13 @@ describe('Analyzer', () => {
 
   it('Claude CLIを最小引数で起動し、指示・スキーマ・本文をstdinで渡す', async () => {
     let request: ChildProcessRequest | undefined;
+    let calls = 0;
     const analyzer = new ClaudeCliAnalyzer({
       executable: '/path/to/claude',
       timeoutMs: 10_000,
       systemPrompt: 'system prompt',
       runner: async (candidate) => {
+        calls += 1;
         request = candidate;
         return {
           stdout: JSON.stringify({
@@ -326,6 +329,117 @@ describe('Analyzer', () => {
     expect(request?.stdin).toContain('system prompt');
     expect(request?.stdin).toContain('# 出力JSON Schema');
     expect(request?.stdin).toContain('<UNTRUSTED_DOCUMENT>');
+    expect(calls).toBe(1);
+    expect(analyzer.getLastRunInfo()).toEqual({ jsonParseRetryCount: 0 });
+  });
+
+  it('行政ニーズJSONのparse失敗時だけ1回再試行し、再試行指示を追加する', async () => {
+    const requests: ChildProcessRequest[] = [];
+    const invalidJson = '{"quote":"... "重点箇所だけへの訪問" ..."}';
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: '/path/to/claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async (request) => {
+        requests.push(request);
+        return {
+          stdout: JSON.stringify({
+            type: 'result',
+            subtype: 'success',
+            is_error: false,
+            result: requests.length === 1 ? invalidJson : JSON.stringify(validAnalysis()),
+          }),
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+        };
+      },
+    });
+
+    await expect(analyzer.analyze(makeInput())).resolves.toEqual(validAnalysis());
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.stdin).not.toContain('JSON形式エラーによる再試行');
+    expect(requests[1]?.stdin).toContain('前回の回答はJSON.parseできない不正JSONでした');
+    expect(requests[1]?.stdin).toContain(String.raw`\"`);
+    expect(requests[1]?.stdin).toContain(
+      'Markdownコードフェンス、説明文、見出し、注釈を付けず、有効なJSONオブジェクトだけ',
+    );
+    expect(requests[1]?.stdin).toContain('<UNTRUSTED_DOCUMENT>');
+    expect(analyzer.getLastRunInfo()).toEqual({ jsonParseRetryCount: 1 });
+  });
+
+  it('初回のZod validation失敗では再試行しない', async () => {
+    let calls = 0;
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: '/path/to/claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async () => {
+        calls += 1;
+        return {
+          stdout: JSON.stringify({
+            type: 'result', subtype: 'success', is_error: false,
+            result: JSON.stringify({ is_target: true }),
+          }),
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+        };
+      },
+    });
+
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow('stage 8');
+    expect(calls).toBe(1);
+    expect(analyzer.getLastRunInfo()).toEqual({ jsonParseRetryCount: 0 });
+  });
+
+  it('outer Claude CLI JSONのparse失敗では再試行しない', async () => {
+    let calls = 0;
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: '/path/to/claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async () => {
+        calls += 1;
+        return {
+          stdout: 'not-outer-json',
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+        };
+      },
+    });
+
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow('stage 1');
+    expect(calls).toBe(1);
+    expect(analyzer.getLastRunInfo()).toEqual({ jsonParseRetryCount: 0 });
+  });
+
+  it('再試行後もJSON parse失敗なら2回で停止する', async () => {
+    let calls = 0;
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: '/path/to/claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async () => {
+        calls += 1;
+        return {
+          stdout: JSON.stringify({
+            type: 'result', subtype: 'success', is_error: false,
+            result: '{"quote":"unescaped "quote""}',
+          }),
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+        };
+      },
+    });
+
+    await expect(analyzer.analyze(makeInput())).rejects.toThrow(
+      'JSON parse retry was attempted once but failed',
+    );
+    expect(calls).toBe(2);
+    expect(analyzer.getLastRunInfo()).toEqual({ jsonParseRetryCount: 1 });
   });
 
   it('Claudeの外側JSONとresult文字列を順番に解析する', () => {
@@ -355,6 +469,150 @@ describe('Analyzer', () => {
       type: 'result', subtype: 'success', is_error: false,
       result: JSON.stringify({ is_target: true }),
     }))).toThrow('stage 8');
+  });
+
+  it.each([
+    ['json指定', (json: string) => `\`\`\`json\n${json}\n\`\`\``],
+    ['言語指定なし', (json: string) => `\`\`\`\n${json}\n\`\`\``],
+    ['CRLF・閉じフェンス前の空白', (json: string) => `\`\`\`json\r\n${json}\r\n  \`\`\``],
+    ['前後の空白・改行', (json: string) => ` \n\n\`\`\`json\n${json}\n\`\`\`\n\n `],
+  ])('result全体を囲む%sコードフェンスだけを除去する', (_label, fence) => {
+    expect(parseClaudeOutput(JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      is_error: false,
+      result: fence(JSON.stringify(validAnalysis())),
+    }))).toEqual(validAnalysis());
+  });
+
+  it('説明文付き・閉じフェンスなし・コードフェンス後の文章をstage 7にする', () => {
+    const invalidResults = [
+      `結果です。\n\`\`\`json\n${JSON.stringify(validAnalysis())}\n\`\`\``,
+      `\`\`\`json\n${JSON.stringify(validAnalysis())}`,
+      `\`\`\`json\n${JSON.stringify(validAnalysis())}\n\`\`\`\n追加の説明です。`,
+    ];
+    for (const result of invalidResults) {
+      expect(() => parseClaudeOutput(JSON.stringify({
+        type: 'result', subtype: 'success', is_error: false, result,
+      }))).toThrow('stage 7');
+    }
+  });
+
+  it('stage 7で文字数・fence状態・JSON.parseメッセージ・先頭末尾を表示する', () => {
+    const result = `先頭です。${'a'.repeat(600)}中央は表示しない${'b'.repeat(600)}末尾です。`;
+
+    try {
+      parseClaudeOutput(JSON.stringify({
+        type: 'result', subtype: 'success', is_error: false, result,
+      }));
+      throw new Error('Expected parseClaudeOutput to fail.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toContain('Claude result parse diagnostics:');
+      expect(message).toContain(`Result characters: ${Array.from(result).length}`);
+      expect(message).toContain('Code fence detected: No');
+      expect(message).toContain('Code fence removed: No');
+      expect(message).toContain(`Prepared JSON characters: ${Array.from(result).length}`);
+      expect(message).toMatch(/JSON\.parse error: .+/u);
+      expect(message).toContain('Prepared JSON head (up to 500 characters):\n先頭です。aaa');
+      expect(message).toContain('Prepared JSON tail (up to 500 characters):');
+      expect(message).toContain('bbb末尾です。');
+      expect(message).not.toContain('中央は表示しない');
+    }
+  });
+
+  it('fence除去後の壊れたJSONで実際のparseエラーとfence診断を表示する', () => {
+    const result = '\`\`\`json\n{"is_target": true,}\n\`\`\`';
+    try {
+      parseClaudeOutput(JSON.stringify({
+        type: 'result', subtype: 'success', is_error: false, result,
+      }));
+      throw new Error('Expected parseClaudeOutput to fail.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toContain('Code fence detected: Yes');
+      expect(message).toContain('Code fence removed: Yes');
+      expect(message).toContain('Prepared JSON characters: 20');
+      expect(message).toMatch(/JSON\.parse error: .+/u);
+      expect(message).toContain('{"is_target": true,}');
+    }
+  });
+
+  it('JSON.parseのエラー位置前後200文字をcontextとして表示する', () => {
+    const malformedJson = [
+      '{"prefix":"',
+      'あ'.repeat(260),
+      '","valid":true ',
+      '"tail":"',
+      'い'.repeat(260),
+      '"}',
+    ].join('');
+    const result = `\`\`\`json\n${malformedJson}\n\`\`\``;
+
+    try {
+      parseClaudeOutput(JSON.stringify({
+        type: 'result', subtype: 'success', is_error: false, result,
+      }));
+      throw new Error('Expected parseClaudeOutput to fail.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toMatch(/JSON\.parse error: .*position \d+/u);
+      expect(message).toContain('Parse error context (up to 200 characters before and after):');
+      expect(message).toContain('<<< PARSE ERROR POSITION >>>');
+      expect(message).toContain('あああ');
+      expect(message).toContain('"tail":"いいい');
+    }
+  });
+
+  it('コードフェンス後に文章がある場合は検出するが除去しない', () => {
+    const result = `\`\`\`json\n${JSON.stringify(validAnalysis())}\n\`\`\`\n追加の説明です。`;
+    try {
+      parseClaudeOutput(JSON.stringify({
+        type: 'result', subtype: 'success', is_error: false, result,
+      }));
+      throw new Error('Expected parseClaudeOutput to fail.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toContain('Code fence detected: Yes');
+      expect(message).toContain('Code fence removed: No');
+      expect(message).toContain('追加の説明です。');
+    }
+  });
+
+  it('stage 7の診断情報からtoken・APIキー・Bearer値を除去する', () => {
+    const notionToken = 'secret_abcdefghijklmnopqrstuvwxyz123456';
+    const anthropicKey = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz123456';
+    const bearerToken = 'eyJhbGciOiJIUzI1NiJ9.payload.signature';
+    const result = [
+      `NOTION_TOKEN=${notionToken}`,
+      `ANTHROPIC_API_KEY: "${anthropicKey}"`,
+      `Authorization: Bearer ${bearerToken}`,
+      '前後の説明文',
+    ].join('\n');
+
+    try {
+      parseClaudeOutput(JSON.stringify({
+        type: 'result', subtype: 'success', is_error: false, result,
+      }));
+      throw new Error('Expected parseClaudeOutput to fail.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toContain('Claude result parse diagnostics');
+      expect(message).toContain('[REDACTED]');
+      expect(message).not.toContain(notionToken);
+      expect(message).not.toContain(anthropicKey);
+      expect(message).not.toContain(bearerToken);
+    }
+  });
+
+  it('正常なClaude resultの解析結果を変更しない', () => {
+    const analysis = validAnalysis();
+    expect(parseClaudeOutput(JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      is_error: false,
+      result: JSON.stringify(analysis),
+    }))).toEqual(analysis);
   });
 
   it('Claude CLIの空出力を認証と決めつけず実行診断付きエラーにする', async () => {

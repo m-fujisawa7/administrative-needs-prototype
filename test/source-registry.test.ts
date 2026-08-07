@@ -35,11 +35,15 @@ const VALID_REGISTRY = {
 } as const;
 
 describe('情報源台帳', () => {
-  it('config/sources.yaml を読み込み、大阪市の情報源を3件以上持つ', async () => {
+  it('config/sources.yamlから大阪市・名古屋市・石川県の情報源を読み込む', async () => {
     const registry = await loadSourceRegistry();
-    expect(registry.organizations).toHaveLength(1);
+    expect(registry.organizations).toHaveLength(4);
     expect(getSourcesByOrganization(registry, 'osaka-city').length).toBeGreaterThanOrEqual(3);
-    expect(getEnabledSources(registry)).toHaveLength(3);
+    expect(getSourcesByOrganization(registry, 'nagoya-city')).toHaveLength(2);
+    expect(getSourcesByOrganization(registry, 'nagoya-city-hatch-tech')).toHaveLength(1);
+    expect(getSourcesByOrganization(registry, 'ishikawa-prefecture')).toHaveLength(4);
+    expect(getEnabledSources(registry)).toHaveLength(9);
+    expect(registry.sources.every((source) => !source.url.includes('utm_'))).toBe(true);
   });
 
   it('別ファイルの正常なYAMLを読み込める', async () => {

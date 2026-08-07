@@ -74,10 +74,15 @@ export type AdministrativeNeedAnalysis = {
   evidence_quotes: EvidenceQuote[];
 };
 
+export type AdministrativeNeedAnalyzerRunInfo = {
+  jsonParseRetryCount: number;
+};
+
 export interface AdministrativeNeedAnalyzer {
   readonly provider: AiProvider;
   readonly model: string | null;
   analyze(input: AdministrativeNeedAnalysisInput): Promise<AdministrativeNeedAnalysis>;
+  getLastRunInfo?(): AdministrativeNeedAnalyzerRunInfo;
 }
 
 export type AiCheckWarningCode =
@@ -87,6 +92,7 @@ export type AiCheckWarningCode =
   | 'pdf_warning'
   | 'html_truncated'
   | 'pdf_truncated'
+  | 'ai_json_parse_retry'
   | 'evidence_not_found';
 
 export type AiCheckWarning = {

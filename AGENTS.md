@@ -4,7 +4,7 @@
 
 ## 現在のスコープ
 
-現在の成果物は、行政ニーズの収集対象を定義する「情報源台帳」、入口URLの疎通・候補抽出を手動確認する「情報源チェック機能」、指定した個別ページの本文抽出を手動確認する「個別ページ抽出チェック機能」、指定したPDFのテキスト抽出を手動確認する「PDF抽出チェック機能」、取得した1案件をClaude CLIまたはMockで判定する「AI判定・構造化チェック機能」、Notionデータベースとデータソース構成を読み取り確認する「Notion接続チェック機能」、選定済み1件をプレビュー後に明示的な`--write`で新規作成する「Notion1件登録チェック機能」、人が選定したURLファイルを最大20件まで直列処理する「Notion選定URLバッチ機能」、対象期間と情報源ごとの前回成功日時を使い、未登録候補を最大20件まで直列処理する「情報源候補手動一括実行機能」です。
+現在の成果物は、行政ニーズの収集対象を定義する「情報源台帳」、入口URLの疎通・候補抽出を手動確認する「情報源チェック機能」、新規Sourceの候補取得からAI判定まで最大5件を直列確認する「新規Source確認機能」、指定した個別ページの本文抽出を手動確認する「個別ページ抽出チェック機能」、指定したPDFのテキスト抽出を手動確認する「PDF抽出チェック機能」、取得した1案件をClaude CLIまたはMockで判定する「AI判定・構造化チェック機能」、Notionデータベースとデータソース構成を読み取り確認する「Notion接続チェック機能」、選定済み1件をプレビュー後に明示的な`--write`で新規作成する「Notion1件登録チェック機能」、人が選定したURLファイルを最大20件まで直列処理する「Notion選定URLバッチ機能」、対象期間と情報源ごとの前回成功日時を使い、未登録候補を最大20件まで直列処理する「情報源候補手動一括実行機能」です。
 
 ユーザーから明示的に依頼されない限り、次の機能を追加しないでください。
 
@@ -26,15 +26,16 @@
 2. `config/README.md`
 3. `config/sources.yaml`
 4. 情報源チェックを変更する場合は `src/source-check/README.md`
-5. 個別ページ抽出チェックを変更する場合は `src/content-check/README.md`
-6. PDF抽出チェックを変更する場合は `src/pdf-check/README.md`
-7. AI判定を変更する場合は `src/ai/README.md`、`prompts/ai-check.md`、`config/company-fit-criteria.yaml`
-8. Notion接続チェックを変更する場合は `src/notion-check/README.md`
-9. Notion1件登録チェックを変更する場合は `src/notion-register/README.md`
-10. Notion選定URLバッチを変更する場合は `src/notion-batch/README.md`
-11. 情報源候補手動一括実行を変更する場合は `src/collection-run/README.md`
-12. `src/source-registry/schema.ts`
-13. 関連する既存テスト
+5. 新規Source確認を変更する場合は `src/source-verify/README.md`
+6. 個別ページ抽出チェックを変更する場合は `src/content-check/README.md`
+7. PDF抽出チェックを変更する場合は `src/pdf-check/README.md`
+8. AI判定を変更する場合は `src/ai/README.md`、`prompts/ai-check.md`、`config/company-fit-criteria.yaml`
+9. Notion接続チェックを変更する場合は `src/notion-check/README.md`
+10. Notion1件登録チェックを変更する場合は `src/notion-register/README.md`
+11. Notion選定URLバッチを変更する場合は `src/notion-batch/README.md`
+12. 情報源候補手動一括実行を変更する場合は `src/collection-run/README.md`
+13. `src/source-registry/schema.ts`
+14. 関連する既存テスト
 
 READMEとコードの記述が異なる場合は、実際のバリデーションを定義する `src/source-registry/schema.ts` を確認し、矛盾を勝手に解消せず報告してください。
 
@@ -84,6 +85,8 @@ npm test
 PDF抽出結果は、追加・変更時または障害の再確認で必要な場合だけ `--output` で `data/logs/pdf-check/source-id.json` へ保存し、同じ情報源の最新結果で上書きしてください。PDFファイル、ページ別本文、本文全文は保存せず、保存JSONをGitへコミットしません。OCRや意味的な行政ニーズ判定を実施したと報告せず、プレビューを人が確認します。
 
 AI判定は自治体公式サイトの公開文書だけを入力し、秘密情報、非公開資料、認証後ページ、個人情報を追加して送信しないでください。`ai:check` は結果を保存しません。`config/company-fit-criteria.yaml` のA・B・C・対象外基準、判定、根拠引用、自社関連度、コンタクト推奨度は人が確認し、AI結果だけで外部連絡や意思決定を行わないでください。
+
+`source:verify`は`src/source-verify/README.md`に従い、1 Sourceの候補を最大5件まで直列確認してください。Notion API・重複検索・ページ作成、`data/collection-state.json`の読み書き、結果保存を追加しないでください。Mock結果を実Claude判定として扱わず、`is_target=false`は解析失敗として扱わないでください。
 
 Notion接続チェックは`src/notion-check/README.md`に従い、データベース取得とデータソース取得だけを行ってください。Notion1件登録チェックは`src/notion-register/README.md`、選定URLバッチは`src/notion-batch/README.md`、情報源候補手動一括実行は`src/collection-run/README.md`に従い、デフォルトをプレビューとし、ユーザーが明示したURL・情報源・件数と`--write`がある場合だけ新規ページを作成してください。Mock解析結果、スキーマ不一致、複数データソース、重複URL、既存にないselect・multi_select選択肢がある場合は作成しないでください。`.env`、`NOTION_TOKEN`、Authorizationヘッダーを表示・ログ・変更・コミットしないでください。既存ページの更新・削除、データベース、データソース、プロパティ・選択肢の作成や変更は行わないでください。
 

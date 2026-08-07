@@ -9,6 +9,30 @@ organizations:
     enabled: true
     notes: 初期検証の対象自治体
 
+  - id: nagoya-city
+    name: 名古屋市
+    organization_type: designated_city
+    prefecture: 愛知県
+    official_domain: city.nagoya.jp
+    enabled: true
+    notes: 行政課題への民間提案制度とRFI・RFCを収集する対象自治体
+
+  - id: nagoya-city-hatch-tech
+    name: 名古屋市
+    organization_type: external_organization
+    official_domain: hatch-tech-nagoya.jp
+    enabled: true
+    parent_organization_id: nagoya-city
+    notes: 名古屋市事業のHatch Technology NAGOYAを、独自公式ドメインへの安全なアクセス制限のため別組織として管理
+
+  - id: ishikawa-prefecture
+    name: 石川県
+    organization_type: prefecture
+    prefecture: 石川県
+    official_domain: pref.ishikawa.lg.jp
+    enabled: true
+    notes: DX、創造的復興、産業政策の行政ニーズを収集する対象都道府県
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -83,4 +107,130 @@ sources:
     content_selector: "#mol_contents"
     notes: 施設運営中心でWeb・DX関連度が低いため、参考情報源として無効状態で保持する。
     last_verified_at: "2026-08-05"
+    verification_status: verified
+
+  - id: nagoya-frontier-cases
+    organization_id: nagoya-city
+    name: NAGOYA FRONTIER 提案募集中の課題
+    url: https://www.nagoya-frontier.city.nagoya.jp/theme/case/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "ul.list.category > li.list_item > a[href*='/case/issue/']"
+    content_selector: ".titleArea, #wrap > section"
+    document_type_hints:
+      - 民間提案募集
+      - 行政課題
+      - 社会課題
+    notes: 名古屋市が行政課題・社会課題を提示し、民間から解決策を募集するテーマ型提案制度の募集中一覧。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: nagoya-hatch-tech-solution
+    organization_id: nagoya-city-hatch-tech
+    name: Hatch Technology NAGOYA 課題提示型
+    url: https://www.hatch-tech-nagoya.jp/solution/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "article a[href^='https://www.hatch-tech-nagoya.jp/solution/']"
+    content_selector: main
+    document_type_hints:
+      - 実証提案募集
+      - 行政課題
+      - 社会課題
+    notes: 名古屋市が提示する行政課題・社会課題に対し、先進技術を活用した解決策と実証事業者を募集するページ。カードのリンク文字列は「詳しく見る」のため、案件名は個別ページ取得時に確認する。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: nagoya-rfi-rfc
+    organization_id: nagoya-city
+    name: 資料提供招請（RFI）・意見招請（RFC）
+    url: https://www.city.nagoya.jp/jigyou/nyusatsu/1014207/index.html
+    collector_type: list_page
+    source_category: rfi
+    priority: high
+    enabled: true
+    link_selector: "article#content ul.listlink a[href*='/jigyou/nyusatsu/1014207/']"
+    content_selector: "article#content"
+    document_type_hints:
+      - RFI
+      - RFC
+      - 情報提供依頼
+      - 意見招請
+    notes: 情報システム等の調達に先立つ資料提供招請と仕様書案への意見招請の一覧。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: ishikawa-digital-office-news
+    organization_id: ishikawa-prefecture
+    name: 総務部 デジタル推進監室
+    url: https://www.pref.ishikawa.lg.jp/johosei/
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#tmp_wrap_c_news_cnt a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - DX施策
+      - 情報システム
+    notes: 石川県の行政・地域DX、情報システム、デジタル施策に関する新着情報。一般向けキャンペーン等も含むため、後続のAI判定で選別する。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: ishikawa-creative-recovery-news
+    organization_id: ishikawa-prefecture
+    name: 創造的復興推進課
+    url: https://www.pref.ishikawa.lg.jp/fukkyuufukkou/souzoutekifukkousuishin/souzoutekifukkousuishinka.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: high
+    enabled: true
+    link_selector: "#tmp_wrap_c_news_cnt a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 官民連携
+      - 復興計画
+    notes: 能登の創造的復興に関する新着情報。民間事業者の募集、官民連携、復興施策の候補を含む。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: ishikawa-dx-headquarters
+    organization_id: ishikawa-prefecture
+    name: DX推進本部
+    url: https://www.pref.ishikawa.lg.jp/johosei/digital/index.html
+    collector_type: single_page
+    source_category: plan
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - DX推進方針
+      - 計画
+      - 会議資料
+    notes: DX推進本部の方針・会議資料を掲載する単一ページ。現在のCollectorはsingle_page未対応であり、デジタル推進監室の新着情報から更新を取得できるため、参考情報源として無効状態で保持する。
+    last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: ishikawa-industry-policy-news
+    organization_id: ishikawa-prefecture
+    name: 商工労働部 産業政策課
+    url: https://www.pref.ishikawa.lg.jp/syoko/index.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_wrap_c_news_cnt a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 産業DX
+      - 実証支援
+    notes: 産業DX、スタートアップ、実証支援、公募型プロポーザルを含む新着情報。幅広い産業支援情報を含むため優先度は中。
+    last_verified_at: "2026-08-07"
     verification_status: verified
