@@ -33,7 +33,6 @@ src/notion-register Notionへの1件登録プレビュー・重複防止
 src/notion-batch    選定URLファイルの直列プレビュー・登録
 src/collection-run  情報源候補の直列プレビュー・登録
 test/               外部アクセスを行わない単体テストとfixture
-docs/               初期設計・将来構想の資料
 ```
 
 AI経由で情報源を追加する場合は、最初に`AGENTS.md`と`config/README.md`を読ませてください。Pull Requestでは`.github/pull_request_template.md`の確認項目を使用します。
