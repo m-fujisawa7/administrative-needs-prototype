@@ -15,7 +15,11 @@ export type FetchImplementation = (
 ) => Promise<Response>;
 
 export type SafeFetchOptions = {
-  officialDomain: string;
+  /**
+   * 許可するドメイン。配列を渡した場合はいずれか1つに一致すれば許可する。
+   * 添付PDF取得で親組織のドメインを追加するときだけ配列を使う。
+   */
+  officialDomain: string | readonly string[];
   accept: string;
   timeoutMs?: number;
   maxBytes?: number;
@@ -124,7 +128,7 @@ export async function safeFetchBytes(
 
 export async function assertSafeUrl(
   url: URL,
-  officialDomain: string,
+  officialDomain: string | readonly string[],
   resolveHost: HostResolver = defaultResolveHost,
 ): Promise<void> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -134,8 +138,9 @@ export async function assertSafeUrl(
     throw new SourceCheckFetchError('ユーザー名やパスワードを含むURLにはアクセスできません。');
   }
   if (!isHostnameAllowed(url.hostname, officialDomain)) {
+    const allowed = toDomainList(officialDomain).join(' / ');
     throw new SourceCheckFetchError(
-      `アクセス先 ${url.hostname} は公式ドメイン ${officialDomain} の配下ではありません。`,
+      `アクセス先 ${url.hostname} は公式ドメイン ${allowed} の配下ではありません。`,
     );
   }
 
@@ -161,10 +166,23 @@ export async function assertSafeUrl(
   }
 }
 
-export function isHostnameAllowed(hostname: string, officialDomain: string): boolean {
+/**
+ * ホスト名が許可ドメインの配下かを判定する。
+ * 配列を渡した場合はいずれか1つに一致すれば許可する。
+ */
+export function isHostnameAllowed(
+  hostname: string,
+  officialDomain: string | readonly string[],
+): boolean {
   const host = normalizeDomain(hostname);
-  const allowed = normalizeDomain(officialDomain);
-  return host === allowed || host.endsWith(`.${allowed}`);
+  return toDomainList(officialDomain).some((domain) => {
+    const allowed = normalizeDomain(domain);
+    return host === allowed || host.endsWith(`.${allowed}`);
+  });
+}
+
+function toDomainList(officialDomain: string | readonly string[]): readonly string[] {
+  return typeof officialDomain === 'string' ? [officialDomain] : officialDomain;
 }
 
 export function isBlockedAddress(address: string, family: 4 | 6): boolean {

@@ -11,6 +11,7 @@ import type {
   AiCheckResult,
   CompanyFitCriteria,
 } from '../ai/types.ts';
+import { getTrustedAttachmentDomains } from '../source-registry/domains.ts';
 import { loadSourceRegistry } from '../source-registry/load.ts';
 import type { SourceRegistry } from '../source-registry/schema.ts';
 
@@ -141,6 +142,7 @@ export async function runAiCheck(
       analyzer,
       companyFitCriteria,
       limits: aiInputLimitsFromEnvironment(env),
+      trustedPdfDomains: getTrustedAttachmentDomains(registry, organization),
     });
     for (const warning of result.warnings) {
       stderr(`[WARNING] [${warning.code}] ${warning.message}`);

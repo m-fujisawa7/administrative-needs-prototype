@@ -22,6 +22,7 @@ import type { SourceVerifyCliOptions, SourceVerifyReport } from '../source-verif
 import { verifySourceCandidates } from '../source-verify/verify.ts';
 import { collectSourceCandidates } from '../source-check/index.ts';
 import type { SourceCheckSample } from '../source-check/types.ts';
+import { getTrustedAttachmentDomains } from '../source-registry/domains.ts';
 import { loadSourceRegistry } from '../source-registry/load.ts';
 import type {
   Organization,
@@ -89,11 +90,13 @@ export async function runSourceVerify(
   let options: SourceVerifyCliOptions;
   let source: Source;
   let organization: Organization;
+  let trustedPdfDomains: readonly string[];
   try {
     options = parseSourceVerifyArgs(argv);
     const registry = await (dependencies.loadRegistry ?? loadSourceRegistry)();
     source = requireSource(registry, options.sourceId);
     organization = requireOrganization(registry, source.organization_id);
+    trustedPdfDomains = getTrustedAttachmentDomains(registry, organization);
   } catch (error) {
     stderr(formatSourceVerifyError(error));
     return 1;
@@ -145,6 +148,7 @@ export async function runSourceVerify(
     analyzer,
     companyFitCriteria,
     limits,
+    trustedPdfDomains,
   }, {
     checkNeed: dependencies.checkNeed,
     extractContent: dependencies.extractContent,

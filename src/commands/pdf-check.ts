@@ -7,6 +7,7 @@ import type {
 } from '../pdf-check/types.ts';
 import { defaultCheckOutputPath } from '../io/check-output-path.ts';
 import { writeJsonFile } from '../io/write-json.ts';
+import { getTrustedAttachmentDomains } from '../source-registry/domains.ts';
 import { loadSourceRegistry } from '../source-registry/load.ts';
 
 const TEXT_PREVIEW_LENGTH = 500;
@@ -93,6 +94,7 @@ export async function runPdfCheck(argv = process.argv.slice(2)): Promise<number>
       source,
       organization,
       url: options.url,
+      trustedPdfDomains: getTrustedAttachmentDomains(registry, organization),
     });
     console.log(formatPdfCheckResult(pdf, options.full));
     if (options.outputPath !== undefined) {

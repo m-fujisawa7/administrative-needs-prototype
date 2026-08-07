@@ -31,6 +31,11 @@ export type AiCheckInput = {
   analyzer: AdministrativeNeedAnalyzer;
   companyFitCriteria: CompanyFitCriteria;
   limits?: AiInputLimits;
+  /**
+   * 添付PDFの取得時にだけ追加で許可するドメイン（親組織の公式ドメインなど）。
+   * 記事HTML取得と候補抽出には使わないので、収集対象は広がらない。
+   */
+  trustedPdfDomains?: readonly string[];
 };
 
 export type ContentExtractor = (
@@ -76,6 +81,7 @@ export async function checkAdministrativeNeed(
         source: input.source,
         organization: input.organization,
         url,
+        trustedPdfDomains: input.trustedPdfDomains ?? [],
       });
       pdfDocuments.push({ url: pdf.url, text: pdf.text });
       for (const warning of pdf.warnings) {

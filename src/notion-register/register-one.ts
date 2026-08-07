@@ -32,6 +32,8 @@ export type RegisterOneInput = {
   client: NotionRegistrationClient;
   report: NotionConnectionReport;
   limits: AiInputLimits;
+  /** 添付PDFの取得時にだけ追加で許可するドメイン（親組織の公式ドメインなど）。 */
+  trustedPdfDomains?: readonly string[];
 };
 
 export type RegisterOneDependencies = {
@@ -97,6 +99,7 @@ export async function registerOneAdministrativeNeed(
       analyzer: context.analyzer,
       companyFitCriteria: context.companyFitCriteria,
       limits: input.limits,
+      trustedPdfDomains: input.trustedPdfDomains ?? [],
     });
   } catch (error) {
     return failure(input.officialUrl, analysisFailureStage(error), error);

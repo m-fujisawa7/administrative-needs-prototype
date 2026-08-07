@@ -40,6 +40,8 @@ export type VerifySourceCandidatesInput = {
   analyzer: AdministrativeNeedAnalyzer;
   companyFitCriteria: CompanyFitCriteria;
   limits?: AiInputLimits;
+  /** 添付PDFの取得時にだけ追加で許可するドメイン（親組織の公式ドメインなど）。 */
+  trustedPdfDomains?: readonly string[];
 };
 
 export async function verifySourceCandidates(
@@ -65,6 +67,7 @@ export async function verifySourceCandidates(
         analyzer: input.analyzer,
         companyFitCriteria: input.companyFitCriteria,
         ...(input.limits === undefined ? {} : { limits: input.limits }),
+        trustedPdfDomains: input.trustedPdfDomains ?? [],
       }, {
         extractContent: async (request) => {
           document = await extractContent(request);

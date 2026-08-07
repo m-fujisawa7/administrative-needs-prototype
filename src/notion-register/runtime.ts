@@ -18,6 +18,7 @@ import type {
   NotionConnectionReport,
   NotionRegistrationClient,
 } from '../notion-check/types.ts';
+import { getTrustedAttachmentDomains } from '../source-registry/domains.ts';
 import { loadSourceRegistry } from '../source-registry/load.ts';
 import type {
   Organization,
@@ -39,6 +40,8 @@ import type {
 export type RegistrationSourceContext = {
   source: Source;
   organization: Organization;
+  /** 添付PDFの取得時にだけ追加で許可するドメイン（親組織の公式ドメインなど）。 */
+  trustedPdfDomains: readonly string[];
 };
 
 export type NotionRegistrationRuntimeDependencies = {
@@ -97,7 +100,11 @@ export async function resolveRegistrationSourceContext(
   if (organization === undefined) {
     throw new NotionConfigurationError(`Organization not found: ${source.organization_id}`);
   }
-  return { source, organization };
+  return {
+    source,
+    organization,
+    trustedPdfDomains: getTrustedAttachmentDomains(registry, organization),
+  };
 }
 
 export async function prepareNotionRegistrationRuntime(

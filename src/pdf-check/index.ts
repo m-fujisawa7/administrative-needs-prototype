@@ -21,11 +21,18 @@ export type FetchAndExtractPdfInput = {
   source: Source;
   organization: Organization;
   url: string;
+  /**
+   * 親組織など、添付PDFの取得時にだけ追加で許可するドメイン。
+   * `getTrustedAttachmentDomains` の結果を渡す。省略時は組織自身のドメインのみ許可する。
+   */
+  trustedPdfDomains?: readonly string[];
 };
 
 export type PdfFetchRequest = {
   url: string;
   officialDomain: string;
+  /** officialDomain に加えて許可するドメイン。 */
+  trustedPdfDomains: readonly string[];
 };
 
 export type PdfFetcher = (request: PdfFetchRequest) => Promise<FetchedBytes>;
@@ -50,6 +57,7 @@ export async function fetchAndExtractPdf(
   const fetched = await fetchPdf({
     url: removeFragment(input.url),
     officialDomain: input.organization.official_domain,
+    trustedPdfDomains: input.trustedPdfDomains ?? [],
   });
   const contentType = requirePdfContentType(fetched.contentType);
   const extraction = await extractPdf(fetched.bytes);
@@ -84,7 +92,9 @@ export async function fetchAndExtractPdf(
 
 async function defaultFetchPdf(request: PdfFetchRequest): Promise<FetchedBytes> {
   return safeFetchBytes(request.url, {
-    officialDomain: request.officialDomain,
+    // 添付PDFの取得だけ、組織自身に加えて親組織のドメインを許可する。
+    // SSRF検査とリダイレクト各ホップの再検査は safeFetchBytes 側でそのまま行う。
+    officialDomain: [request.officialDomain, ...request.trustedPdfDomains],
     accept: 'application/pdf',
     timeoutMs: PDF_FETCH_TIMEOUT_MS,
     maxBytes: MAX_PDF_BYTES,

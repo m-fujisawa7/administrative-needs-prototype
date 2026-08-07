@@ -23,7 +23,7 @@ organizations:
     official_domain: hatch-tech-nagoya.jp
     enabled: true
     parent_organization_id: nagoya-city
-    notes: 名古屋市事業のHatch Technology NAGOYAを、独自公式ドメインへの安全なアクセス制限のため別組織として管理
+    notes: 名古屋市事業のHatch Technology NAGOYAを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。記事から見つけた添付PDFに限り、parent_organization_id で参照する名古屋市の city.nagoya.jp 配下も取得を許可する
 
   - id: ishikawa-prefecture
     name: 石川県
