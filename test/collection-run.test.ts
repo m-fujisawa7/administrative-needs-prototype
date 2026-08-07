@@ -5,6 +5,7 @@ import {
   type CollectionRunCommandDependencies,
 } from '../src/commands/collection-run.ts';
 import { processCollectedCandidates } from '../src/collection-run/run.ts';
+import { CollectionStateError } from '../src/collection-run/state.ts';
 import type {
   NotionConnectionReport,
   NotionRegistrationClient,
@@ -41,6 +42,15 @@ describe('collect:run引数', () => {
     expect(() => parseCollectionRunArgs([...args(), '--limit', limit])).toThrow('--limit');
   });
 
+  it('--sinceの有効な日付を受理し、不正形式と実在しない日付を拒否する', () => {
+    expect(parseCollectionRunArgs([...args(), '--since', '2026-07-15']).since)
+      .toBe('2026-07-15');
+    expect(() => parseCollectionRunArgs([...args(), '--since', '2026/07/15']))
+      .toThrow('--since');
+    expect(() => parseCollectionRunArgs([...args(), '--since', '2026-02-30']))
+      .toThrow('--since');
+  });
+
   it('database URLとIDの同時指定を拒否する', () => {
     expect(() => parseCollectionRunArgs([
       ...args(),
@@ -50,40 +60,56 @@ describe('collect:run引数', () => {
 });
 
 describe('候補の直列処理', () => {
-  it('順番を保ち、同じURLを除外してからlimitを適用する', async () => {
+  it('順番を保ち、新規候補だけへlimitを適用して直列処理する', async () => {
     const processed: string[] = [];
     let active = 0;
     let maximumActive = 0;
     const report = await processCollectedCandidates(
-      'osaka-digital-rss',
-      [candidate(URL_A), candidate(URL_A), candidate(URL_B), candidate(URL_C)],
-      2,
-      false,
-      async ({ url }) => {
+      {
+        sourceId: 'osaka-digital-rss',
+        candidates: [candidate(URL_A), candidate(URL_B), candidate(URL_C)],
+        candidatesCollected: 4,
+        uniqueCandidates: 3,
+        effectiveSince: '2026-07-01',
+        runStartedAt: '2026-08-07T12:00:00+09:00',
+        limit: 2,
+        write: false,
+        checkDuplicate: async () => null,
+        processor: async ({ url }) => {
         processed.push(url);
         active += 1;
         maximumActive = Math.max(maximumActive, active);
         await new Promise((resolve) => setTimeout(resolve, 5));
         active -= 1;
         return previewed(url);
+        },
       },
     );
     expect(processed).toEqual([URL_A, URL_B]);
     expect(maximumActive).toBe(1);
     expect(report.candidatesCollected).toBe(4);
-    expect(report.uniqueCandidates).toBe(2);
+    expect(report.uniqueCandidates).toBe(3);
+    expect(report.processedNewCandidates).toBe(2);
+    expect(report.remainingNewCandidates).toBe(1);
   });
 
   it('1件目の失敗後も2件目を処理し、失敗ステージを保持する', async () => {
     const processed: string[] = [];
     const report = await processCollectedCandidates(
-      'osaka-digital-rss',
-      [candidate(URL_A), candidate(URL_B)],
-      5,
-      false,
-      async ({ url }) => {
+      {
+        sourceId: 'osaka-digital-rss',
+        candidates: [candidate(URL_A), candidate(URL_B)],
+        candidatesCollected: 2,
+        uniqueCandidates: 2,
+        effectiveSince: '2026-07-01',
+        runStartedAt: '2026-08-07T12:00:00+09:00',
+        limit: 5,
+        write: false,
+        checkDuplicate: async () => null,
+        processor: async ({ url }) => {
         processed.push(url);
         return url === URL_A ? failed(url, 'ai_validation') : previewed(url);
+        },
       },
     );
     expect(processed).toEqual([URL_A, URL_B]);
@@ -105,7 +131,6 @@ describe('collect:runコマンド', () => {
     expect(collectCandidates).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'osaka-digital-rss' }),
       expect.objectContaining({ id: 'osaka-city' }),
-      5,
     );
     expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([URL_A, URL_B]);
   });
@@ -126,19 +151,232 @@ describe('collect:runコマンド', () => {
     expect(stdout.join('\n')).toContain('Candidates collected:\n0');
   });
 
+  it('stateなしのPreviewは2026-07-01から開始し、stateを書かない', async () => {
+    const stdout: string[] = [];
+    const writeState = vi.fn();
+    const exitCode = await runCollection(args(), dependencies({
+      stdout,
+      writeState,
+      registerOne: async (input) => previewed(input.officialUrl),
+    }));
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    expect(output).toContain('Previous successful check:\nNone');
+    expect(output).toContain('Initial collection since:\n2026-07-01');
+    expect(output).toContain('Effective since:\n2026-07-01');
+    expect(output).toContain('Collection state:\nNot advanced');
+    expect(output).toContain('Reason:\nPreview mode.');
+    expect(writeState).not.toHaveBeenCalled();
+  });
+
+  it('stateありでは3日前から開始する', async () => {
+    const stdout: string[] = [];
+    await runCollection(args(), dependencies({
+      stdout,
+      readState: async () => ({
+        'osaka-digital-rss': {
+          last_successful_check_at: '2026-08-05T09:00:00+09:00',
+        },
+      }),
+      registerOne: async (input) => previewed(input.officialUrl),
+    }));
+    expect(stdout.join('\n')).toContain('Effective since:\n2026-08-02T09:00:00+09:00');
+  });
+
+  it('--sinceをstateより優先し、Writeでもstateを進めない', async () => {
+    const stdout: string[] = [];
+    const writeState = vi.fn();
+    const exitCode = await runCollection(
+      [...args(), '--since', '2026-07-15', '--write'],
+      dependencies({
+        stdout,
+        readState: async () => ({
+          'osaka-digital-rss': {
+            last_successful_check_at: '2026-08-05T09:00:00+09:00',
+          },
+        }),
+        writeState,
+        registerOne: async (input) => created(input.officialUrl),
+      }),
+    );
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    expect(output).toContain('Effective since:\n2026-07-15');
+    expect(output).toContain('Reason:\nManual --since override was used.');
+    expect(writeState).not.toHaveBeenCalled();
+  });
+
   it('Collector失敗時はNotion接続と登録処理を開始しない', async () => {
     const createClient = vi.fn();
     const registerOne = vi.fn();
+    const writeState = vi.fn();
     const exitCode = await runCollection(args(), dependencies({
       collectCandidates: async () => {
         throw new Error('fixture collector failure');
       },
       createClient,
+      writeState,
       registerOne,
     }));
     expect(exitCode).toBe(1);
     expect(createClient).not.toHaveBeenCalled();
     expect(registerOne).not.toHaveBeenCalled();
+    expect(writeState).not.toHaveBeenCalled();
+  });
+
+  it('state読み取り失敗時はCollectorへ進まず明確なエラーを表示する', async () => {
+    const collectCandidates = vi.fn();
+    const stderr: string[] = [];
+    const exitCode = await runCollection(args(), dependencies({
+      stderr,
+      collectCandidates,
+      readState: async () => {
+        throw new CollectionStateError('Failed to read collection state.\ninvalid JSON');
+      },
+      registerOne: vi.fn(),
+    }));
+    expect(exitCode).toBe(1);
+    expect(collectCandidates).not.toHaveBeenCalled();
+    expect(stderr.join('\n')).toContain('Failed to read collection state.');
+    expect(stderr.join('\n')).toContain('invalid JSON');
+  });
+
+  it('Write成功時はrunStartedAtをstateへ保存する', async () => {
+    const writeState = vi.fn(async () => undefined);
+    const exitCode = await runCollection([...args(), '--write'], dependencies({
+      writeState,
+      registerOne: async (input) => created(input.officialUrl),
+    }));
+    expect(exitCode).toBe(0);
+    expect(writeState).toHaveBeenCalledWith({
+      'osaka-digital-rss': {
+        last_successful_check_at: '2026-08-07T12:00:00+09:00',
+      },
+    });
+  });
+
+  it.each(['ai_analysis', 'notion_create'] as const)(
+    '%s失敗時は後続を処理してstateを進めない',
+    async (stage) => {
+      const writeState = vi.fn();
+      const registerOne = vi.fn(async (input) => input.officialUrl === URL_A
+        ? failed(input.officialUrl, stage)
+        : created(input.officialUrl));
+      const exitCode = await runCollection([...args(), '--write'], dependencies({
+        writeState,
+        registerOne,
+      }));
+      expect(exitCode).toBe(1);
+      expect(registerOne).toHaveBeenCalledTimes(2);
+      expect(writeState).not.toHaveBeenCalled();
+    },
+  );
+
+  it('Notion接続失敗時は候補処理とstate更新へ進まない', async () => {
+    const registerOne = vi.fn();
+    const writeState = vi.fn();
+    const exitCode = await runCollection([...args(), '--write'], {
+      ...dependencies({ registerOne, writeState }),
+      checkConnection: async () => {
+        throw new Error('fixture Notion connection failure');
+      },
+    });
+    expect(exitCode).toBe(1);
+    expect(registerOne).not.toHaveBeenCalled();
+    expect(writeState).not.toHaveBeenCalled();
+  });
+
+  it('limit超過の未登録候補を数え、stateを進めない', async () => {
+    const stdout: string[] = [];
+    const writeState = vi.fn();
+    const registerOne = vi.fn(async (input) => created(input.officialUrl));
+    const exitCode = await runCollection(
+      [...args(), '--limit', '2', '--write'],
+      dependencies({
+        stdout,
+        writeState,
+        collectCandidates: async () => [candidate(URL_A), candidate(URL_B), candidate(URL_C)],
+        registerOne,
+      }),
+    );
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    expect(registerOne).toHaveBeenCalledTimes(2);
+    expect(output).toContain('New candidates found:\n3');
+    expect(output).toContain('Processed new candidates:\n2');
+    expect(output).toContain('Remaining new candidates:\n1');
+    expect(output).toContain('Reason:\nUnprocessed candidates remain because of --limit.');
+    expect(writeState).not.toHaveBeenCalled();
+  });
+
+  it('登録済み候補はlimitを消費せず、後続の未登録候補を処理する', async () => {
+    const writeState = vi.fn(async () => undefined);
+    const registerOne = vi.fn(async (input) => created(input.officialUrl));
+    const exitCode = await runCollection(
+      [...args(), '--limit', '2', '--write'],
+      dependencies({
+        createClient: () => client(new Set([URL_A])),
+        writeState,
+        collectCandidates: async () => [candidate(URL_A), candidate(URL_B), candidate(URL_C)],
+        registerOne,
+      }),
+    );
+    expect(exitCode).toBe(0);
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([URL_B, URL_C]);
+    expect(writeState).toHaveBeenCalledTimes(1);
+  });
+
+  it('全件重複のWriteはHTML・PDF・Claude側の1件処理を呼ばずstateを進める', async () => {
+    const registerOne = vi.fn();
+    const writeState = vi.fn(async () => undefined);
+    const exitCode = await runCollection([...args(), '--write'], dependencies({
+      createClient: () => client(new Set([URL_A, URL_B])),
+      registerOne,
+      writeState,
+    }));
+    expect(exitCode).toBe(0);
+    expect(registerOne).not.toHaveBeenCalled();
+    expect(writeState).toHaveBeenCalledTimes(1);
+  });
+
+  it('候補0件のWriteはNotionへ接続せずstateを進める', async () => {
+    const createClient = vi.fn();
+    const writeState = vi.fn(async () => undefined);
+    const exitCode = await runCollection([...args(), '--write'], dependencies({
+      collectCandidates: async () => [],
+      createClient,
+      writeState,
+      registerOne: vi.fn(),
+    }));
+    expect(exitCode).toBe(0);
+    expect(createClient).not.toHaveBeenCalled();
+    expect(writeState).toHaveBeenCalledTimes(1);
+  });
+
+  it('日付不明候補を除外せず、警告して処理する', async () => {
+    const stderr: string[] = [];
+    const registerOne = vi.fn(async (input) => previewed(input.officialUrl));
+    const exitCode = await runCollection(args(), dependencies({
+      stderr,
+      collectCandidates: async () => [{ ...candidate(URL_A), publishedAt: null }],
+      registerOne,
+    }));
+    expect(exitCode).toBe(0);
+    expect(registerOne).toHaveBeenCalledTimes(1);
+    expect(stderr.join('\n')).toContain('Candidate publication date is unavailable.');
+    expect(stderr.join('\n')).toContain(URL_A);
+  });
+
+  it('期間外の既知日付候補を除外する', async () => {
+    const registerOne = vi.fn(async (input) => previewed(input.officialUrl));
+    await runCollection(args(), dependencies({
+      collectCandidates: async () => [
+        { ...candidate(URL_A), publishedAt: '2026-06-30' },
+        candidate(URL_B),
+      ],
+      registerOne,
+    }));
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([URL_B]);
   });
 
   it.each([false, true])(
@@ -255,7 +493,7 @@ function duplicate(url: string): RegisterOneResult {
 
 function failed(
   url: string,
-  stage: 'ai_validation' | 'notion_schema',
+  stage: 'ai_analysis' | 'ai_validation' | 'notion_schema' | 'notion_create',
 ): RegisterOneResult {
   return {
     status: 'failed',
@@ -321,11 +559,16 @@ function notionReport(): NotionConnectionReport {
   };
 }
 
-function client(): NotionRegistrationClient {
+function client(duplicateUrls = new Set<string>()): NotionRegistrationClient {
   return {
     retrieveDatabase: async () => ({}),
     retrieveDataSource: async () => ({}),
-    queryDataSourceByUrl: async () => ({ object: 'list', results: [] }),
+    queryDataSourceByUrl: async (_dataSourceId, _propertyName, url) => ({
+      object: 'list',
+      results: duplicateUrls.has(url)
+        ? [{ object: 'page', id: PAGE_ID, url: PAGE_URL }]
+        : [],
+    }),
     createPage: async () => ({ object: 'page', id: PAGE_ID, url: PAGE_URL }),
   };
 }
@@ -342,12 +585,17 @@ function dependencies(options: {
   stderr?: string[];
   collectCandidates?: NonNullable<CollectionRunCommandDependencies['collectCandidates']>;
   createClient?: NonNullable<CollectionRunCommandDependencies['createClient']>;
+  readState?: NonNullable<CollectionRunCommandDependencies['readState']>;
+  writeState?: NonNullable<CollectionRunCommandDependencies['writeState']>;
   registerOne: NonNullable<CollectionRunCommandDependencies['registerOne']>;
 }): CollectionRunCommandDependencies {
   return {
     env: { NOTION_TOKEN: 'test-token' },
     loadEnvironment: () => undefined,
     loadRegistry: async () => registry(),
+    now: () => new Date('2026-08-07T03:00:00.000Z'),
+    readState: options.readState ?? (async () => ({})),
+    writeState: options.writeState ?? (async () => undefined),
     collectCandidates: options.collectCandidates
       ?? (async () => [candidate(URL_A), candidate(URL_B)]),
     createClient: options.createClient ?? (() => client()),

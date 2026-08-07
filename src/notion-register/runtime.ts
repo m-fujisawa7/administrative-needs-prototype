@@ -28,7 +28,10 @@ import {
   registerOneAdministrativeNeed,
   type RegisterOneInput,
 } from './register-one.ts';
+import { findExistingNotionPage } from './registration.ts';
+import { selectRegistrationDataSource } from './schema.ts';
 import type {
+  ExistingNotionPage,
   NotionRegistrationAnalysisContext,
   RegisterOneResult,
 } from './types.ts';
@@ -61,6 +64,7 @@ export type NotionRegistrationRuntimeDependencies = {
 };
 
 export type NotionRegistrationRuntime = RegistrationSourceContext & {
+  checkDuplicate: (officialUrl: string) => Promise<ExistingNotionPage | null>;
   register: (officialUrl: string, write: boolean) => Promise<RegisterOneResult>;
 };
 
@@ -138,9 +142,15 @@ export async function prepareNotionRegistrationRuntime(
     return analysisContext;
   };
   const registerOne = dependencies.registerOne ?? registerOneAdministrativeNeed;
+  const dataSource = selectRegistrationDataSource(report);
 
   return {
     ...sourceContext,
+    checkDuplicate: (officialUrl) => findExistingNotionPage(
+      client,
+      dataSource.id,
+      officialUrl,
+    ),
     register: (officialUrl, write) => registerOne({
       ...sourceContext,
       officialUrl,

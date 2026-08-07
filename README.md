@@ -31,7 +31,7 @@ src/ai/             Claude CLI／Mockによる判定・構造化
 src/notion-check/   Notion接続とスキーマの読み取り確認
 src/notion-register Notionへの1件登録プレビュー・重複防止
 src/notion-batch    選定URLファイルの直列プレビュー・登録
-src/collection-run  情報源候補の直列プレビュー・登録
+src/collection-run  期間・情報源別状態を使う候補の直列プレビュー・登録
 test/               外部アクセスを行わない単体テストとfixture
 ```
 
@@ -137,7 +137,9 @@ AI_PROVIDER=claude_cli npm run collect:run -- \
   --database-url "https://app.notion.com/p/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?v=..."
 ```
 
-デフォルトはプレビューです。候補URLの文字列重複を除いてから最大20件に制限し、Notion登録済みURLは後続取得とClaude解析の前にスキップします。`--write`を明示した場合だけ未登録URLを作成します。詳細は `src/collection-run/README.md` を参照してください。
+デフォルトはプレビューです。候補URLの文字列重複を除き、Notion登録済みURLは後続取得とClaude解析の前にスキップします。未登録候補だけを最大20件まで処理し、`--write`を明示した場合だけNotionページを作成します。詳細は `src/collection-run/README.md` を参照してください。
+
+初回は2026-07-01から、2回目以降は情報源ごとの前回成功日時の3日前から実行開始時刻までを対象にします。`--limit`は未登録候補だけが消費する安全上限です。条件を満たすWrite成功時だけ、実行開始時刻をGit管理外の`data/collection-state.json`へ保存します。`--since YYYY-MM-DD`による手動バックフィルも可能ですが、この場合は状態を進めません。
 
 品質チェックは以下で実行できます。
 
@@ -213,4 +215,4 @@ const enabledSources = getEnabledSources(registry);
 const osakaSources = getSourcesByOrganization(registry, 'osaka-city');
 ```
 
-後続の収集処理は `collector_type` を見て取得方式を選べます。現段階の取得とAI判定は、入口ページ、指定した個別ページ、そのページのPDF、1案件のAI解析、および人が指定した最大20件を手動で直列実行する範囲です。Notionは接続・構成確認と、明示的な`--write`による新規登録だけです。候補の継続収集、結果保存、既存Notionページの更新・削除は実装していません。
+後続の収集処理は `collector_type` を見て取得方式を選べます。現段階の取得とAI判定は、入口ページ、指定した個別ページ、そのページのPDF、1案件のAI解析、および人が指定した最大20件を手動で直列実行する範囲です。手動一括実行の対象期間と情報源ごとの前回成功日時だけをローカルJSONで管理します。Notionは接続・構成確認と、明示的な`--write`による新規登録だけです。候補・AI結果の保存、既存Notionページの更新・削除、定期実行は実装していません。

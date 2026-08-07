@@ -1,7 +1,45 @@
 import type {
+  CollectionRunCliOptions,
   CollectionRunItemResult,
   CollectionRunReport,
 } from './types.ts';
+import {
+  COLLECTION_LOOKBACK_DAYS,
+  INITIAL_COLLECTION_SINCE,
+  type CollectionPeriod,
+} from './state.ts';
+
+export function formatCollectionRunStarted(
+  options: CollectionRunCliOptions,
+  period: CollectionPeriod,
+): string {
+  const lines = [
+    'Collection started.',
+    '',
+    'Source:',
+    options.sourceId,
+    '',
+    'Run started at:',
+    period.runStartedAt,
+    '',
+    'Previous successful check:',
+    period.previousSuccessfulCheck ?? 'None',
+  ];
+  if (period.previousSuccessfulCheck === null) {
+    lines.push('', 'Initial collection since:', INITIAL_COLLECTION_SINCE);
+  } else if (!period.usedManualSince) {
+    lines.push('', 'Lookback:', `${COLLECTION_LOOKBACK_DAYS} days`);
+  }
+  lines.push(
+    '',
+    'Effective since:',
+    period.effectiveSince,
+    '',
+    'Limit:',
+    String(options.limit),
+  );
+  return lines.join('\n');
+}
 
 export function formatCollectionRunItem(
   item: CollectionRunItemResult,
@@ -126,11 +164,25 @@ export function formatCollectionRunSummary(report: CollectionRunReport): string 
     'Source:',
     report.sourceId,
     '',
+    'Period:',
+    report.effectiveSince,
+    'to',
+    report.runStartedAt,
+    '',
     'Candidates collected:',
     String(report.candidatesCollected),
     '',
     'Unique candidates:',
     String(report.uniqueCandidates),
+    '',
+    'Candidates in period:',
+    String(report.candidatesInPeriod),
+    '',
+    'New candidates found:',
+    String(report.newCandidatesFound),
+    '',
+    'Processed new candidates:',
+    String(report.processedNewCandidates),
     '',
     'Previewed:',
     String(count('previewed')),
@@ -143,6 +195,9 @@ export function formatCollectionRunSummary(report: CollectionRunReport): string 
     '',
     'Failed:',
     String(count('failed')),
+    '',
+    'Remaining new candidates:',
+    String(report.remainingNewCandidates),
   ];
   if (failures.length > 0) {
     lines.push('', 'Failures:', '');
@@ -154,6 +209,20 @@ export function formatCollectionRunSummary(report: CollectionRunReport): string 
         `  Message: ${result.message}`,
       );
     }
+  }
+  lines.push(
+    '',
+    'Collection state:',
+    report.collectionState.status === 'advanced' ? 'Advanced' : 'Not advanced',
+  );
+  if (report.collectionState.status === 'advanced') {
+    lines.push(
+      '',
+      'New last successful check:',
+      report.collectionState.newLastSuccessfulCheck,
+    );
+  } else {
+    lines.push('', 'Reason:', report.collectionState.reason);
   }
   return lines.join('\n');
 }

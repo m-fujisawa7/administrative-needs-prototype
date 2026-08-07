@@ -6,6 +6,7 @@ export type CollectionRunCliOptions = {
   limit: number;
   databaseId: string;
   write: boolean;
+  since?: string;
 };
 
 export type CollectionRunItemResult = {
@@ -16,7 +17,24 @@ export type CollectionRunItemResult = {
 export type CollectionRunReport = {
   write: boolean;
   sourceId: string;
+  effectiveSince: string;
+  runStartedAt: string;
   candidatesCollected: number;
   uniqueCandidates: number;
+  candidatesInPeriod: number;
+  newCandidatesFound: number;
+  processedNewCandidates: number;
+  remainingNewCandidates: number;
   results: CollectionRunItemResult[];
+  collectionState: CollectionStateOutcome;
 };
+
+export type CollectionStateOutcome =
+  | {
+    status: 'advanced';
+    newLastSuccessfulCheck: string;
+  }
+  | {
+    status: 'not_advanced';
+    reason: string;
+  };
