@@ -2,13 +2,14 @@ import {
   fetchAndExtractDocument,
   type FetchAndExtractDocumentInput,
 } from '../content-check/index.ts';
-import type { ExtractedDocument } from '../content-check/types.ts';
+import type { ExtractedDocument, PdfLink } from '../content-check/types.ts';
 import {
   fetchAndExtractPdf,
   type FetchAndExtractPdfInput,
 } from '../pdf-check/index.ts';
 import type { ExtractedPdf } from '../pdf-check/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
+import { describePdfLink, selectPdfsByPriority } from './pdf-priority.ts';
 import {
   DEFAULT_AI_INPUT_LIMITS,
   prepareAnalysisInput,
@@ -65,17 +66,18 @@ export async function checkAdministrativeNeed(
     message,
   }));
 
-  const pdfUrls = deduplicatePdfUrls(document.pdfUrls);
-  const selectedPdfUrls = input.noPdf ? [] : pdfUrls.slice(0, limits.maxPdfs);
-  if (!input.noPdf && pdfUrls.length > selectedPdfUrls.length) {
+  const pdfLinks = deduplicatePdfLinks(document.pdfLinks);
+  const selectedPdfLinks = input.noPdf ? [] : selectPdfsByPriority(pdfLinks, limits.maxPdfs);
+  if (!input.noPdf && pdfLinks.length > selectedPdfLinks.length) {
+    const selectedLabels = selectedPdfLinks.map((link) => describePdfLink(link)).join(' / ');
     warnings.push({
       code: 'pdf_limit',
-      message: `検出したPDF ${pdfUrls.length}件のうち、先頭${selectedPdfUrls.length}件だけを解析します。`,
+      message: `検出したPDF ${pdfLinks.length}件から、優先度に基づき${selectedPdfLinks.length}件を解析します: ${selectedLabels}`,
     });
   }
 
   const pdfDocuments: AnalysisPdfDocument[] = [];
-  for (const url of selectedPdfUrls) {
+  for (const { url } of selectedPdfLinks) {
     try {
       const pdf = await extractPdf({
         source: input.source,
@@ -106,8 +108,8 @@ export async function checkAdministrativeNeed(
     sourceName: input.source.name,
     htmlText: document.bodyText,
     pdfDocuments,
-    pdfDiscovered: pdfUrls.length,
-    pdfAttempted: selectedPdfUrls.length,
+    pdfDiscovered: pdfLinks.length,
+    pdfAttempted: selectedPdfLinks.length,
     companyFitCriteria: input.companyFitCriteria,
     limits,
   });
@@ -139,15 +141,16 @@ export async function checkAdministrativeNeed(
   };
 }
 
-function deduplicatePdfUrls(values: string[]): string[] {
+/** アンカーの違いを無視して同一PDFを1件に畳む。最初に現れたリンクテキストを残す。 */
+function deduplicatePdfLinks(links: readonly PdfLink[]): PdfLink[] {
   const seen = new Set<string>();
-  const result: string[] = [];
-  for (const value of values) {
-    const url = new URL(value);
+  const result: PdfLink[] = [];
+  for (const link of links) {
+    const url = new URL(link.url);
     url.hash = '';
     if (seen.has(url.href)) continue;
     seen.add(url.href);
-    result.push(url.href);
+    result.push({ url: url.href, text: link.text });
   }
   return result;
 }

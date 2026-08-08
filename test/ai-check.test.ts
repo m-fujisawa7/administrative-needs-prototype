@@ -1044,6 +1044,8 @@ function makeDocument(overrides: Partial<ExtractedDocument> = {}): ExtractedDocu
     publishedAtCandidate: '2026-08-06',
     publishedAtSource: 'time',
     pdfUrls: [],
+    // pdfUrls だけを上書きするテストのために、未指定なら pdfUrls から導出する。
+    pdfLinks: (overrides.pdfUrls ?? []).map((url) => ({ url, text: '' })),
     contentSelectorConfigured: 'main',
     contentSelectorUsed: 'main',
     usedFallback: false,

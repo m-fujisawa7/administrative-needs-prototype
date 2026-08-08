@@ -1,5 +1,12 @@
 export type PublishedAtSource = 'time' | 'meta' | 'page_text';
 
+/** 記事本文から見つけた添付PDFのリンク。優先選択の判定材料に使う。 */
+export type PdfLink = {
+  url: string;
+  /** アンカーの表示文字列。取得できない場合は空文字。 */
+  text: string;
+};
+
 export type ContentExtractionResult = {
   title: string;
   bodyText: string;
@@ -7,6 +14,8 @@ export type ContentExtractionResult = {
   publishedAtCandidate: string | null;
   publishedAtSource: PublishedAtSource | null;
   pdfUrls: string[];
+  /** pdfUrls と同じ並び。リンクテキスト付き。 */
+  pdfLinks: PdfLink[];
   contentSelectorConfigured: string | null;
   contentSelectorUsed: string;
   usedFallback: boolean;

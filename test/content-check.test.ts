@@ -294,6 +294,7 @@ function makeExtractedDocument(): ExtractedDocument {
     publishedAtCandidate: '2026-08-05',
     publishedAtSource: 'time',
     pdfUrls: [],
+    pdfLinks: [],
     contentSelectorConfigured: 'main',
     contentSelectorUsed: 'main',
     usedFallback: false,

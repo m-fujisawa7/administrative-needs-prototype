@@ -319,6 +319,7 @@ function document(url: string, pdfUrls: string[] = []): ExtractedDocument {
     publishedAtCandidate: '2026-08-07',
     publishedAtSource: 'page_text',
     pdfUrls,
+    pdfLinks: pdfUrls.map((url) => ({ url, text: '' })),
     contentSelectorConfigured: null,
     contentSelectorUsed: 'main',
     usedFallback: true,

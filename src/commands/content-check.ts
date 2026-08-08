@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { classifyPdfPriority, describePdfLink } from '../ai/pdf-priority.ts';
 import { fetchAndExtractDocument } from '../content-check/index.ts';
 import type {
   ContentCheckCliOptions,
@@ -147,7 +148,11 @@ export function formatContentCheckResult(
     `PDF links: ${document.pdfUrls.length}`,
   ];
 
-  for (const url of document.pdfUrls) lines.push(`  - ${url}`);
+  // 優先度を併記し、どのPDFが解析対象に選ばれるかを人が確認できるようにする。
+  for (const link of document.pdfLinks) {
+    lines.push(`  - [${classifyPdfPriority(link)}] ${describePdfLink(link)}`);
+    lines.push(`    ${link.url}`);
+  }
   if (document.warnings.length > 0) {
     lines.push('Warnings:');
     for (const warning of document.warnings) lines.push(`  - ${warning}`);

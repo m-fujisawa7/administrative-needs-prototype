@@ -2,6 +2,7 @@ import { load } from 'cheerio';
 import { normalizeWhitespace, parseDateCandidate } from '../source-check/utils.ts';
 import type {
   ContentExtractionResult,
+  PdfLink,
   PublishedAtSource,
 } from './types.ts';
 
@@ -112,7 +113,7 @@ export function extractDocumentFromHtml(
   const publishedAt = findPublishedAtCandidate($);
   if (publishedAt.value === null) warnings.push('公開日候補を取得できませんでした。');
   const effectiveBaseUrl = findEffectiveBaseUrl($, input.url, warnings);
-  const pdfUrls = extractPdfUrls($, selectedElements, effectiveBaseUrl);
+  const pdfLinks = extractPdfLinks($, selectedElements, effectiveBaseUrl);
 
   return {
     title,
@@ -120,7 +121,8 @@ export function extractDocumentFromHtml(
     bodyLength: selectedText.length,
     publishedAtCandidate: publishedAt.value,
     publishedAtSource: publishedAt.source,
-    pdfUrls,
+    pdfUrls: pdfLinks.map((entry) => entry.url),
+    pdfLinks,
     contentSelectorConfigured: configuredSelector,
     contentSelectorUsed: selectedSelector,
     usedFallback,
@@ -135,14 +137,14 @@ function extractVisibleText(elements: ReturnType<ReturnType<typeof load>>): stri
   return normalizeWhitespace(clone.text());
 }
 
-function extractPdfUrls(
+function extractPdfLinks(
   $: ReturnType<typeof load>,
   elements: ReturnType<ReturnType<typeof load>>,
   baseUrl: string,
-): string[] {
+): PdfLink[] {
   const clone = elements.clone();
   clone.find(EXCLUDED_ELEMENTS).remove();
-  const urls: string[] = [];
+  const links: PdfLink[] = [];
   const seen = new Set<string>();
 
   clone.find('a[href]').addBack('a[href]').each((_index, element) => {
@@ -159,9 +161,9 @@ function extractPdfUrls(
     if (!url.pathname.toLocaleLowerCase('en').endsWith('.pdf')) return;
     if (seen.has(url.href)) return;
     seen.add(url.href);
-    urls.push(url.href);
+    links.push({ url: url.href, text: normalizeWhitespace($(element).text()) });
   });
-  return urls;
+  return links;
 }
 
 function findEffectiveBaseUrl(
