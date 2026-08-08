@@ -1,3 +1,4 @@
+import type { CollectionBatchReport } from './batch.ts';
 import type {
   CollectionRunCliOptions,
   CollectionRunItemResult,
@@ -224,5 +225,70 @@ export function formatCollectionRunSummary(report: CollectionRunReport): string 
   } else {
     lines.push('', 'Reason:', report.collectionState.reason);
   }
+  return lines.join('\n');
+}
+
+const BATCH_COLUMNS = [
+  { header: 'Source', align: 'left' as const },
+  { header: 'Created', align: 'right' as const },
+  { header: 'Previewed', align: 'right' as const },
+  { header: 'Duplicates', align: 'right' as const },
+  { header: 'Failed', align: 'right' as const },
+  { header: 'Remaining', align: 'right' as const },
+  { header: 'State', align: 'left' as const },
+];
+
+/** Sourceごとの結果を一目で比較できる表を作る。 */
+export function formatCollectionBatchSummary(report: CollectionBatchReport): string {
+  const rows = report.outcomes.map((outcome) => [
+    outcome.sourceId,
+    String(outcome.created),
+    String(outcome.previewed),
+    String(outcome.duplicates),
+    String(outcome.failed),
+    String(outcome.remaining),
+    outcome.state,
+  ]);
+  const widths = BATCH_COLUMNS.map((column, index) => Math.max(
+    column.header.length,
+    ...rows.map((row) => (row[index] ?? '').length),
+  ));
+  const renderRow = (cells: readonly string[]): string => cells
+    .map((cell, index) => (BATCH_COLUMNS[index]?.align === 'right'
+      ? cell.padStart(widths[index] ?? 0)
+      : cell.padEnd(widths[index] ?? 0)))
+    .join('  ')
+    .trimEnd();
+
+  const lines = [
+    'Batch collection completed.',
+    '',
+    'Mode:',
+    report.write ? 'Write' : 'Preview',
+    '',
+    'Sources selected:',
+    String(report.sourcesSelected),
+    '',
+    renderRow(BATCH_COLUMNS.map((column) => column.header)),
+    ...rows.map(renderRow),
+  ];
+
+  const withReason = report.outcomes.filter((outcome) => outcome.reason !== undefined);
+  if (withReason.length > 0) {
+    lines.push('', 'State details:');
+    for (const outcome of withReason) {
+      lines.push(`- ${outcome.sourceId}: ${outcome.state} (${outcome.reason ?? ''})`);
+    }
+  }
+
+  lines.push(
+    '',
+    'Totals:',
+    `Created: ${report.totals.created}`,
+    `Previewed: ${report.totals.previewed}`,
+    `Duplicates skipped: ${report.totals.duplicates}`,
+    `Failed: ${report.totals.failed}`,
+    `Remaining new candidates: ${report.totals.remaining}`,
+  );
   return lines.join('\n');
 }

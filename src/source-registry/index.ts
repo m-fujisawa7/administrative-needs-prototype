@@ -1,7 +1,9 @@
 export {
   DEFAULT_SOURCE_REGISTRY_PATH,
   getEnabledSources,
+  getSourcesByMunicipality,
   getSourcesByOrganization,
+  listOrganizationNames,
   loadSourceRegistry,
 } from './load.ts';
 export {
