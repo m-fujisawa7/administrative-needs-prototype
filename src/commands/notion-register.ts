@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { formatWarningLine } from '../ai/warning-severity.ts';
 import { NotionConfigurationError } from '../notion-check/errors.ts';
 import {
   isNotionRegistrationConfigurationError,
@@ -113,7 +114,7 @@ export async function runNotionRegister(
   const result = await runtime.register(options.url, options.write);
 
   for (const warning of result.warnings) {
-    stderr(`[WARNING] [${warning.code}] ${warning.message}`);
+    stderr(formatWarningLine(warning));
   }
   if (result.status === 'duplicate') {
     if (result.preview !== undefined) {

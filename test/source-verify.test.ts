@@ -201,7 +201,8 @@ describe('source:verifyコマンド', () => {
     }));
 
     expect(exitCode).toBe(0);
-    expect(stderr.join('\n')).toContain('[WARNING] [ai_json_parse_retry]');
+    // 再試行して成功した場合は対応不要のためNOTICE（warning-severity.ts）。
+    expect(stderr.join('\n')).toContain('[NOTICE] [ai_json_parse_retry]');
     expect(stderr.join('\n')).toContain('1回再試行して成功しました');
   });
 

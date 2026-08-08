@@ -22,6 +22,7 @@ import type {
   CollectionRunReport,
   CollectionStateOutcome,
 } from '../collection-run/types.ts';
+import { formatWarningLine } from '../ai/warning-severity.ts';
 import { NotionConfigurationError } from '../notion-check/errors.ts';
 import { safeNotionRegistrationErrorMessage } from '../notion-register/error-format.ts';
 import {
@@ -163,7 +164,7 @@ export async function runCollection(
   );
   for (const candidate of periodSelection.unknownDateCandidates) {
     stderr([
-      'Warning:',
+      'Notice:',
       'Candidate publication date is unavailable.',
       '',
       'URL:',
@@ -223,7 +224,7 @@ export async function runCollection(
       processor: (candidate) => runtime.register(candidate.url, options.write),
       onResult: (item, index, total) => {
         for (const warning of item.result.warnings) {
-          stderr(`[${index}/${total}] [WARNING] [${warning.code}] ${warning.message}`);
+          stderr(formatWarningLine(warning, `[${index}/${total}] `));
         }
         stdout(formatCollectionRunItem(item, index, total));
       },

@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { formatWarningLine } from '../ai/warning-severity.ts';
 import { checkAdministrativeNeed } from '../ai/check.ts';
 import { loadCompanyFitCriteria } from '../ai/company-fit-criteria.ts';
 import { createAnalyzer } from '../ai/create-analyzer.ts';
@@ -156,7 +157,7 @@ export async function runSourceVerify(
   }, (item, index, total) => {
     if (item.status === 'succeeded') {
       for (const warning of item.result.warnings) {
-        stderr(`[${index}/${total}] [WARNING] [${warning.code}] ${warning.message}`);
+        stderr(formatWarningLine(warning, `[${index}/${total}] `));
       }
     }
     stdout(formatSourceVerificationItem(item, index, total));

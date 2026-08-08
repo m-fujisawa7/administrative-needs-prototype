@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { formatWarningLine } from '../ai/warning-severity.ts';
 import { processSelectedUrls } from '../notion-batch/batch.ts';
 import { NotionBatchConfigurationError } from '../notion-batch/errors.ts';
 import {
@@ -120,7 +121,7 @@ export async function runNotionBatch(
     (officialUrl) => runtime.register(officialUrl, options.write),
     (result, index, total) => {
       for (const warning of result.warnings) {
-        stderr(`[${index}/${total}] [WARNING] [${warning.code}] ${warning.message}`);
+        stderr(formatWarningLine(warning, `[${index}/${total}] `));
       }
       stdout(formatNotionBatchItem(result, index, total));
     },

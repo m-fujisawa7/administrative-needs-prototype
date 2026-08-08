@@ -90,6 +90,8 @@ export async function checkAdministrativeNeed(
         warnings.push({
           code: 'pdf_warning',
           message: `${pdf.url}: ${warning.message}`,
+          // 内訳コードを残し、文字間空白（NOTICE）と抽出欠落（WARNING）を区別できるようにする。
+          detail: warning.code,
         });
       }
     } catch (error) {

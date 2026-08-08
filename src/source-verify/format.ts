@@ -1,3 +1,4 @@
+import { countWarningsBySeverity } from '../ai/warning-severity.ts';
 import type { AdministrativeNeedAnalysis } from '../ai/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
 import type {
@@ -128,8 +129,11 @@ export function formatSourceVerificationItem(
     'Evidence matched:',
     `${result.evidenceMatched}/${result.analysis.evidence_quotes.length}`,
     '',
+    'Notices:',
+    String(countWarningsBySeverity(result.warnings).notices),
+    '',
     'Warnings:',
-    String(result.warnings.length),
+    String(countWarningsBySeverity(result.warnings).warnings),
   ].join('\n');
 }
 

@@ -98,6 +98,12 @@ export type AiCheckWarningCode =
 export type AiCheckWarning = {
   code: AiCheckWarningCode;
   message: string;
+  /**
+   * 同じ code でも内容が異なる場合の内訳コード。
+   * pdf_warning なら PdfExtractionWarning の code をそのまま持つ。
+   * ログ重要度の判定に使う（warning-severity.ts）。
+   */
+  detail?: string;
 };
 
 export type AiInputSummary = {

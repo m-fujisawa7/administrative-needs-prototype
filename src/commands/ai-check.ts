@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { countWarningsBySeverity, formatWarningLine } from '../ai/warning-severity.ts';
 import { checkAdministrativeNeed } from '../ai/check.ts';
 import { loadCompanyFitCriteria } from '../ai/company-fit-criteria.ts';
 import { createAnalyzer } from '../ai/create-analyzer.ts';
@@ -145,7 +146,7 @@ export async function runAiCheck(
       trustedPdfDomains: getTrustedAttachmentDomains(registry, organization),
     });
     for (const warning of result.warnings) {
-      stderr(`[WARNING] [${warning.code}] ${warning.message}`);
+      stderr(formatWarningLine(warning));
     }
     stdout(options.json
       ? JSON.stringify(result.analysis, null, 2)
@@ -188,7 +189,8 @@ export function formatAiCheckResult(result: AiCheckResult): string {
     `  HTML characters: ${result.inputSummary.htmlSentCharacters}/${result.inputSummary.htmlOriginalCharacters}`,
     `  PDF documents: ${result.inputSummary.pdfIncluded}/${result.inputSummary.pdfDiscovered} (attempted ${result.inputSummary.pdfAttempted})`,
     `  PDF characters: ${result.inputSummary.pdfSentCharacters}/${result.inputSummary.pdfOriginalCharacters}`,
-    `Warnings: ${result.warnings.length}`,
+    `Notices: ${countWarningsBySeverity(result.warnings).notices}`,
+    `Warnings: ${countWarningsBySeverity(result.warnings).warnings}`,
   );
   return lines.join('\n');
 }
