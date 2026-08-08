@@ -268,6 +268,121 @@ describe('根拠照合', () => {
     expect(missing.matched).toBe(0);
     expect(missing.warnings[0]?.code).toBe('evidence_not_found');
   });
+
+  /** 引用1件だけを渡して一致したかを返す。 */
+  function matchOne(
+    quote: string,
+    options: { htmlText?: string; pdfText?: string } = {},
+  ): boolean {
+    const usePdf = options.pdfText !== undefined;
+    const input = makeInput({
+      ...(options.htmlText === undefined ? {} : { htmlText: options.htmlText }),
+      ...(usePdf ? { pdfDocuments: [{ url: PDF_A, text: options.pdfText as string }] } : {}),
+    });
+    const result = validateEvidenceQuotes(validAnalysis({
+      evidence_quotes: [{
+        source_type: usePdf ? 'pdf' : 'html',
+        source_url: usePdf ? PDF_A : DOCUMENT_URL,
+        quote,
+      }],
+    }), input);
+    return result.matched === 1;
+  }
+
+  it('完全一致する引用を通す', () => {
+    expect(matchOne('行政サービスを改善するための情報提供', {
+      htmlText: '行政サービスを改善するための情報提供を募集します。',
+    })).toBe(true);
+  });
+
+  it('HTMLの改行差を吸収する', () => {
+    expect(matchOne('行政サービスを改善する 情報提供を募集します', {
+      htmlText: '行政サービスを改善する\n情報提供を募集します。',
+    })).toBe(true);
+  });
+
+  it('HTMLの連続空白とタブ差を吸収する', () => {
+    expect(matchOne('募集します 詳細は下記', {
+      htmlText: '募集します。\n\n   \t 詳細は下記のとおりです。'.replace('。\n\n', ' '),
+    })).toBe(true);
+  });
+
+  it('曲がり引用符と直線引用符の差を吸収する', () => {
+    // 実例: 原文は “重点箇所だけへの訪問”、Claudeは "重点箇所だけへの訪問" を返した。
+    expect(matchOne('現地調査を、"重点箇所だけへの訪問"に切り替えられるだろうか？', {
+      htmlText: '職員が歩き回る現地調査を、“重点箇所だけへの訪問”に切り替えられるだろうか？',
+    })).toBe(true);
+    expect(matchOne('現地調査を、“重点箇所だけへの訪問”に切り替え', {
+      htmlText: '職員が歩き回る現地調査を、"重点箇所だけへの訪問"に切り替えられるだろうか？',
+    })).toBe(true);
+  });
+
+  it('単一引用符の曲がり・直線差も吸収する', () => {
+    expect(matchOne("'重点箇所'への訪問", { htmlText: '‘重点箇所’への訪問に切り替える。' }))
+      .toBe(true);
+  });
+
+  it('PDF抽出で日本語文字間に混入した空白を吸収する', () => {
+    // 実例: unpdf の抽出結果は「行 政 課 題 1 件 あ た り 150 万 円 ま で」。
+    expect(matchOne('行政課題 1件あたり 150万円まで', {
+      pdfText: '行 政 課 題 1 件 あ た り 150 万 円 ま で\n社 会 課 題 1 件 あ た り 300 万 円 ま で',
+    })).toBe(true);
+  });
+
+  it('PDF由来の空白入り引用を空白なし原文に照合できる', () => {
+    expect(matchOne('行 政 課 題 1 件 あ た り 150 万 円', {
+      pdfText: '行政課題 1件あたり 150万円まで',
+    })).toBe(true);
+  });
+
+  it('欧文の単語間スペースは保持して誤一致させない', () => {
+    expect(matchOne('open data', { htmlText: 'opendata の推進について' })).toBe(false);
+    expect(matchOne('opendata', { htmlText: 'open data の推進について' })).toBe(false);
+    expect(matchOne('open data', { htmlText: 'open data の推進について' })).toBe(true);
+  });
+
+  it('数字が異なる引用は一致させない', () => {
+    expect(matchOne('行政課題 1件あたり 300万円まで', {
+      pdfText: '行 政 課 題 1 件 あ た り 150 万 円 ま で',
+    })).toBe(false);
+  });
+
+  it('言い換えた引用は一致させない', () => {
+    expect(matchOne('行政課題1件につき最大150万円を補助します', {
+      pdfText: '行 政 課 題 1 件 あ た り 150 万 円 ま で',
+    })).toBe(false);
+  });
+
+  it('原文に存在しない引用は一致させない', () => {
+    expect(matchOne('入力に存在しない引用', {
+      htmlText: '行政サービスを改善するための情報提供を募集します。',
+    })).toBe(false);
+  });
+
+  it('語順を入れ替えた引用は一致させない', () => {
+    expect(matchOne('情報提供を募集します 行政サービスを改善する', {
+      htmlText: '行政サービスを改善するための情報提供を募集します。',
+    })).toBe(false);
+  });
+
+  it('出典種別が違えば一致させない', () => {
+    const input = makeInput({
+      htmlText: '行政課題1件あたり150万円まで',
+      pdfDocuments: [{ url: PDF_A, text: '別の本文' }],
+    });
+    const result = validateEvidenceQuotes(validAnalysis({
+      evidence_quotes: [{
+        source_type: 'pdf',
+        source_url: PDF_A,
+        quote: '行政課題1件あたり150万円まで',
+      }],
+    }), input);
+    expect(result.matched).toBe(0);
+  });
+
+  it('空の引用は一致させない', () => {
+    expect(matchOne('   ', { htmlText: '行政サービスを改善する。' })).toBe(false);
+  });
 });
 
 describe('Analyzer', () => {

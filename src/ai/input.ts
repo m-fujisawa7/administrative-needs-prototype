@@ -175,8 +175,40 @@ export function validateEvidenceQuotes(
   return { matched, warnings };
 }
 
+/** 意味を変えない引用符の表記差だけを寄せる。曲がり引用符と直線引用符を同一視する。 */
+const QUOTE_VARIANTS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/[“”„‟〝〞〟]/gu, '"'],
+  [/[‘’‚‛]/gu, "'"],
+];
+
+/** 空白を挟んだ左右が両方ともラテン文字・数字か。欧文の語境界はここだけ。 */
+const LATIN_OR_DIGIT = /[0-9A-Za-z]/u;
+
+/**
+ * 根拠照合のための正規化。原文と引用の両方に同じ処理を当ててから部分一致を見る。
+ *
+ * 吸収するのは意味を変えない表記差だけに限る。
+ * - 改行・タブ・連続空白（NFKC と \s+ の畳み込み）
+ * - 曲がり引用符と直線引用符の差（Claude が引用符を打ち直すことがある）
+ * - PDF抽出で日本語文字間に混入した空白（`行 政 課 題` → `行政課題`）
+ *
+ * 空白を無条件に全除去すると `open data` と `opendata` が一致してしまうため、
+ * 左右が両方ともラテン文字・数字の空白だけは残す。
+ */
 function normalizeForEvidence(value: string): string {
-  return value.normalize('NFKC').replace(/\s+/gu, ' ').trim();
+  let normalized = value.normalize('NFKC');
+  for (const [pattern, replacement] of QUOTE_VARIANTS) {
+    normalized = normalized.replace(pattern, replacement);
+  }
+  return normalized
+    .replace(/\s+/gu, ' ')
+    .replace(/ /gu, (_match, offset: number, whole: string) => {
+      const before = whole[offset - 1];
+      const after = whole[offset + 1];
+      if (before === undefined || after === undefined) return '';
+      return LATIN_OR_DIGIT.test(before) && LATIN_OR_DIGIT.test(after) ? ' ' : '';
+    })
+    .trim();
 }
 
 function allocateCharacterLimits(lengths: number[], totalLimit: number): number[] {
