@@ -97,9 +97,17 @@ export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
     0,
   );
   if (pdfWasTruncated) {
+    // どのPDFがどれだけ入力に残ったかを確認できるようにする。
+    // 配分は allocateCharacterLimits が行うため、ここでは結果を表示するだけ。
+    const perDocument = options.pdfDocuments
+      .map((document, index) => {
+        const sent = pdfDocuments[index]?.text.length ?? 0;
+        return `${pdfLabel(document.url)} ${document.text.length}→${sent}`;
+      })
+      .join(', ');
     warnings.push({
       code: 'pdf_truncated',
-      message: `PDF本文合計を ${pdfOriginalCharacters} 文字から ${pdfSentCharacters} 文字へ切り詰めました。`,
+      message: `PDF本文合計を ${pdfOriginalCharacters} 文字から ${pdfSentCharacters} 文字へ切り詰めました（${perDocument}）。`,
     });
   }
 
@@ -211,6 +219,23 @@ function normalizeForEvidence(value: string): string {
     .trim();
 }
 
+/** 診断表示用にPDFのファイル名だけを取り出す。取れない場合はURLをそのまま使う。 */
+function pdfLabel(url: string): string {
+  try {
+    return decodeURIComponent(new URL(url).pathname).split('/').pop() || url;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * PDF本文合計の上限を各PDFへ公平に配分する。
+ *
+ * 合計が上限以内ならそのまま全文を使う。超える場合は残り予算を残り件数で均等割りし、
+ * その枠より短いPDFは全文を確定させて余りを他へ再配分する。どのPDFも枠に収まらなく
+ * なった時点で均等配分し、端数を先頭から1文字ずつ配る。
+ * 乱数も時刻も使わないため、同じ入力なら毎回同じ配分になる。
+ */
 function allocateCharacterLimits(lengths: number[], totalLimit: number): number[] {
   if (lengths.length === 0) return [];
   if (lengths.reduce((total, length) => total + length, 0) <= totalLimit) {

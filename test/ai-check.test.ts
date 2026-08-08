@@ -244,6 +244,133 @@ describe('AI入力組み立て', () => {
     expect(prepared.warnings.map((warning) => warning.code)).not.toContain('pdf_truncated');
   });
 
+  /** 指定した文字数のPDFを渡し、実際に送信された文字数を返す。 */
+  function allocate(lengths: number[], pdfCharacters = 50_000) {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: lengths.map((length, index) => ({
+        url: `https://www.city.osaka.lg.jp/files/${index}.pdf`,
+        text: String(index).repeat(length),
+      })),
+      pdfDiscovered: lengths.length,
+      pdfAttempted: lengths.length,
+      limits: { htmlCharacters: 30_000, pdfCharacters, maxPdfs: 3 },
+    });
+    return {
+      sent: prepared.input.pdfDocuments.map((document) => document.text.length),
+      total: prepared.summary.pdfSentCharacters,
+      warnings: prepared.warnings,
+      prepared,
+    };
+  }
+
+  it('PDF1件で上限を超えても上限以内に収める', () => {
+    const result = allocate([60_000]);
+    expect(result.total).toBeLessThanOrEqual(50_000);
+    expect(result.sent[0]).toBe(50_000);
+  });
+
+  it('PDF2件で上限を超えても両方が入力に含まれる', () => {
+    const result = allocate([40_000, 30_000]);
+    expect(result.total).toBe(50_000);
+    expect(result.sent.every((length) => length > 0)).toBe(true);
+  });
+
+  it('PDF3件で上限を超えても3件すべてが入力に含まれる', () => {
+    const result = allocate([30_000, 20_000, 15_000]);
+    expect(result.sent).toEqual([17_500, 17_500, 15_000]);
+    expect(result.total).toBe(50_000);
+  });
+
+  it('均等枠より短いPDFは全文使用し、余った予算を他へ再配分する', () => {
+    // 均等枠は 50000/3 = 16666。15000文字のPDFは全文使い、余りが他2件へ回る。
+    const result = allocate([30_000, 20_000, 15_000]);
+    expect(result.sent[2]).toBe(15_000);
+    expect(result.sent[0]).toBeGreaterThan(16_666);
+    expect(result.sent[1]).toBeGreaterThan(16_666);
+  });
+
+  it('極端に偏っていても短いPDFが落ちない', () => {
+    const result = allocate([49_999, 1, 1]);
+    expect(result.sent).toEqual([49_998, 1, 1]);
+    expect(result.total).toBe(50_000);
+  });
+
+  it('どのPDFも均等枠に収まらない場合は均等配分し端数を配る', () => {
+    const result = allocate([50_000, 50_000, 50_000]);
+    expect(result.sent).toEqual([16_667, 16_667, 16_666]);
+    expect(result.total).toBe(50_000);
+  });
+
+  it('最終合計が上限を超えない', () => {
+    for (const lengths of [[60_000], [40_000, 30_000], [30_000, 20_000, 15_000], [50_000, 50_000, 50_000]]) {
+      expect(allocate(lengths).total, lengths.join('/')).toBeLessThanOrEqual(50_000);
+    }
+  });
+
+  it('同じ入力なら毎回同じ配分になる', () => {
+    const first = allocate([30_000, 20_000, 15_000]).sent;
+    for (let i = 0; i < 5; i += 1) {
+      expect(allocate([30_000, 20_000, 15_000]).sent).toEqual(first);
+    }
+  });
+
+  it('PDFなしでも既存どおり動作する', () => {
+    const result = allocate([]);
+    expect(result.sent).toEqual([]);
+    expect(result.total).toBe(0);
+    expect(result.warnings.map((warning) => warning.code)).not.toContain('pdf_truncated');
+  });
+
+  it('上限以内の1〜3件は全文のまま既存挙動を変えない', () => {
+    for (const lengths of [[10_000], [10_000, 10_000], [10_000, 10_000, 10_000]]) {
+      const result = allocate(lengths);
+      expect(result.sent, lengths.join('/')).toEqual(lengths);
+      expect(result.warnings.map((warning) => warning.code)).not.toContain('pdf_truncated');
+    }
+  });
+
+  it('切り詰め時のWarningに各PDFの使用文字数を含める', () => {
+    const warning = allocate([30_000, 20_000, 15_000]).warnings
+      .find((entry) => entry.code === 'pdf_truncated');
+    expect(warning?.message).toContain('65000 文字から 50000 文字');
+    expect(warning?.message).toContain('0.pdf 30000→17500');
+    expect(warning?.message).toContain('1.pdf 20000→17500');
+    expect(warning?.message).toContain('2.pdf 15000→15000');
+  });
+
+  it('Evidence照合はAIへ渡した切り詰め後のテキストを対象にする', () => {
+    // truncateHeadTail は先頭と末尾を残して中間を落とすため、
+    // 残る先頭と、落ちる中間の両方に目印を置いて確認する。
+    const head = '先頭に必ず残る文言';
+    const middle = '中間にしかない文言';
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [
+        { url: PDF_A, text: `${head}${'あ'.repeat(60_000)}` },
+        { url: PDF_B, text: `${'い'.repeat(25_000)}${middle}${'う'.repeat(25_000)}` },
+      ],
+      pdfDiscovered: 2,
+      pdfAttempted: 2,
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    });
+
+    const sentA = prepared.input.pdfDocuments[0]?.text ?? '';
+    expect(sentA).toContain(head);
+    expect(validateEvidenceQuotes(validAnalysis({
+      evidence_quotes: [{ source_type: 'pdf', source_url: PDF_A, quote: head }],
+    }), prepared.input).matched).toBe(1);
+
+    // AIへ渡していない範囲の文字列は一致扱いにしない。
+    const sentB = prepared.input.pdfDocuments[1]?.text ?? '';
+    expect(sentB).not.toContain(middle);
+    const notSent = validateEvidenceQuotes(validAnalysis({
+      evidence_quotes: [{ source_type: 'pdf', source_url: PDF_B, quote: middle }],
+    }), prepared.input);
+    expect(notSent.matched).toBe(0);
+    expect(notSent.warnings[0]?.code).toBe('evidence_not_found');
+  });
+
   it('環境変数の入力上限を検証する', () => {
     expect(aiInputLimitsFromEnvironment({ AI_MAX_PDFS: '5' })).toMatchObject({ maxPdfs: 5 });
     expect(() => aiInputLimitsFromEnvironment({ AI_MAX_PDFS: '0' }))
