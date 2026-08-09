@@ -1,7 +1,11 @@
 import type { CollectionExecutionDependencies } from './execute.ts';
 import { executeSourceCollection } from './execute.ts';
 import type { CollectionState } from './state.ts';
-import type { CollectionRunItemResult, CollectionRunReport } from './types.ts';
+import type {
+  ClaudeUsageLimitStop,
+  CollectionRunItemResult,
+  CollectionRunReport,
+} from './types.ts';
 
 export type CollectionBatchSourceOutcome = {
   sourceId: string;
@@ -19,6 +23,8 @@ export type CollectionBatchReport = {
   write: boolean;
   sourcesSelected: number;
   outcomes: CollectionBatchSourceOutcome[];
+  /** Claude CLIの利用上限でバッチを打ち切った場合だけ設定する。 */
+  stopped?: ClaudeUsageLimitStop;
   totals: {
     created: number;
     previewed: number;
@@ -64,6 +70,7 @@ export async function runCollectionBatch(
   // 前のSourceが進めた収集状態を引き継ぐ。一括更新はしない。
   let state = input.state;
   let anyFailure = false;
+  let stopped: ClaudeUsageLimitStop | undefined;
 
   for (const [index, sourceId] of input.sourceIds.entries()) {
     stdout(formatBatchSourceHeader(sourceId, index + 1, input.sourceIds.length));
@@ -83,12 +90,18 @@ export async function runCollectionBatch(
     state = outcome.state;
     if (outcome.exitCode === 1) anyFailure = true;
     outcomes.push(summarizeSource(sourceId, outcome.report, outcome.failure));
+    // 利用上限はClaude全体の状態なので、後続SourceでClaudeを呼び直さず打ち切る。
+    if (outcome.usageLimit !== undefined) {
+      stopped = outcome.usageLimit;
+      break;
+    }
   }
 
   const report: CollectionBatchReport = {
     write: input.write,
     sourcesSelected: input.sourceIds.length,
     outcomes,
+    ...(stopped === undefined ? {} : { stopped }),
     totals: {
       created: sum(outcomes, (outcome) => outcome.created),
       previewed: sum(outcomes, (outcome) => outcome.previewed),

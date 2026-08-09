@@ -1,7 +1,8 @@
 import { tmpdir } from 'node:os';
 import { z } from 'zod';
-import { AiAnalyzerError, AiConfigurationError } from './errors.ts';
+import { AiAnalyzerError, AiConfigurationError, ClaudeUsageLimitError } from './errors.ts';
 import { formatAnalysisInput } from './prompt.ts';
+import { detectClaudeUsageLimit } from './usage-limit.ts';
 import { type ChildProcessRunner, runChildProcess } from './process.ts';
 import {
   administrativeNeedJsonSchema,
@@ -93,6 +94,8 @@ export class ClaudeCliAnalyzer implements AdministrativeNeedAnalyzer {
       maxStderrBytes: this.options.maxStderrBytes ?? 64 * 1024,
     });
     if (result.exitCode !== 0) {
+      const limitMessage = detectClaudeUsageLimit(result.stdout, result.stderr);
+      if (limitMessage !== null) throw new ClaudeUsageLimitError(limitMessage);
       throw new AiAnalyzerError(formatExecutionFailure(result));
     }
     if (result.stdout.trim() === '') {

@@ -27,6 +27,13 @@ export type CollectionRunReport = {
   remainingNewCandidates: number;
   results: CollectionRunItemResult[];
   collectionState: CollectionStateOutcome;
+  /** Claude CLIの利用上限で候補処理を打ち切った場合だけ設定する。 */
+  usageLimit?: ClaudeUsageLimitStop;
+};
+
+/** Claude CLIの利用上限による停止情報。リセット時刻を含む場合がある。 */
+export type ClaudeUsageLimitStop = {
+  message: string;
 };
 
 export type CollectionStateOutcome =

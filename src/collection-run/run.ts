@@ -1,3 +1,4 @@
+import { ClaudeUsageLimitError } from '../ai/errors.ts';
 import { safeNotionRegistrationErrorMessage } from '../notion-register/error-format.ts';
 import type {
   ExistingNotionPage,
@@ -5,6 +6,7 @@ import type {
 } from '../notion-register/types.ts';
 import type { SourceCheckSample } from '../source-check/types.ts';
 import type {
+  ClaudeUsageLimitStop,
   CollectionRunItemResult,
   CollectionRunReport,
   CollectionStateOutcome,
@@ -80,6 +82,7 @@ export async function processCollectedCandidates(
   let newCandidatesFound = 0;
   let processedNewCandidates = 0;
   let remainingNewCandidates = 0;
+  let usageLimit: ClaudeUsageLimitStop | undefined;
   const onResult = input.onResult ?? (() => undefined);
 
   for (const [index, candidate] of input.candidates.entries()) {
@@ -125,6 +128,9 @@ export async function processCollectedCandidates(
     try {
       result = await input.processor(candidate);
     } catch (error) {
+      if (error instanceof ClaudeUsageLimitError) {
+        usageLimit = { message: error.limitMessage };
+      }
       result = {
         status: 'failed',
         officialUrl: candidate.url,
@@ -137,6 +143,8 @@ export async function processCollectedCandidates(
     const item = { candidate, result };
     results.push(item);
     onResult(item, index + 1, input.candidates.length);
+    // 利用上限はClaude全体の状態なので、残りの候補を試さず打ち切る。
+    if (usageLimit !== undefined) break;
   }
 
   return {
@@ -155,6 +163,7 @@ export async function processCollectedCandidates(
       status: 'not_advanced',
       reason: 'Collection state has not been evaluated.',
     },
+    ...(usageLimit === undefined ? {} : { usageLimit }),
   };
 }
 

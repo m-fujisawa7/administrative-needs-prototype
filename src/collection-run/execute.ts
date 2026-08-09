@@ -11,6 +11,7 @@ import { collectSourceCandidates } from '../source-check/index.ts';
 import type { SourceCheckSample } from '../source-check/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
 import {
+  formatClaudeUsageLimitStop,
   formatCollectionRunItem,
   formatCollectionRunStarted,
 } from './format.ts';
@@ -25,6 +26,7 @@ import {
   type CollectionState,
 } from './state.ts';
 import type {
+  ClaudeUsageLimitStop,
   CollectionRunCliOptions,
   CollectionRunReport,
   CollectionStateOutcome,
@@ -56,6 +58,8 @@ export type ExecuteSourceCollectionOutcome = {
   exitCode: 0 | 1;
   /** Source単位の失敗メッセージ。成功時は undefined。 */
   failure?: string;
+  /** Claude CLIの利用上限で打ち切った場合だけ設定する。呼び出し側は後続を止める。 */
+  usageLimit?: ClaudeUsageLimitStop;
 };
 
 /**
@@ -187,11 +191,15 @@ export async function executeSourceCollection(
     dependencies,
     stderr,
   );
+  if (report.usageLimit !== undefined) {
+    stderr(formatClaudeUsageLimitStop(report.usageLimit));
+  }
   const hasFailure = report.results.some((item) => item.result.status === 'failed');
   return {
     report,
     state: finalized.state,
     exitCode: finalized.exitCode === 1 || hasFailure ? 1 : 0,
+    ...(report.usageLimit === undefined ? {} : { usageLimit: report.usageLimit }),
   };
 }
 
@@ -229,6 +237,12 @@ function determineCollectionStateOutcome(
   options: CollectionRunCliOptions,
   runStartedAt: string,
 ): CollectionStateOutcome {
+  if (report.usageLimit !== undefined) {
+    return {
+      status: 'not_advanced',
+      reason: 'Claude CLI usage limit reached.',
+    };
+  }
   if (!options.write) {
     return { status: 'not_advanced', reason: 'Preview mode.' };
   }

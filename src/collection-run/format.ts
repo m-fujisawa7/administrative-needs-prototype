@@ -1,5 +1,6 @@
 import type { CollectionBatchReport } from './batch.ts';
 import type {
+  ClaudeUsageLimitStop,
   CollectionRunCliOptions,
   CollectionRunItemResult,
   CollectionRunReport,
@@ -40,6 +41,20 @@ export function formatCollectionRunStarted(
     String(options.limit),
   );
   return lines.join('\n');
+}
+
+/**
+ * 利用上限で停止したことを1目で分かる形にする。
+ *
+ * raw stdout全体は出さず、Claude CLIが返した利用上限メッセージだけを見せる。
+ */
+export function formatClaudeUsageLimitStop(stop: ClaudeUsageLimitStop): string {
+  return [
+    '[ERROR] Claude CLI usage limit reached.',
+    stop.message,
+    '',
+    'AI processing has been stopped for the rest of this run.',
+  ].join('\n');
 }
 
 export function formatCollectionRunItem(
@@ -211,6 +226,16 @@ export function formatCollectionRunSummary(report: CollectionRunReport): string 
       );
     }
   }
+  if (report.usageLimit !== undefined) {
+    lines.push(
+      '',
+      'Stopped:',
+      'Claude CLI usage limit reached.',
+      report.usageLimit.message,
+      '',
+      'Remaining candidates were not sent to Claude.',
+    );
+  }
   lines.push(
     '',
     'Collection state:',
@@ -290,5 +315,20 @@ export function formatCollectionBatchSummary(report: CollectionBatchReport): str
     `Failed: ${report.totals.failed}`,
     `Remaining new candidates: ${report.totals.remaining}`,
   );
+  if (report.stopped !== undefined) {
+    const notRun = report.sourcesSelected - report.outcomes.length;
+    lines.push(
+      '',
+      'Batch stopped:',
+      'Claude CLI usage limit reached.',
+      report.stopped.message,
+      '',
+      'Collection state:',
+      'Not advanced for the interrupted source.',
+      '',
+      'Sources not started:',
+      String(notRun),
+    );
+  }
   return lines.join('\n');
 }

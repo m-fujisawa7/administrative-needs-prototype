@@ -1,5 +1,5 @@
 import { checkAdministrativeNeed } from '../ai/check.ts';
-import { AiAnalyzerError } from '../ai/errors.ts';
+import { AiAnalyzerError, ClaudeUsageLimitError } from '../ai/errors.ts';
 import type { AiInputLimits } from '../ai/input.ts';
 import { NotionCheckError } from '../notion-check/errors.ts';
 import type {
@@ -86,6 +86,8 @@ export async function registerOneAdministrativeNeed(
       };
     }
   } catch (error) {
+    // 利用上限は1件の失敗ではなくClaude全体の状態なので、呼び出し側が停止できるよう再throwする。
+    if (error instanceof ClaudeUsageLimitError) throw error;
     return failure(input.officialUrl, 'ai_analysis', error);
   }
 
@@ -102,6 +104,7 @@ export async function registerOneAdministrativeNeed(
       trustedPdfDomains: input.trustedPdfDomains ?? [],
     });
   } catch (error) {
+    if (error instanceof ClaudeUsageLimitError) throw error;
     return failure(input.officialUrl, analysisFailureStage(error), error);
   }
 

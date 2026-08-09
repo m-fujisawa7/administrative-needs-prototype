@@ -75,6 +75,8 @@ AI_PROVIDER=claude_cli npm run collect:run -- \
 
 プレビュー、Collector・HTML・PDF・Claude・Notionの失敗、limit残件、手動`--since`では更新しません。全件重複または候補0件の正常なWriteは更新できます。プレビューでは状態ファイル自体も作りません。
 
+Claude CLIの利用上限を検出した場合も、失敗と同じく状態を更新しません。停止した情報源の未処理候補は次回の再実行で処理され、登録済みURLは重複としてスキップされます。利用上限より前に完全成功して条件を満たした別の情報源の状態は、そのまま維持します。
+
 状態ファイルが存在しないことは正常な初回状態です。JSON破損や不正な構造を検出した場合は初期化・上書きせず、Collectorや外部処理を始める前にエラー終了します。内容を確認して、正しいJSONへ手動で復旧してください。
 
 ## 処理順
@@ -88,6 +90,21 @@ AI_PROVIDER=claude_cli npm run collect:run -- \
 7. 条件を満たすWriteだけ状態をatomic write
 
 1件が失敗しても後続候補を処理します。失敗が1件以上、情報源取得失敗、Notion接続失敗、引数・状態不正の場合は終了コード1です。プレビュー・作成・重複スキップだけ、またはlimit残件だけの場合は0ですが、残件があれば状態は進みません。
+
+## Claude CLIの利用上限
+
+Claude CLIが利用上限に達した場合、`ai_analysis`の汎用エラーとして次の候補を試し続けず、その実行を打ち切ります。
+
+```text
+[ERROR] Claude CLI usage limit reached.
+You've hit your limit · resets 10pm (Asia/Tokyo)
+
+AI processing has been stopped for the rest of this run.
+```
+
+`collect:run`では残りの候補へClaudeを呼びません。`collect:batch`では利用上限がClaude全体の状態であるため、後続の情報源も実行せずバッチを終了します。Final summaryの`Created` / `Previewed` / `Duplicates skipped` / `Failed` / `Remaining new candidates`は従来どおり表示し、末尾に停止理由と開始しなかった情報源数を追加します。
+
+すでに作成済みのNotionページはロールバックしません。自動再実行、リセット時刻までの待機、他Providerへのfallbackは行いません。
 
 ## 安全策と制約
 
