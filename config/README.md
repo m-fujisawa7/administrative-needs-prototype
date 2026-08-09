@@ -106,12 +106,14 @@ sources:
 | --- | --- |
 | `link_selector` | 一覧ページから個別ページへのリンクを抽出するCSSセレクター候補 |
 | `content_selector` | 個別ページの本文を抽出するCSSセレクター候補 |
-| `category_includes` | RSSカテゴリなどの許可条件 |
-| `title_excludes` | 結果公表など、明らかな対象外タイトルの除外条件 |
+| `category_includes` | RSSカテゴリの許可条件。`collector_type: rss` だけに適用 |
+| `title_excludes` | 結果公表など、明らかな対象外タイトルの除外条件。`collector_type: rss` だけに適用 |
 | `document_type_hints` | 想定される文書種別 |
 | `notes` | 情報源の特徴、登録理由、注意事項 |
 | `last_verified_at` | 人がURLを最後に確認した日。`YYYY-MM-DD`形式 |
 | `verification_status` | URLの確認状態 |
+
+`category_includes` と `title_excludes` は、RSS解析（`../src/source-check/rss-checker.ts`）だけが読み取ります。`list_page` など他の `collector_type` に設定しても無視され、台帳の検証もエラーにならないため、設定したつもりで効いていない状態になります。一覧ページで結果公表などを除きたい場合は、対象外の傾向を `notes` に記録し、後続のAI判定で選別してください。
 
 ### 許可される値
 
