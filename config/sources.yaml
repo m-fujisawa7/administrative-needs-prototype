@@ -41,6 +41,14 @@ organizations:
     enabled: true
     notes: 官民連携の課題提示、入札・公募型プロポーザル、デジタル化施策、スタートアップ・産学連携の行政ニーズを収集する対象自治体。KYOTO CITY OPEN LABOのopen-labo.city.kyoto.lg.jpはcity.kyoto.lg.jpのサブドメインのため、別組織に分けず同一組織として管理する
 
+  - id: miyagi-prefecture
+    name: 宮城県
+    organization_type: prefecture
+    prefecture: 宮城県
+    official_domain: pref.miyagi.jp
+    enabled: true
+    notes: 情報政策・IT産業、公募型企画提案、行政運営改革の行政ニーズを収集する対象都道府県
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -366,5 +374,58 @@ sources:
       - スタートアップ支援
       - 産学連携
     notes: 産業観光局スタートアップ・産学連携推進室の組織ページ。#page_left直下に8つのulがあり、全て拾うと258件中226件が恒久カテゴリのアーカイブになるため、報道発表資料と新着情報の2ブロックだけを対象にする。ulにclassが無いので、並び順ではなく直前のh2の見出し文字列で位置を特定する。スタートアップ支援やイベント告知も含むため優先度は中。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: miyagi-it-policy
+    organization_id: miyagi-prefecture
+    name: 情報政策・IT産業
+    url: https://www.pref.miyagi.jp/life/7/28/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.idx_menu_cnt > ul > li > a"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - IT産業支援
+      - 実証事業
+      - 補助金
+    notes: 情報政策とIT産業の掲載ページ一覧。Digital Frontier MIYAGIの先端技術実証事業や商品開発支援、情報通信関連企業立地促進奨励金などを含む。90件すべてに掲載日がある。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: miyagi-proposal-list
+    organization_id: miyagi-prefecture
+    name: 公募型企画提案（プロポーザル）方式・総合評価落札方式
+    url: https://www.pref.miyagi.jp/soshiki/keiyaku/r7puropo.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "table.datatable > tbody > tr > td a[href]:not([href$='index.html'])"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型企画提案
+      - プロポーザル
+      - 総合評価落札
+    notes: 全庁の公募型企画提案を集約する一覧。各行に案件名称と発注所属の2リンクがあるため、課室トップpage（index.html）を除外して案件名称だけを候補にする。公告日が「R8.8.5」の和暦略記のため、parseDateCandidateへ略記対応を追加してある。URLはr7puropo.htmlだが年度別ではなく現行の一覧で、r8puropo.htmlは存在しない。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: miyagi-administrative-reform-plan
+    organization_id: miyagi-prefecture
+    name: みやぎ行政運営・働き方改革推進プラン
+    url: https://www.pref.miyagi.jp/site/gyoukaku/goukakuplan_r8.html
+    collector_type: single_page
+    source_category: plan
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 行政改革
+      - 働き方改革
+      - 計画
+    notes: 行政運営と働き方改革の推進プラン。計画本文PDFと過年度アーカイブへのリンクだけで新着一覧を持たない。現在のCollectorはsingle_page未対応のため、参考情報源として無効状態で保持する。
     last_verified_at: "2026-08-10"
     verification_status: verified
