@@ -359,12 +359,12 @@ sources:
     source_category: policy_signal
     priority: medium
     enabled: true
-    link_selector: "#page_left > ul:nth-of-type(1) > li > a, #page_left > ul:nth-of-type(2) > li > a"
+    link_selector: "#page_left h2:contains('報道発表資料') + ul > li > a, #page_left h2:contains('新着情報') + ul > li > a"
     content_selector: "#page_left"
     document_type_hints:
       - 公募型プロポーザル
       - スタートアップ支援
       - 産学連携
-    notes: 産業観光局スタートアップ・産学連携推進室の組織ページ。#page_left直下に8つのulがあり、全て拾うと258件中226件が恒久カテゴリのアーカイブになるため、先頭2ブロックの報道発表資料と新着情報だけを対象にする。スタートアップ支援やイベント告知も含むため優先度は中。
+    notes: 産業観光局スタートアップ・産学連携推進室の組織ページ。#page_left直下に8つのulがあり、全て拾うと258件中226件が恒久カテゴリのアーカイブになるため、報道発表資料と新着情報の2ブロックだけを対象にする。ulにclassが無いので、並び順ではなく直前のh2の見出し文字列で位置を特定する。スタートアップ支援やイベント告知も含むため優先度は中。
     last_verified_at: "2026-08-10"
     verification_status: verified
