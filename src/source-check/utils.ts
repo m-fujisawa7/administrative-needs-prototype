@@ -25,6 +25,19 @@ export function parseDateCandidate(value: string): string | null {
     return formatDate(2018 + Number(reiwa[1]), Number(reiwa[2]), Number(reiwa[3]));
   }
 
+  // 宮城県のプロポーザル一覧のように、公告日を「R8.8.5」と省略表記する自治体がある。
+  // バージョン番号などの誤検知を避けるため、行頭・空白・括弧に続く独立したトークンだけを見る。
+  const reiwaAbbreviation = normalized.match(
+    /(?:^|[\s（(【[])R(\d{1,2})\.(\d{1,2})\.(\d{1,2})(?![\d.])/u,
+  );
+  if (reiwaAbbreviation !== null) {
+    return formatDate(
+      2018 + Number(reiwaAbbreviation[1]),
+      Number(reiwaAbbreviation[2]),
+      Number(reiwaAbbreviation[3]),
+    );
+  }
+
   const rfc822 = normalized.match(/\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(20\d{2})\b/iu);
   if (rfc822 !== null) {
     const month = MONTHS[rfc822[2]!.toLocaleLowerCase('en')];

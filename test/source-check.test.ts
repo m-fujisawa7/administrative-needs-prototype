@@ -23,6 +23,7 @@ import {
 } from '../src/source-check/index.ts';
 import { analyzeListPage } from '../src/source-check/list-page-checker.ts';
 import { analyzeRss } from '../src/source-check/rss-checker.ts';
+import { parseDateCandidate } from '../src/source-check/utils.ts';
 import type {
   FetchedText,
   SourceCheckResult,
@@ -463,3 +464,34 @@ function result(status: SourceCheckResult['status'], sourceEnabled: boolean): So
     checkedAt: '2026-08-05T00:00:00.000Z',
   };
 }
+
+describe('公開日候補の解析', () => {
+  it.each([
+    ['R8.8.5', '2026-08-05'],
+    ['R8.9.4 PM3時', '2026-09-04'],
+    ['R8.8.5 正午', '2026-08-05'],
+    ['R8.12.31', '2026-12-31'],
+    ['R10.1.9', '2028-01-09'],
+  ])('和暦略記 %s を解析する', (value, expected) => {
+    expect(parseDateCandidate(value)).toBe(expected);
+  });
+
+  it('行全体からは先に現れる公告日を採用する', () => {
+    const row = '117 令和8年度県産広葉樹プロモーション業務 林業振興課 R8.8.5 R8.9.4 PM3時';
+    expect(parseDateCandidate(row)).toBe('2026-08-05');
+  });
+
+  it('既存の西暦・令和フル表記の解析を変えない', () => {
+    expect(parseDateCandidate('2026年8月5日')).toBe('2026-08-05');
+    expect(parseDateCandidate('2026-08-05')).toBe('2026-08-05');
+    expect(parseDateCandidate('令和8年8月5日')).toBe('2026-08-05');
+    expect(parseDateCandidate('2026年8月5日 R8.9.4')).toBe('2026-08-05');
+  });
+
+  it.each(['R8', 'AR8.1.2', 'R2.0.1', 'R8.13.1', 'バージョンR1.2.3の資料'])(
+    '和暦として妥当でない %s は解析しない',
+    (value) => {
+      expect(parseDateCandidate(value)).toBeNull();
+    },
+  );
+});
