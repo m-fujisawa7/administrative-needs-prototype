@@ -33,6 +33,14 @@ organizations:
     enabled: true
     notes: DX、創造的復興、産業政策の行政ニーズを収集する対象都道府県
 
+  - id: kyoto-city
+    name: 京都市
+    organization_type: designated_city
+    prefecture: 京都府
+    official_domain: city.kyoto.lg.jp
+    enabled: true
+    notes: 官民連携の課題提示、入札・公募型プロポーザル、デジタル化施策、スタートアップ・産学連携の行政ニーズを収集する対象自治体。KYOTO CITY OPEN LABOのopen-labo.city.kyoto.lg.jpはcity.kyoto.lg.jpのサブドメインのため、別組織に分けず同一組織として管理する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -287,4 +295,76 @@ sources:
       - 実証支援
     notes: 産業DX、スタートアップ、実証支援、公募型プロポーザルを含む新着情報。幅広い産業支援情報を含むため優先度は中。
     last_verified_at: "2026-08-07"
+    verification_status: verified
+
+  - id: kyoto-open-labo-issues
+    organization_id: kyoto-city
+    name: KYOTO CITY OPEN LABO 提案募集中の課題
+    url: https://open-labo.city.kyoto.lg.jp/issue/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "ul.box_list.issue > li > div.heading a"
+    content_selector: "#content"
+    document_type_hints:
+      - 民間提案募集
+      - 行政課題
+      - 社会課題
+    notes: 京都市が行政課題を提示し、民間から解決策を募集する官民連携プラットフォーム。一覧に掲載日が無いため候補は毎回すべて期間内として扱われ、Notion登録済みURLで除外される。リンク文字列の先頭に「募集中」「成立・受付継続」の状態が付く。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kyoto-sogo-procurement
+    organization_id: kyoto-city
+    name: 入札・公募型プロポーザル情報 総合企画局
+    url: https://www.city.kyoto.lg.jp/menu5/category/70-3-3-0-0-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#page_left ul.catlst > li > a"
+    content_selector: "#page_left"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 業務委託
+      - 受託候補者選定
+    notes: 入札・公募型プロポーザル情報は局別の階層で、入口の70-3-0-0-0-0-0-0-0-0.htmlには局へのリンク14件しかなく個別案件を取得できない。DX・デジタル化を所管する総合企画局のカテゴリを登録する。一覧は320件のアーカイブだが全件に掲載日があるため期間フィルタで直近分だけが対象になる。実施結果・審査結果の記事も含むが、title_excludesはRSSにしか適用されないため後続のAI判定で選別する。他13局は未登録。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kyoto-digital-promotion
+    organization_id: kyoto-city
+    name: デジタル化・情報化の推進 お知らせ
+    url: https://www.city.kyoto.lg.jp/menu5/category/79-3-2-1-0-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#page_left ul.catlst > li > a"
+    content_selector: "#page_left"
+    document_type_hints:
+      - DX推進方針
+      - 実証実験
+      - デジタル施策
+    notes: 総合企画局が所管するデジタル化・情報化の推進の掲載ページ一覧。DX推進のための基本方針やAIボイスボット実証実験の結果など上流の政策シグナルを含むが、9件中6件はスマートフォン講習会やSSL/TLSの案内など恒久的な市民向け情報で更新頻度も低いため優先度は中。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kyoto-startup-industry-academia
+    organization_id: kyoto-city
+    name: スタートアップ・産学連携推進室
+    url: https://www.city.kyoto.lg.jp/sankan/soshiki/7-9-0-0-0.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#page_left > ul:nth-of-type(1) > li > a, #page_left > ul:nth-of-type(2) > li > a"
+    content_selector: "#page_left"
+    document_type_hints:
+      - 公募型プロポーザル
+      - スタートアップ支援
+      - 産学連携
+    notes: 産業観光局スタートアップ・産学連携推進室の組織ページ。#page_left直下に8つのulがあり、全て拾うと258件中226件が恒久カテゴリのアーカイブになるため、先頭2ブロックの報道発表資料と新着情報だけを対象にする。スタートアップ支援やイベント告知も含むため優先度は中。
+    last_verified_at: "2026-08-10"
     verification_status: verified
