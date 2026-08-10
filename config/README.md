@@ -112,6 +112,9 @@ sources:
 | `notes` | 情報源の特徴、登録理由、注意事項 |
 | `last_verified_at` | 人がURLを最後に確認した日。`YYYY-MM-DD`形式 |
 | `verification_status` | URLの確認状態 |
+| `initial_since` | この情報源だけ初回収集の開始日を変える場合に指定する。`YYYY-MM-DD`形式 |
+
+`initial_since` は、過去分が非常に多く初回からすべてをAI解析したくない情報源で使います。省略した場合は共通の初回収集開始日（`2026-07-01`）を使います。収集状態ができた後の通常巡回には影響せず、そのときは従来どおり前回成功日時の3日前が対象期間の開始になります。手動の`--since`を指定した場合は`--since`が優先されます。詳細は `../src/collection-run/README.md` を参照してください。
 
 `category_includes` と `title_excludes` は、RSS解析（`../src/source-check/rss-checker.ts`）だけが読み取ります。`list_page` など他の `collector_type` に設定しても無視され、台帳の検証もエラーにならないため、設定したつもりで効いていない状態になります。一覧ページで結果公表などを除きたい場合は、対象外の傾向を `notes` に記録し、後続のAI判定で選別してください。
 

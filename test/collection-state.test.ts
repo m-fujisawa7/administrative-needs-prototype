@@ -102,3 +102,46 @@ describe('収集stateファイル', () => {
     ]);
   });
 });
+
+describe('Sourceごとの初回収集開始日', () => {
+  const runStartedAt = new Date('2026-08-07T03:00:00.000Z');
+
+  it('initial_since未指定でstateなしなら2026-07-01から開始する', () => {
+    expect(resolveCollectionPeriod(runStartedAt, null)).toMatchObject({
+      effectiveSince: '2026-07-01',
+      initialCollectionSince: '2026-07-01',
+      usedManualSince: false,
+    });
+  });
+
+  it('initial_sinceがありstateなしならinitial_sinceから開始する', () => {
+    expect(resolveCollectionPeriod(runStartedAt, null, undefined, '2026-08-01')).toMatchObject({
+      effectiveSince: '2026-08-01',
+      initialCollectionSince: '2026-08-01',
+      usedManualSince: false,
+    });
+  });
+
+  it('stateがあればinitial_sinceを使わず前回成功の3日前を採用する', () => {
+    expect(resolveCollectionPeriod(
+      runStartedAt,
+      '2026-08-05T09:00:00+09:00',
+      undefined,
+      '2026-08-01',
+    ).effectiveSince).toBe('2026-08-02T09:00:00+09:00');
+  });
+
+  it('--sinceはinitial_sinceより優先され、手動バックフィル扱いになる', () => {
+    expect(resolveCollectionPeriod(runStartedAt, null, '2026-07-15', '2026-08-01')).toMatchObject({
+      effectiveSince: '2026-07-15',
+      usedManualSince: true,
+    });
+  });
+
+  it('不正な形式のinitial_sinceを拒否する', () => {
+    expect(() => resolveCollectionPeriod(runStartedAt, null, undefined, '2026/08/01'))
+      .toThrow('initial_since');
+    expect(() => resolveCollectionPeriod(runStartedAt, null, undefined, '2026-02-30'))
+      .toThrow('initial_since');
+  });
+});

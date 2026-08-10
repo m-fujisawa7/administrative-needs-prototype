@@ -605,3 +605,93 @@ function dependencies(options: {
     stderr: (message: string) => options.stderr?.push(message),
   };
 }
+
+describe('Sourceごとのinitial_since', () => {
+  it('stateなしのWriteでinitial_sinceを初回開始日に使い、完全成功ならstateを進める', async () => {
+    const stdout: string[] = [];
+    const writeState = vi.fn(async () => undefined);
+    const exitCode = await runCollection([...args(), '--write'], {
+      ...dependencies({
+        stdout,
+        writeState,
+        registerOne: async (input) => created(input.officialUrl),
+      }),
+      loadRegistry: async () => registryWithInitialSince('2026-08-01'),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.join('\n')).toContain('Initial collection since:\n2026-08-01');
+    expect(stdout.join('\n')).toContain('Effective since:\n2026-08-01');
+    expect(writeState).toHaveBeenCalledWith({
+      'osaka-digital-rss': { last_successful_check_at: '2026-08-07T12:00:00+09:00' },
+    });
+  });
+
+  it('initial_since未指定の既存Sourceは初回開始日を2026-07-01のままにする', async () => {
+    const stdout: string[] = [];
+    await runCollection(args(), dependencies({
+      stdout,
+      registerOne: async (input) => previewed(input.officialUrl),
+    }));
+
+    expect(stdout.join('\n')).toContain('Initial collection since:\n2026-07-01');
+    expect(stdout.join('\n')).toContain('Effective since:\n2026-07-01');
+  });
+
+  it('stateがあればinitial_sinceを使わず前回成功の3日前から開始する', async () => {
+    const stdout: string[] = [];
+    await runCollection(args(), {
+      ...dependencies({
+        stdout,
+        registerOne: async (input) => previewed(input.officialUrl),
+      }),
+      loadRegistry: async () => registryWithInitialSince('2026-08-01'),
+      readState: async () => ({
+        'osaka-digital-rss': { last_successful_check_at: '2026-08-05T09:00:00+09:00' },
+      }),
+    });
+
+    expect(stdout.join('\n')).not.toContain('Initial collection since:');
+    expect(stdout.join('\n')).toContain('Effective since:\n2026-08-02T09:00:00+09:00');
+  });
+
+  it('--sinceはinitial_sinceより優先され、stateを進めない', async () => {
+    const stdout: string[] = [];
+    const writeState = vi.fn();
+    await runCollection([...args(), '--since', '2026-07-15', '--write'], {
+      ...dependencies({
+        stdout,
+        writeState,
+        registerOne: async (input) => created(input.officialUrl),
+      }),
+      loadRegistry: async () => registryWithInitialSince('2026-08-01'),
+    });
+
+    expect(stdout.join('\n')).toContain('Effective since:\n2026-07-15');
+    expect(writeState).not.toHaveBeenCalled();
+  });
+});
+
+function registryWithInitialSince(initialSince: string) {
+  return validateSourceRegistry({
+    version: 1,
+    organizations: [{
+      id: 'osaka-city',
+      name: '大阪市',
+      organization_type: 'designated_city',
+      official_domain: 'city.osaka.lg.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'osaka-digital-rss',
+      organization_id: 'osaka-city',
+      name: 'デジタル統括室 RSS',
+      url: 'https://www.city.osaka.lg.jp/rss.xml',
+      collector_type: 'rss',
+      source_category: 'digital_news',
+      priority: 'high',
+      enabled: true,
+      initial_since: initialSince,
+    }],
+  });
+}

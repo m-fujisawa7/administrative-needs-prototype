@@ -7,7 +7,6 @@ import type {
 } from './types.ts';
 import {
   COLLECTION_LOOKBACK_DAYS,
-  INITIAL_COLLECTION_SINCE,
   type CollectionPeriod,
 } from './state.ts';
 
@@ -28,7 +27,7 @@ export function formatCollectionRunStarted(
     period.previousSuccessfulCheck ?? 'None',
   ];
   if (period.previousSuccessfulCheck === null) {
-    lines.push('', 'Initial collection since:', INITIAL_COLLECTION_SINCE);
+    lines.push('', 'Initial collection since:', period.initialCollectionSince);
   } else if (!period.usedManualSince) {
     lines.push('', 'Lookback:', `${COLLECTION_LOOKBACK_DAYS} days`);
   }

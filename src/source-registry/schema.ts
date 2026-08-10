@@ -84,6 +84,8 @@ export const sourceSchema = z.strictObject({
   notes: z.string().trim().min(1).optional(),
   last_verified_at: z.iso.date().optional(),
   verification_status: z.enum(VERIFICATION_STATUSES).optional(),
+  /** この情報源だけ初回収集の開始日を変える場合に指定する。省略時は共通の初回収集開始日を使う。 */
+  initial_since: z.iso.date().optional(),
 });
 
 export const sourceRegistrySchema = z

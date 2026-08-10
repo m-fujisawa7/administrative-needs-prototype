@@ -393,6 +393,7 @@ sources:
     source_category: digital_news
     priority: high
     enabled: true
+    initial_since: "2026-08-01"
     link_selector: "div.idx_menu_cnt > ul > li > a"
     content_selector: "#tmp_contents"
     document_type_hints:
@@ -411,6 +412,7 @@ sources:
     source_category: proposal
     priority: high
     enabled: true
+    initial_since: "2026-08-01"
     link_selector: "table.datatable > tbody > tr > td a[href]:not([href$='index.html'])"
     content_selector: "#tmp_contents"
     document_type_hints:

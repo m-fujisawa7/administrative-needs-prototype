@@ -114,3 +114,46 @@ function mutableRegistry(): MutableRegistry {
 // 公開型が意図どおり推論できることを型検査にも含める。
 const _typeCheck: SourceRegistry | undefined = undefined;
 void _typeCheck;
+
+describe('initial_sinceの検証', () => {
+  it('YYYY-MM-DD形式のinitial_sinceを受理する', () => {
+    const registry = validateSourceRegistry(registryWithInitialSince('2026-08-01'));
+    expect(registry.sources[0]?.initial_since).toBe('2026-08-01');
+  });
+
+  it('initial_since未指定を従来どおり受理する', () => {
+    const registry = validateSourceRegistry(registryWithInitialSince(undefined));
+    expect(registry.sources[0]?.initial_since).toBeUndefined();
+  });
+
+  it.each(['2026/08/01', '2026-02-30', '20260801', '2026-13-01', ''])(
+    '不正なinitial_since %s を拒否する',
+    (value) => {
+      expect(() => validateSourceRegistry(registryWithInitialSince(value))).toThrow();
+    },
+  );
+});
+
+function registryWithInitialSince(initialSince: string | undefined): unknown {
+  return {
+    version: 1,
+    organizations: [{
+      id: 'osaka-city',
+      name: '大阪市',
+      organization_type: 'designated_city',
+      official_domain: 'city.osaka.lg.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'osaka-digital-rss',
+      organization_id: 'osaka-city',
+      name: 'デジタル統括室 RSS',
+      url: 'https://www.city.osaka.lg.jp/rss.xml',
+      collector_type: 'rss',
+      source_category: 'digital_news',
+      priority: 'high',
+      enabled: true,
+      ...(initialSince === undefined ? {} : { initial_since: initialSince }),
+    }],
+  };
+}

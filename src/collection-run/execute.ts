@@ -92,6 +92,7 @@ export async function executeSourceCollection(
     input.runStartedAt,
     previousSuccessfulCheck,
     options.since,
+    source.initial_since,
   );
   stdout(formatCollectionRunStarted(options, period));
 

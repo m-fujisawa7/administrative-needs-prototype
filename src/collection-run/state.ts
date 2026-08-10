@@ -22,6 +22,8 @@ export type CollectionPeriod = {
   runStartedAt: string;
   previousSuccessfulCheck: string | null;
   usedManualSince: boolean;
+  /** この情報源で実際に採用する初回収集開始日。initial_since 未指定なら共通の既定値。 */
+  initialCollectionSince: string;
 };
 
 export class CollectionStateError extends Error {
@@ -73,47 +75,62 @@ export async function writeCollectionStateAtomic(
   }
 }
 
+/**
+ * 対象期間を決める。
+ *
+ * 優先順位は --since、前回成功日時の3日前、情報源の initial_since、共通の初回収集開始日。
+ * initial_since は初回収集の開始位置だけを変える設定で、状態ができた後の通常巡回では使わない。
+ */
 export function resolveCollectionPeriod(
   runStartedAt: Date,
   previousSuccessfulCheck: string | null,
   manualSince?: string,
+  initialSince?: string,
 ): CollectionPeriod {
   const formattedRunStartedAt = formatJapanTimestamp(runStartedAt);
+  const initialCollectionSince = initialSince === undefined
+    ? INITIAL_COLLECTION_SINCE
+    : parseSinceDate(initialSince, 'initial_since');
+
   if (manualSince !== undefined) {
     return {
       effectiveSince: parseSinceDate(manualSince),
       runStartedAt: formattedRunStartedAt,
       previousSuccessfulCheck,
       usedManualSince: true,
+      initialCollectionSince,
     };
   }
   if (previousSuccessfulCheck === null) {
     return {
-      effectiveSince: INITIAL_COLLECTION_SINCE,
+      effectiveSince: initialCollectionSince,
       runStartedAt: formattedRunStartedAt,
       previousSuccessfulCheck: null,
       usedManualSince: false,
+      initialCollectionSince,
     };
   }
 
   const lookback = new Date(Date.parse(previousSuccessfulCheck));
   lookback.setUTCDate(lookback.getUTCDate() - COLLECTION_LOOKBACK_DAYS);
+  // 通常巡回では initial_since を使わず、従来どおり共通の初回収集開始日で丸める。
   const initial = new Date(`${INITIAL_COLLECTION_SINCE}T00:00:00+09:00`);
   return {
     effectiveSince: formatJapanTimestamp(lookback < initial ? initial : lookback),
     runStartedAt: formattedRunStartedAt,
     previousSuccessfulCheck,
     usedManualSince: false,
+    initialCollectionSince,
   };
 }
 
-export function parseSinceDate(value: string): string {
+export function parseSinceDate(value: string, label = '--since'): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new CollectionStateError('--since must use YYYY-MM-DD format.');
+    throw new CollectionStateError(`${label} must use YYYY-MM-DD format.`);
   }
   const date = new Date(`${value}T00:00:00+09:00`);
   if (!Number.isFinite(date.getTime()) || formatJapanDate(date) !== value) {
-    throw new CollectionStateError('--since must be a valid date in YYYY-MM-DD format.');
+    throw new CollectionStateError(`${label} must be a valid date in YYYY-MM-DD format.`);
   }
   return value;
 }
