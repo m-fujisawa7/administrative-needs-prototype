@@ -57,6 +57,14 @@ organizations:
     enabled: true
     notes: 全庁の公募・募集、DX推進、スタートアップ・企業立地の行政ニーズを収集する対象都道府県
 
+  - id: yokohama-city
+    name: 横浜市
+    organization_type: designated_city
+    prefecture: 神奈川県
+    official_domain: city.yokohama.lg.jp
+    enabled: true
+    notes: 全庁の発注情報、共創フロント、サウンディング調査の行政ニーズを収集する対象自治体。YOKOHAMA Hack!のhack.city.yokohama.lg.jpはcity.yokohama.lg.jpのサブドメインのため、別組織に分けず同一組織として管理する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -507,5 +515,93 @@ sources:
       - 官民連携
       - 協働団体募集
     notes: 県が提案する連携・協働活動へ団体を募集する制度の説明ページ。HTMLの一覧を持たず、募集事業一覧はfiles/R8oshinagakiplan.pdfのPDF1件だけで提供される。現在のCollectorはsingle_page未対応のため、参考情報源として無効状態で保持する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: yokohama-procurement-rss
+    organization_id: yokohama-city
+    name: プロポーザル等の発注情報 RSS
+    url: https://www.city.yokohama.lg.jp/business/nyusatsu/kakukukyoku/rss_news.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: true
+    content_selector: "#tmp_contents"
+    title_excludes:
+      - 質問回答
+      - 入札結果
+      - 契約結果
+      - 特定結果
+      - 電子入札に移行
+      - 締切日時等変更
+    document_type_hints:
+      - 公募型プロポーザル
+      - RFI
+      - 業務委託
+    notes: 全庁の発注情報を集約するRSS。RFIも同じRSSに載るため、局別階層のRFI一覧を別登録しなくても取得できる。カテゴリ要素が無いためcategory_includesは使えず、公告後の続報が半数以上を占めるのでtitle_excludesで除外する。実データ32件のうち19件が除外され13件が残ることを確認済み。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: yokohama-sounding
+    organization_id: yokohama-city
+    name: サウンディング調査
+    url: https://www.city.yokohama.lg.jp/business/kyoso/kyosofront/sounding/sounding.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table tbody > tr > td:nth-child(3) a[href]:not([href$='.pdf'])"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - サウンディング型市場調査
+      - 官民対話
+      - 民間提案
+    notes: 全庁のサウンディング型市場調査を集約する93行の表。件名列はリンクではなく、記者発表資料列の「詳細は局HP」が案件ページを指すため、その列だけを候補にする。対話結果の概要列は完了案件のため除外する。リンク文字列が「局HP」になるのはHatch Technology NAGOYAと同じで、案件名は個別ページ取得時に確認する。対話実施時期がR8年9月のように年月のみでparseDateCandidateが解釈できないため、候補は掲載日なしとして扱われる。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: yokohama-hack-needs
+    organization_id: yokohama-city
+    name: YOKOHAMA Hack! ニーズリスト
+    url: https://hack.city.yokohama.lg.jp/needs
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 行政課題
+      - 実証実験募集
+      - アイデア募集
+    notes: 職員が提示する行政ニーズの一覧。一覧側には掲載日、所属、状態、概要が載るが、案件リンクがすべてhack.city.yokohama.lg.jp/register?redirect=へ向かい、needs/10005を直接開いてもregisterへリダイレクトされる。認証後ページはAIへ送信しない方針のため、取得できるようになるまで無効状態で保持する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: yokohama-theme-front
+    organization_id: yokohama-city
+    name: テーマ型共創フロント
+    url: https://www.city.yokohama.lg.jp/business/kyoso/kyosofront/front/syousai/theme-front.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 民間提案募集
+      - 行政課題
+    notes: 市が募集テーマを提示し民間提案を募る一覧。37行の表だが募集テーマのリンク先が44件すべてtheme-front.files配下のPDF直リンクで、テーマごとのHTML個別ページが無い。現在の取得は個別HTMLページとその添付PDFを前提とするため、無効状態で保持する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: yokohama-rfi-list
+    organization_id: yokohama-city
+    name: RFI一覧
+    url: https://www.city.yokohama.lg.jp/business/nyusatsu/kakukukyoku/2026/RFI/
+    collector_type: list_page
+    source_category: rfi
+    priority: medium
+    enabled: false
+    document_type_hints:
+      - RFI
+      - 情報提供依頼
+    notes: 年度別RFIの入口。政策経営・国際戦略局、こども青少年局、健康福祉局、教育委員会事務局の4局へのリンクだけで個別案件を持たない。RFIはyokohama-procurement-rssのRSSにも載るため、局別に登録せず無効状態で保持する。
     last_verified_at: "2026-08-10"
     verification_status: verified
