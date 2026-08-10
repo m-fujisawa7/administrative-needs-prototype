@@ -49,6 +49,14 @@ organizations:
     enabled: true
     notes: 情報政策・IT産業、公募型企画提案、行政運営改革の行政ニーズを収集する対象都道府県
 
+  - id: aomori-prefecture
+    name: 青森県
+    organization_type: prefecture
+    prefecture: 青森県
+    official_domain: pref.aomori.lg.jp
+    enabled: true
+    notes: 全庁の公募・募集、DX推進、スタートアップ・企業立地の行政ニーズを収集する対象都道府県
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -427,5 +435,75 @@ sources:
       - 働き方改革
       - 計画
     notes: 行政運営と働き方改革の推進プラン。計画本文PDFと過年度アーカイブへのリンクだけで新着一覧を持たない。現在のCollectorはsingle_page未対応のため、参考情報源として無効状態で保持する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: aomori-boshu-list
+    organization_id: aomori-prefecture
+    name: 公募・募集 新着情報一覧
+    url: https://www.pref.aomori.lg.jp/boshu/index_1.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "section.page05.ichiran > div.inner > ul.ds > li > a"
+    content_selector: "section.page05"
+    document_type_hints:
+      - 企画提案
+      - 企画競争
+      - 公募
+    notes: 全庁の公募・募集を集約する一覧。入口の/boshu/は掲載日を持つが12件で6日分しか保持せず回転が速いため、30件を保持するindex_1.htmlを登録する。この一覧には掲載日が無く、候補は毎回すべて期間内として扱われるが、Notion登録済みURLはHTML取得とClaude解析の前に除外される。index_2.html以降のページャはCollectorが追わない。DX推進課と企業立地・創出課の案件はここにも出るため、その2情報源と候補が重複する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: aomori-dx-promotion
+    organization_id: aomori-prefecture
+    name: DX推進課
+    url: https://www.pref.aomori.lg.jp/soshiki/seisaku/dxsuishin/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "section.page04 > div.inner > ul > li > a"
+    content_selector: "section.page05"
+    document_type_hints:
+      - 企画提案
+      - DX施策
+      - デジタル人材育成
+    notes: DX推進課の新着情報12件。掲載日はすべて取得できる。同じページのul.dsは青森県DX推進プランなど恒久的な計画ページのため候補に含めない。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: aomori-industry-location
+    organization_id: aomori-prefecture
+    name: 企業立地・創出課
+    url: https://www.pref.aomori.lg.jp/soshiki/sangyo/richi/index.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "section.page04 > div.inner > ul > li > a"
+    content_selector: "section.page05"
+    document_type_hints:
+      - スタートアップ支援
+      - 課題実証
+      - 企業立地
+    notes: 企業立地・創出課の新着情報12件。あおもりFOCの課題実証事業者募集やスタートアップ支援を含むが、交流イベントの参加者募集も多いため優先度は中。同じページのul.dsは産業立地ガイドなど恒久ページのため候補に含めない。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: aomori-collaboration-plan
+    organization_id: aomori-prefecture
+    name: 連携・協働おしながきプラン
+    url: https://www.pref.aomori.lg.jp/soshiki/soumu/gyokei/oshinagaki.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: "section.page05"
+    document_type_hints:
+      - 官民連携
+      - 協働団体募集
+    notes: 県が提案する連携・協働活動へ団体を募集する制度の説明ページ。HTMLの一覧を持たず、募集事業一覧はfiles/R8oshinagakiplan.pdfのPDF1件だけで提供される。現在のCollectorはsingle_page未対応のため、参考情報源として無効状態で保持する。
     last_verified_at: "2026-08-10"
     verification_status: verified
