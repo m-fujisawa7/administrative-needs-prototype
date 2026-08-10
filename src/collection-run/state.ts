@@ -79,7 +79,9 @@ export async function writeCollectionStateAtomic(
  * 対象期間を決める。
  *
  * 優先順位は --since、前回成功日時の3日前、情報源の initial_since、共通の初回収集開始日。
- * initial_since は初回収集の開始位置だけを変える設定で、状態ができた後の通常巡回では使わない。
+ * initial_since は初回収集の開始位置であると同時に自動収集の下限日でもあり、
+ * 通常巡回の3日前がそれより前になる場合も initial_since へ丸める。
+ * 手動バックフィルの --since だけはこの下限の対象外で、より前へ遡れる。
  */
 export function resolveCollectionPeriod(
   runStartedAt: Date,
@@ -113,8 +115,9 @@ export function resolveCollectionPeriod(
 
   const lookback = new Date(Date.parse(previousSuccessfulCheck));
   lookback.setUTCDate(lookback.getUTCDate() - COLLECTION_LOOKBACK_DAYS);
-  // 通常巡回では initial_since を使わず、従来どおり共通の初回収集開始日で丸める。
-  const initial = new Date(`${INITIAL_COLLECTION_SINCE}T00:00:00+09:00`);
+  // initial_since は自動収集の下限日でもあるため、通常巡回の3日前もここで丸める。
+  // 手動の --since は上の分岐で返しており、この下限の対象にしない。
+  const initial = new Date(`${initialCollectionSince}T00:00:00+09:00`);
   return {
     effectiveSince: formatJapanTimestamp(lookback < initial ? initial : lookback),
     runStartedAt: formattedRunStartedAt,

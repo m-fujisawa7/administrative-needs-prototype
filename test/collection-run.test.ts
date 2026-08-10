@@ -638,7 +638,7 @@ describe('Sourceごとのinitial_since', () => {
     expect(stdout.join('\n')).toContain('Effective since:\n2026-07-01');
   });
 
-  it('stateがあればinitial_sinceを使わず前回成功の3日前から開始する', async () => {
+  it('3日前がinitial_sinceより後ならその3日前から開始する', async () => {
     const stdout: string[] = [];
     await runCollection(args(), {
       ...dependencies({
@@ -653,6 +653,22 @@ describe('Sourceごとのinitial_since', () => {
 
     expect(stdout.join('\n')).not.toContain('Initial collection since:');
     expect(stdout.join('\n')).toContain('Effective since:\n2026-08-02T09:00:00+09:00');
+  });
+
+  it('3日前がinitial_sinceより前ならinitial_sinceを自動収集の下限として使う', async () => {
+    const stdout: string[] = [];
+    await runCollection(args(), {
+      ...dependencies({
+        stdout,
+        registerOne: async (input) => previewed(input.officialUrl),
+      }),
+      loadRegistry: async () => registryWithInitialSince('2026-08-01'),
+      readState: async () => ({
+        'osaka-digital-rss': { last_successful_check_at: '2026-08-02T09:00:00+09:00' },
+      }),
+    });
+
+    expect(stdout.join('\n')).toContain('Effective since:\n2026-08-01T00:00:00+09:00');
   });
 
   it('--sinceはinitial_sinceより優先され、stateを進めない', async () => {

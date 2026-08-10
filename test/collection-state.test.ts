@@ -122,7 +122,7 @@ describe('Sourceごとの初回収集開始日', () => {
     });
   });
 
-  it('stateがあればinitial_sinceを使わず前回成功の3日前を採用する', () => {
+  it('3日前がinitial_sinceより後ならその3日前をそのまま使う', () => {
     expect(resolveCollectionPeriod(
       runStartedAt,
       '2026-08-05T09:00:00+09:00',
@@ -131,9 +131,37 @@ describe('Sourceごとの初回収集開始日', () => {
     ).effectiveSince).toBe('2026-08-02T09:00:00+09:00');
   });
 
+  it('3日前がinitial_sinceより前ならinitial_sinceへ丸める', () => {
+    expect(resolveCollectionPeriod(
+      runStartedAt,
+      '2026-08-02T09:00:00+09:00',
+      undefined,
+      '2026-08-01',
+    ).effectiveSince).toBe('2026-08-01T00:00:00+09:00');
+  });
+
+  it('initial_since未指定なら従来どおり2026-07-01へ丸める', () => {
+    expect(resolveCollectionPeriod(
+      runStartedAt,
+      '2026-07-02T09:00:00+09:00',
+    ).effectiveSince).toBe('2026-07-01T00:00:00+09:00');
+  });
+
   it('--sinceはinitial_sinceより優先され、手動バックフィル扱いになる', () => {
     expect(resolveCollectionPeriod(runStartedAt, null, '2026-07-15', '2026-08-01')).toMatchObject({
       effectiveSince: '2026-07-15',
+      usedManualSince: true,
+    });
+  });
+
+  it('--sinceは手動バックフィルなのでinitial_sinceの下限より前へ遡れる', () => {
+    expect(resolveCollectionPeriod(
+      runStartedAt,
+      '2026-08-05T09:00:00+09:00',
+      '2026-07-05',
+      '2026-08-01',
+    )).toMatchObject({
+      effectiveSince: '2026-07-05',
       usedManualSince: true,
     });
   });
