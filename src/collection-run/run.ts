@@ -53,6 +53,13 @@ export function filterCandidatesByPeriod(
       unknownDateCandidates.push(candidate);
       continue;
     }
+    // 実行開始時刻より後の日付は公開日ではなく、見出しに含まれる申込締切などである。
+    // 期間外として除外すると募集中の案件を落とすため、掲載日不明として処理へ回す。
+    if (isAfterRunStart(candidate.publishedAt, runStartedAt)) {
+      selected.push(candidate);
+      unknownDateCandidates.push(candidate);
+      continue;
+    }
     if (isInPeriod(candidate.publishedAt, effectiveSince, runStartedAt)) {
       selected.push(candidate);
     }
@@ -174,6 +181,13 @@ function isRecognizedDate(value: string): boolean {
     return Number.isFinite(parsed.getTime()) && shifted.toISOString().slice(0, 10) === value;
   }
   return Number.isFinite(Date.parse(value));
+}
+
+function isAfterRunStart(value: string, runStartedAt: string): boolean {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value > runStartedAt.slice(0, 10);
+  }
+  return Date.parse(value) > Date.parse(runStartedAt);
 }
 
 function isInPeriod(value: string, effectiveSince: string, runStartedAt: string): boolean {

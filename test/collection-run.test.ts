@@ -4,7 +4,10 @@ import {
   runCollection,
   type CollectionRunCommandDependencies,
 } from '../src/commands/collection-run.ts';
-import { processCollectedCandidates } from '../src/collection-run/run.ts';
+import {
+  filterCandidatesByPeriod,
+  processCollectedCandidates,
+} from '../src/collection-run/run.ts';
 import { CollectionStateError } from '../src/collection-run/state.ts';
 import type {
   NotionConnectionReport,
@@ -711,3 +714,52 @@ function registryWithInitialSince(initialSince: string) {
     }],
   });
 }
+
+describe('公開日が未来の候補', () => {
+  const RUN_STARTED_AT = '2026-08-07T12:00:00+09:00';
+  const SINCE = '2026-07-01';
+
+  it('実行開始時刻より後の日付は除外せず掲載日不明として処理へ回す', () => {
+    const selection = filterCandidatesByPeriod(
+      [{ url: URL_A, title: '【令和8年8月21日申込締切】公募型プロポーザル', publishedAt: '2026-08-21' }],
+      SINCE,
+      RUN_STARTED_AT,
+    );
+
+    expect(selection.candidates.map(({ url }) => url)).toEqual([URL_A]);
+    expect(selection.unknownDateCandidates.map(({ url }) => url)).toEqual([URL_A]);
+  });
+
+  it('タイムスタンプ形式の未来日も掲載日不明として扱う', () => {
+    const selection = filterCandidatesByPeriod(
+      [{ url: URL_A, title: 'A', publishedAt: '2026-09-01T09:00:00+09:00' }],
+      SINCE,
+      RUN_STARTED_AT,
+    );
+
+    expect(selection.candidates.map(({ url }) => url)).toEqual([URL_A]);
+    expect(selection.unknownDateCandidates.map(({ url }) => url)).toEqual([URL_A]);
+  });
+
+  it('期間より前の過去日は従来どおり除外する', () => {
+    const selection = filterCandidatesByPeriod(
+      [{ url: URL_A, title: 'A', publishedAt: '2026-06-30' }],
+      SINCE,
+      RUN_STARTED_AT,
+    );
+
+    expect(selection.candidates).toEqual([]);
+    expect(selection.unknownDateCandidates).toEqual([]);
+  });
+
+  it('期間内の候補は掲載日不明にせず従来どおり通す', () => {
+    const selection = filterCandidatesByPeriod(
+      [{ url: URL_A, title: 'A', publishedAt: '2026-08-06' }],
+      SINCE,
+      RUN_STARTED_AT,
+    );
+
+    expect(selection.candidates.map(({ url }) => url)).toEqual([URL_A]);
+    expect(selection.unknownDateCandidates).toEqual([]);
+  });
+});
