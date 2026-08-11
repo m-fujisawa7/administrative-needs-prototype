@@ -73,6 +73,22 @@ organizations:
     enabled: true
     notes: 事業者募集、RFI・RFC、スマートシティ、サウンディング型市場調査の行政ニーズを収集する対象自治体。神戸スマートシティのNewsletterと講演資料はsmartkobe-portal.comにあり別ドメインのため、今回は登録していない
 
+  - id: kitakyushu-city
+    name: 北九州市
+    organization_type: designated_city
+    prefecture: 福岡県
+    official_domain: city.kitakyushu.lg.jp
+    enabled: true
+    notes: プロポーザル募集、DX・AI戦略室の施策、官民共創の行政ニーズを収集する対象自治体
+
+  - id: kitakyushu-city-qport
+    name: 北九州市
+    organization_type: external_organization
+    official_domain: kitaq-partnership.com
+    enabled: true
+    parent_organization_id: kitakyushu-city
+    notes: 北九州市の官民共創窓口Q-PORTを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。課題図鑑の実体はnote.com/kitaq_ccx/にあり公式ドメイン外のため、現時点で収集できる情報源は無い
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -699,5 +715,73 @@ sources:
       - 実証実験募集
       - スタートアップ
     notes: 行政課題に対しスタートアップの実証提案を募る制度。課題4件は同一ページのアコーディオンに埋め込まれ、リンクがすべてjavascript:void(0)、募集形式の切り替えも#chiikiと#jiyuuの同一ページアンカーで、個別URLが存在しない。現在のCollectorはsingle_page未対応のため無効状態で保持する。ページ本文6253文字に課題の詳細が含まれるので、必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kitakyushu-proposal-list
+    organization_id: kitakyushu-city
+    name: プロポーザル募集一覧
+    url: https://www.city.kitakyushu.lg.jp/business/menu03_00174.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#contents ul.linkUL > li.contents > a"
+    content_selector: "#contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 総合評価落札
+      - 業務委託
+    notes: 全庁の公募型プロポーザルを集約する一覧。見出しに「【令和8年8月21日申込締切】」と申込締切が入るため、掲載日ではなく締切がparseDateCandidateで解釈される。締切が未来の候補は実行開始時刻より後の日付として掲載日不明扱いになり、期間外で落ちずに処理へ進む。確認時点の21件のうち15件が対象となり、うち9件が掲載日不明扱いだった。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kitakyushu-dx-division
+    organization_id: kitakyushu-city
+    name: DX・AI戦略室ページ一覧
+    url: https://www.city.kitakyushu.lg.jp/contents/division337list.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#contents ul.linkUL > li.contents > a"
+    content_selector: "#contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - DX施策
+      - AI活用
+    notes: DX・AI戦略室が所管するページの一覧。68件と多く、結果公表済みの案件やDX人材育成の告知も含むため優先度は中。プロポーザル募集一覧と同じく見出しに申込締切や結果公表日が入り、68件のうち20件で日付が解釈される。所管課の全ページを列挙する索引であり新着順ではない。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kitakyushu-busters-fund
+    organization_id: kitakyushu-city
+    name: 北九州課題快傑バスターズ
+    url: https://www.city.kitakyushu.lg.jp/contents/337_00045.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#contents"
+    document_type_hints:
+      - 行政課題
+      - 民間提案募集
+      - 寄付基金
+    notes: 市民意見の収集からマッチング、資金調達までを一気通貫で扱うスキームの報道発表ページ。募集テーマは本文に列挙されるがHTMLの一覧を持たず、募集要項と申し込みは外部の北九州課題快傑バスターズファンドホームページにある。現在のCollectorはsingle_page未対応のため無効状態で保持する。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: kitakyushu-qport-issues
+    organization_id: kitakyushu-city-qport
+    name: Q-PORT 課題図鑑
+    url: https://kitaq-partnership.com/kitaq_ccx/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 行政課題
+      - 民間提案募集
+    notes: 北九州市の官民共創窓口。課題図鑑に掲載される課題は【2604KQ】のような課題番号付きだが、実体がすべてnote.com/kitaq_ccx/の記事で、すべての課題一覧もnoteのマガジンである。noteは自治体の公式ドメインではなく共用ブログ基盤で、official_domainに加えると無関係なnoteページまで取得可能になるため登録しない。ページ自身の内部リンクは担当者紹介と提案フォームだけで候補にならない。課題が公式ドメインへ移った場合に有効化を再検討する。
     last_verified_at: "2026-08-10"
     verification_status: verified
