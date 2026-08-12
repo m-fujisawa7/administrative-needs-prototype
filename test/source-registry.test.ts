@@ -157,3 +157,29 @@ function registryWithInitialSince(initialSince: string | undefined): unknown {
     }],
   };
 }
+
+describe('list_pageのtitle_excludes設定', () => {
+  it('kitakyushu-dx-divisionの実台帳がtitle_excludesを持ち検証を通る', async () => {
+    const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
+    const registry = await loadSourceRegistry();
+    const source = registry.sources.find(({ id }) => id === 'kitakyushu-dx-division');
+
+    expect(source?.collector_type).toBe('list_page');
+    expect(source?.title_excludes).toEqual([
+      'よくある質問',
+      'FAQ',
+      '使い方',
+      'セキュリティポリシー',
+    ]);
+  });
+
+  it('結果公表やプロポーザルを除外条件に入れていない', async () => {
+    const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
+    const registry = await loadSourceRegistry();
+    const source = registry.sources.find(({ id }) => id === 'kitakyushu-dx-division');
+
+    for (const keyword of ['結果公表', 'プロポーザル', '公募', '募集', 'RFI']) {
+      expect(source?.title_excludes ?? []).not.toContain(keyword);
+    }
+  });
+});

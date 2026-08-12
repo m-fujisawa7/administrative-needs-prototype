@@ -754,11 +754,16 @@ sources:
     enabled: true
     link_selector: "#contents ul.linkUL > li.contents > a"
     content_selector: "#contents"
+    title_excludes:
+      - よくある質問
+      - FAQ
+      - 使い方
+      - セキュリティポリシー
     document_type_hints:
       - 公募型プロポーザル
       - DX施策
       - AI活用
-    notes: DX・AI戦略室が所管するページの一覧。68件と多く、結果公表済みの案件やDX人材育成の告知も含むため優先度は中。プロポーザル募集一覧と同じく見出しに申込締切や結果公表日が入り、68件のうち20件で日付が解釈される。所管課の全ページを列挙する索引であり新着順ではない。
+    notes: DX・AI戦略室が所管するページの一覧。68件と多く、結果公表済みの案件やDX人材育成の告知も含むため優先度は中。プロポーザル募集一覧と同じく見出しに申込締切や結果公表日が入り、68件のうち20件で日付が解釈される。所管課の全ページを列挙する索引であり新着順ではない。固定の案内ページはtitle_excludesで除外する。結果公表は有用案件まで落とす恐れがあるため除外条件へ入れず、後続のAI判定に任せる。
     last_verified_at: "2026-08-10"
     verification_status: verified
 

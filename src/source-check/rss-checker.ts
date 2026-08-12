@@ -1,6 +1,7 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import type { Source } from '../source-registry/schema.ts';
 import { isHostnameAllowed } from './fetch.ts';
+import { createTitleExcludeMatcher } from './title-excludes.ts';
 import type {
   SourceCheckExclusion,
   SourceCheckSample,
@@ -120,7 +121,7 @@ export function analyzeRss(
   }
 
   const categoryIncludes = (source.category_includes ?? []).map(normalizeForMatch);
-  const titleExcludes = (source.title_excludes ?? []).map(normalizeForMatch);
+  const isTitleExcluded = createTitleExcludeMatcher(source.title_excludes);
   const usableCandidates: RssCandidate[] = [];
 
   for (const candidate of uniqueCandidates) {
@@ -133,8 +134,7 @@ export function analyzeRss(
       increment(exclusions, 'category_includesで除外');
       continue;
     }
-    const normalizedTitle = normalizeForMatch(candidate.title);
-    if (titleExcludes.some((pattern) => normalizedTitle.includes(pattern))) {
+    if (isTitleExcluded(candidate.title)) {
       increment(exclusions, 'title_excludesで除外');
       continue;
     }

@@ -495,3 +495,79 @@ describe('公開日候補の解析', () => {
     },
   );
 });
+
+describe('一覧ページのtitle_excludes', () => {
+  const HTML = [
+    '<main id="main">',
+    '<a href="/1">【公募型プロポーザル】AI窓口業務</a>',
+    '<a href="/2">よくある質問</a>',
+    '<a href="/3">サービスの使い方</a>',
+    '<a href="/4">セキュリティポリシー</a>',
+    '<a href="/5">ＦＡＱ</a>',
+    '</main>',
+  ].join('');
+  const EXCLUDES = ['よくある質問', 'FAQ', 'サービスの使い方', 'セキュリティポリシー'];
+
+  it('一致した候補を除外し、除外理由と件数を残す', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ title_excludes: EXCLUDES }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+
+    expect(result.rawItemCount).toBe(5);
+    expect(result.usableItemCount).toBe(1);
+    expect(result.samples.map(({ title }) => title)).toEqual(['【公募型プロポーザル】AI窓口業務']);
+    expect(result.exclusions).toContainEqual({ reason: 'title_excludesで除外', count: 4 });
+  });
+
+  it('全角のＦＡＱもRSSと同じ正規化で一致させる', () => {
+    const result = analyzeListPage(
+      '<main id="main"><a href="/1">ＦＡＱ</a><a href="/2">案件</a></main>',
+      makeSource({ title_excludes: ['FAQ'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+
+    expect(result.samples.map(({ title }) => title)).toEqual(['案件']);
+  });
+
+  it('title_excludes未指定なら従来どおり全件を残す', () => {
+    const result = analyzeListPage(HTML, makeSource(), OFFICIAL_DOMAIN, 10);
+
+    expect(result.usableItemCount).toBe(5);
+    expect(result.exclusions.some(({ reason }) => reason === 'title_excludesで除外')).toBe(false);
+  });
+
+  it('日付が取れない候補は一致しなければ落とさない', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ title_excludes: EXCLUDES }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+
+    expect(result.samples[0]?.publishedAt).toBeNull();
+  });
+
+  it('適用後に候補が0件ならErrorにする', () => {
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="/1">よくある質問</a></main>',
+      makeSource({ title_excludes: ['よくある質問'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('title_excludes');
+  });
+
+  it('共通Collector経由でも除外後の候補だけを返す', async () => {
+    const source = makeSource({ title_excludes: EXCLUDES });
+    const candidates = await collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+      { fetchSource: async ({ url }) => fetched(HTML, url, 'text/html') },
+    );
+
+    expect(candidates.map(({ title }) => title)).toEqual(['【公募型プロポーザル】AI窓口業務']);
+  });
+});

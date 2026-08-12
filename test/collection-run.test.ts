@@ -17,6 +17,7 @@ import type {
   NotionRegistrationPreview,
   RegisterOneResult,
 } from '../src/notion-register/types.ts';
+import { collectSourceCandidates } from '../src/source-check/index.ts';
 import type { SourceCheckSample } from '../src/source-check/types.ts';
 import { validateSourceRegistry } from '../src/source-registry/schema.ts';
 
@@ -763,3 +764,95 @@ describe('公開日が未来の候補', () => {
     expect(selection.unknownDateCandidates).toEqual([]);
   });
 });
+
+describe('title_excludesで除外した候補の扱い', () => {
+  const NOISY_HTML = [
+    '<main id="main">',
+    '<a href="/proposal/1">【公募型プロポーザル】AI窓口業務</a>',
+    '<a href="/faq">よくある質問</a>',
+    '<a href="/howto">サービスの使い方</a>',
+    '<a href="/policy">セキュリティポリシー</a>',
+    '<a href="/proposal/2">【公募型プロポーザル】相談記録システム導入業務</a>',
+    '</main>',
+  ].join('');
+
+  it('limitを消費せずRemaining new candidatesにも含めない', async () => {
+    const stdout: string[] = [];
+    const registerOne = vi.fn(async (input: { officialUrl: string }) =>
+      previewed(input.officialUrl));
+
+    const exitCode = await runCollection([...args(), '--limit', '2'], {
+      ...dependencies({ stdout, registerOne }),
+      loadRegistry: async () => registryWithTitleExcludes(),
+      collectCandidates: async (source, organization) => collectSourceCandidates(
+        source,
+        organization,
+        { fetchSource: async ({ url }) => fetchedHtml(NOISY_HTML, url) },
+      ),
+    });
+
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([
+      'https://www.city.osaka.lg.jp/proposal/1',
+      'https://www.city.osaka.lg.jp/proposal/2',
+    ]);
+    expect(output).toContain('Candidates collected:\n2');
+    expect(output).toContain('Remaining new candidates:\n0');
+  });
+
+  it('除外されなかった候補は従来どおり1件処理へ渡る', async () => {
+    const registerOne = vi.fn(async (input: { officialUrl: string }) =>
+      previewed(input.officialUrl));
+
+    await runCollection(args(), {
+      ...dependencies({ registerOne }),
+      loadRegistry: async () => registryWithTitleExcludes(),
+      collectCandidates: async (source, organization) => collectSourceCandidates(
+        source,
+        organization,
+        { fetchSource: async ({ url }) => fetchedHtml(NOISY_HTML, url) },
+      ),
+    });
+
+    expect(registerOne).toHaveBeenCalledTimes(2);
+  });
+});
+
+function registryWithTitleExcludes() {
+  return validateSourceRegistry({
+    version: 1,
+    organizations: [{
+      id: 'osaka-city',
+      name: '大阪市',
+      organization_type: 'designated_city',
+      official_domain: 'city.osaka.lg.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'osaka-digital-rss',
+      organization_id: 'osaka-city',
+      name: 'ノイズ混在の一覧',
+      url: 'https://www.city.osaka.lg.jp/list.html',
+      collector_type: 'list_page',
+      source_category: 'procurement',
+      priority: 'high',
+      enabled: true,
+      link_selector: '#main a',
+      title_excludes: ['よくある質問', 'FAQ', 'サービスの使い方', 'セキュリティポリシー'],
+    }],
+  });
+}
+
+function fetchedHtml(text: string, url: string) {
+  return {
+    originalUrl: url,
+    finalUrl: url,
+    httpStatus: 200,
+    contentType: 'text/html',
+    text,
+    responseBytes: new TextEncoder().encode(text).byteLength,
+    durationMs: 1,
+    redirectCount: 0,
+  };
+}
