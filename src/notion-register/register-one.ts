@@ -1,6 +1,7 @@
 import { checkAdministrativeNeed } from '../ai/check.ts';
 import { AiAnalyzerError, ClaudeUsageLimitError } from '../ai/errors.ts';
 import type { AiInputLimits } from '../ai/input.ts';
+import { ContentExtractionError } from '../content-check/errors.ts';
 import { NotionCheckError } from '../notion-check/errors.ts';
 import type {
   NotionConnectionReport,
@@ -196,6 +197,8 @@ function failure(
 
 function analysisFailureStage(error: unknown): RegisterOneFailureStage {
   if (error instanceof SourceCheckFetchError) return 'html_fetch';
+  // 本文抽出の失敗はClaudeへ渡す前に起きるため、ai_analysisと混ぜない。
+  if (error instanceof ContentExtractionError) return 'content_extract';
   if (error instanceof AiAnalyzerError && error.message.includes('Zod schema')) {
     return 'ai_validation';
   }

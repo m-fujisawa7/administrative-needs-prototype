@@ -70,6 +70,7 @@ export type NotionRegistrationAnalysisContext = {
 export type RegisterOneFailureStage =
   | 'duplicate_check'
   | 'html_fetch'
+  | 'content_extract'
   | 'pdf_extraction'
   | 'ai_analysis'
   | 'ai_validation'

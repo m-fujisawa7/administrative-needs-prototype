@@ -920,6 +920,7 @@ sources:
     source_category: digital_news
     priority: medium
     enabled: true
+    initial_since: "2026-08-01"
     link_selector: "article.page-contents > div.page-body > ul.c-list--archive > li.c-list__item > a"
     content_selector: "article.page-contents"
     title_excludes:
@@ -935,7 +936,7 @@ sources:
       - 企画提案競技
       - DX推進計画
       - データ連携基盤
-    notes: デジタル政策推進課が所管するページの一覧。2014年の項目まで含む所管課の索引で新着順ではないが、38件すべてに掲載日があるため期間フィルタで直近分だけが対象になる。確認時点で2026-07-01以降は3件だけなのでinitial_sinceは付けていない。マイナンバー制度や電子申請などの恒久的な案内も含むため優先度は中とし、続報と固定の案内ページはtitle_excludesで除外する。
+    notes: デジタル政策推進課が所管するページの一覧。2014年の項目まで含む所管課の索引で新着順ではないが、38件すべてに掲載日があるため期間フィルタで直近分だけが対象になる。秋田県の初回自動収集を2026-08-01起点に揃えるためinitial_sinceを設定している。マイナンバー制度や電子申請などの恒久的な案内も含むため優先度は中とし、続報と固定の案内ページはtitle_excludesで除外する。本文が200文字未満の短い障害報告なども混じるため、その候補はcontent_extractとして失敗する。
     last_verified_at: "2026-08-12"
     verification_status: verified
 
@@ -947,6 +948,7 @@ sources:
     source_category: public_private_partnership
     priority: high
     enabled: true
+    initial_since: "2026-08-01"
     link_selector: "article.page-contents > div.page-body > ul.c-list--archive > li.c-list__item > a"
     content_selector: "article.page-contents"
     title_excludes:
@@ -957,7 +959,7 @@ sources:
       - サウンディング型市場調査
       - 官民対話
       - PPP/PFI
-    notes: あきた公民連携地域プラットフォームの取組一覧。県有施設のネーミングライツ導入に関するサウンディング型市場調査や官民対話の実施済み案件を含む。22件のうち16件は終了したセミナーと勉強会の案内で、タイトル先頭の状態表示が[開催終了]と〔開催終了〕の2種類あるため、括弧を含めず開催終了だけを除外語にして両方に一致させる。除外すると22件が6件になる。確認時点で2026-07-01以降は2件と少ないためinitial_sinceは付けていない。
+    notes: あきた公民連携地域プラットフォームの取組一覧。県有施設のネーミングライツ導入に関するサウンディング型市場調査や官民対話の実施済み案件を含む。22件のうち16件は終了したセミナーと勉強会の案内で、タイトル先頭の状態表示が[開催終了]と〔開催終了〕の2種類あるため、括弧を含めず開催終了だけを除外語にして両方に一致させる。除外すると22件が6件になる。秋田県の初回自動収集を2026-08-01起点に揃えるためinitial_sinceを設定している。
     last_verified_at: "2026-08-12"
     verification_status: verified
 

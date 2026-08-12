@@ -1,5 +1,6 @@
 import { load } from 'cheerio';
 import { normalizeWhitespace, parseDateCandidate } from '../source-check/utils.ts';
+import { ContentExtractionError } from './errors.ts';
 import type {
   ContentExtractionResult,
   PdfLink,
@@ -48,7 +49,9 @@ export function extractDocumentFromHtml(
     normalizeWhitespace($('h1').first().text()),
     normalizeWhitespace($('title').first().text()),
   );
-  if (title === null) throw new Error('ページタイトルを h1 または title から取得できませんでした。');
+  if (title === null) {
+    throw new ContentExtractionError('ページタイトルを h1 または title から取得できませんでした。');
+  }
 
   const configuredSelector = input.contentSelector?.trim() || null;
   const selectors = uniqueSelectors(configuredSelector);
@@ -97,7 +100,7 @@ export function extractDocumentFromHtml(
     || selectedSelector === undefined
   ) {
     const prefix = configuredIssue === undefined ? '' : `${configuredIssue} `;
-    throw new Error(
+    throw new ContentExtractionError(
       `${prefix}フォールバックでも本文を ${MINIMUM_BODY_LENGTH} 文字以上抽出できませんでした。`,
     );
   }

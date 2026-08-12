@@ -48,6 +48,8 @@ Codex実行環境で実Claude CLIが応答しない場合は、結合確認を�
 
 PDF単体の失敗はWarningとしてHTML本文だけで続行します。AI結果はローカルファイルへ保存しません。
 
+失敗した場合は原因に応じたStageを表示します。取得の失敗は`html_fetch`、本文抽出の失敗は`content_extract`、Claude呼び出しの失敗は`ai_analysis`、Zod検証の失敗は`ai_validation`です。本文が200文字に届かないページや、h1とtitleからタイトルを取得できないページはClaudeへ渡す前に`content_extract`で失敗します。この判定は`ContentExtractionError`の型で行うため、Claude側の失敗と混ざりません。
+
 ## スキーマ変更の防止
 
 Notionは、存在しない`select`または`multi_select`名をページ作成時に送ると、権限によっては新しい選択肢をデータソースへ追加します。このコマンドは登録予定の選択肢を現在のデータソース定義と照合し、不足している場合は`--write`があってもページを作成しません。
