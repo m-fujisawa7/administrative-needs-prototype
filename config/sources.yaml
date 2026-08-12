@@ -105,6 +105,14 @@ organizations:
     enabled: true
     notes: 企画提案競技、デジタル政策、公民連携（PPP/PFI）の行政ニーズを収集する対象都道府県。秋田県はプロポーザルを「企画提案競技」と呼ぶ
 
+  - id: yamagata-prefecture
+    name: 山形県
+    organization_type: prefecture
+    prefecture: 山形県
+    official_domain: pref.yamagata.jp
+    enabled: true
+    notes: 公募型プロポーザルとデジタル施策の行政ニーズを収集する対象都道府県。分野別RSSを多数配信しているがいずれもRSS 1.0（RDF）で、現在のanalyzeRssでは解析できない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -983,5 +991,57 @@ sources:
       - 企画提案競技
       - 意見募集
     notes: 全庁の新着情報を配信するRSS。RSS 2.0でpubDateを持ち既存のanalyzeRssで解析できるが、県営住宅の提供や庁内ネットワークの不具合、熱中症関連情報まで含む全庁横断で、確認時点の98件のうち調達・募集系は33件、そのうち実質の案件は数件だった。category要素が無いためcategory_includesで絞れず、title_excludesは除外リストなので範囲の広さ自体は解消できない。企画提案競技はakita-compe、デジタル施策はakita-digital-policyで取得できるため無効状態で保持する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: yamagata-proposal
+    organization_id: yamagata-prefecture
+    name: 公募型プロポーザル
+    url: https://www.pref.yamagata.jp/kensei/nyuusatsujouhou/nyuusatsujouhou/proposal/index.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > ul > li > a"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案の募集
+      - 業務委託
+    notes: 全庁の公募型プロポーザルを集約する一覧。タイトル先頭に【観光文化スポーツ部観光プロモーション課】のように所管部課が入るため、後続のAI判定で担当部門を読み取れる。掲載日は無く、タイトル末尾の参加申込期限や企画提案期限が令和のフル表記のためparseDateCandidateがそれを拾う。74件の内訳は日付なし31件、締切が未来の4件、締切が過去の39件で、未来日は掲載日不明として扱われるため募集中の案件が期間外で落ちることはない。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: yamagata-dx-division
+    organization_id: yamagata-prefecture
+    name: DX推進課
+    url: https://www.pref.yamagata.jp/020051/kensei/shoukai/soshikiannai/kikakushinko/020051.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - DXビジョン
+      - データ連携基盤
+      - 情報セキュリティ方針
+    notes: DX推進課の組織案内ページ。本文は担当別業務とお問い合わせ先で新着一覧を持たないが、主なページとして政策文書5件へリンクしている。やまがた県民幸せDXビジョン、データ連携基盤共同利用に関するビジョン、サイバーセキュリティを確保するための方針など上流の政策シグナルを取得するため、その5件だけを候補にする。掲載日は取得できず毎回5件が対象になるが、Notion登録済みURLはHTML取得とClaude解析の前に除外される。恒久的な政策文書のため優先度は中。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: yamagata-business-rss
+    organization_id: yamagata-prefecture
+    name: 事業者向け情報 入札情報 RSS
+    url: https://www.pref.yamagata.jp/sangyo/jigyousha/nyuusatsu.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 入札
+      - 公募型プロポーザル
+    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しているが、いずれもRSS 1.0（RDF）でルートがrdf:RDF、日付がdc:dateである。analyzeRssはRSS 2.0のchannel要素だけを見るため、実データで「RSS 2.0 の channel 要素が見つかりません。」となり解析できない。宮城県のRSSと同じ形式で、RSS 1.0対応を実装するまで無効状態で保持する。公募型プロポーザルはyamagata-proposalで取得できる。同じ場所にshinchaku.xmlもあるが同形式である。
     last_verified_at: "2026-08-12"
     verification_status: verified
