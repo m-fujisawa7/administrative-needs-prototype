@@ -121,6 +121,14 @@ organizations:
     enabled: true
     notes: 全庁の入札・契約と募集の行政ニーズを収集する対象自治体。SAPPORO CO-CREATION GATEのwww4.city.sapporo.jpはcity.sapporo.jpのサブドメインのため、別組織に分けず同一組織として管理する
 
+  - id: fukushima-prefecture
+    name: 福島県
+    organization_type: prefecture
+    prefecture: 福島県
+    official_domain: pref.fukushima.lg.jp
+    enabled: true
+    notes: 全庁の入札・契約、デジタル変革、産業振興の行政ニーズを収集する対象都道府県。所属単位のRSSを配信しており、いずれもRSS 1.0（RDF）である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1145,5 +1153,92 @@ sources:
       - 一般競争入札
       - 公募型企画競争
     notes: スマートシティ推進部の一般競争入札等情報。ICT活用プラットフォーム運用保守やDX推進リーダー育成研修など対象性の高い案件が並ぶが、確認時点では見出し「公募中の契約情報」の直後が空で公募中が0件、48件すべてが「終了した契約情報（落札結果等）」だった。公募中セクションだけを対象にすると毎回ERRORになり、兄弟要素まで拾うと終了案件48件が候補になる。公募が出た時点で有効化を再検討する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: fukushima-procurement
+    organization_id: fukushima-prefecture
+    name: 入札・契約情報
+    url: https://www.pref.fukushima.lg.jp/sec/list10-1.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "div.list_ccc > ul > li > span.span_b > a[href]:first-child"
+    content_selector: "#main_body"
+    document_type_hints:
+      - 公募型企画プロポーザル
+      - 一般競争入札
+      - 発注見通し
+    notes: 全庁の入札・契約情報を集約する新着一覧。liはspan_aに更新日、span_bに案件と所属の2アンカーを持つため、first-childで案件だけを候補にする。所属リンクを含めると51件になり課室トップページが混ざる。30件すべてに更新日があり、確認時点では全件が2026年8月分で回転が速いため、initial_sinceを付けても絞れないので設定していない。同じページのspan_cは掲載日のない全ページ索引なので使わない。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: fukushima-dx-division-rss
+    organization_id: fukushima-prefecture
+    name: デジタル変革課 RSS
+    url: https://www.pref.fukushima.lg.jp/rss/10/sec-4-40.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: high
+    enabled: true
+    initial_since: "2026-08-01"
+    content_selector: "#main_body"
+    document_type_hints:
+      - 公募型プロポーザル
+      - DX施策
+      - デジタル社会形成
+    notes: デジタル変革課の所属単位RSS。RSS 1.0（RDF）でdc:dateから公開日を全件取得でき警告も出ない。同じ内容のHTML新着は5件しか載せないため、27件を保持するRSSを採用した。dc:subjectは所属名のデジタル変革課1種類なのでcategory_includesでは絞れない。アーカイブなので初回はinitial_sinceで絞り、確認時点では2026-08-01以降が1件、2026-07-01起点なら2件だった。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: fukushima-industry-division-rss
+    organization_id: fukushima-prefecture
+    name: 産業振興課 RSS
+    url: https://www.pref.fukushima.lg.jp/rss/10/sec-9-117.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    initial_since: "2026-08-01"
+    content_selector: "#main_body"
+    document_type_hints:
+      - 補助金
+      - 事業者公募
+      - スタートアップ支援
+    notes: 産業振興課の所属単位RSS。RSS 1.0（RDF）で70件すべてに公開日がある。同じ内容のHTML新着は5件のみ。dc:subjectは所属名の産業振興課1種類なのでcategory_includesでは絞れない。グループ補助金の交付決定や事業再開支援の公募が中心で、ふくしまベンチャーアワードやイノベーションプログラムの募集も含むが調達より支援制度の告知が多いため優先度は中。確認時点では2026-08-01以降が3件、2026-07-01起点なら8件だった。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: fukushima-kyoso-team
+    organization_id: fukushima-prefecture
+    name: ふくしま共創チーム
+    url: https://www.pref.fukushima.lg.jp/sec/11015b/kannminnrenkeikyousou100.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#main_body"
+    document_type_hints:
+      - 官民連携
+      - 会員募集
+    notes: 産官学金労言士がオール福島で人口減少対策に取り組む枠組みの説明ページ。会員名簿はPDFで、本文内リンクはページ内アンカー5件と会員募集・活動状況・関連資料の3サブページだけで個別案件の一覧を持たない。現在のCollectorはsingle_page未対応のため無効状態で保持する。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: fukushima-ppp-platform
+    organization_id: fukushima-prefecture
+    name: ふくしまPPP/PFI地域プラットフォーム
+    url: https://www.pref.fukushima.lg.jp/site/sdgs-pf/subcommittee-member1.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#main_body"
+    document_type_hints:
+      - PPP/PFI
+      - サウンディング
+      - 官民対話
+    notes: 2024年12月10日に設置されたPPP/PFI地域プラットフォームの趣旨説明ページ。活動内容にサウンディング（官民対話）の実施調整を掲げているが、リンクは設置要綱、活動計画書、活動報告書のPDF4件だけで案件ページが無い。現在のCollectorはsingle_page未対応のため無効状態で保持する。官民対話の案件ページが公開された時点で有効化を再検討する。
     last_verified_at: "2026-08-12"
     verification_status: verified
