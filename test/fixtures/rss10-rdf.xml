@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rdf:RDF 
+	xmlns="http://purl.org/rss/1.0/"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xml:lang="ja">
+	<channel rdf:about="https://www.pref.miyagi.jp/shinchaku/index.html">
+		<title>宮城県 宮城県トップページの新着情報一覧</title>
+		<link>https://www.pref.miyagi.jp/shinchaku/index.html</link>
+		<description></description>
+		<items>
+			<rdf:Seq>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/kasen/sendaiwannenganpabukome.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/kasen/sanrikuminamienganpabukome.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/site/nh-khsgsin-e/deepside2026.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/kankou/r8_taiwantour2.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/kigyo/nyuusatsu_dbo.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/kyou-soumu/manawel.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/sinrin/hutakuchi/hutakuchitopsyuusei.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/jyoho/bosyu3.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/suishin/miyagisuisannohi-marche.html"/>
+
+				<rdf:li rdf:resource="https://www.pref.miyagi.jp/soshiki/zao-syounen/mankitsuaki.html"/>
+
+			</rdf:Seq>
+		</items>
+	</channel>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/kasen/sendaiwannenganpabukome.html">
+		<title>仙台湾沿岸海岸保全基本計画の改定に関する計画本文（素案）対する御意見の募集について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/kasen/sendaiwannenganpabukome.html</link>
+		<description>仙台湾沿岸海岸保全基本計画の改定に関する計画本文（素案）に対するパブリックコメント（パブコメ）を実施するもの</description>
+		<dc:creator>土木部河川課 </dc:creator>
+		<dc:subject>宮城県,防災・安全</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>土木部河川課  </dc:contributor>
+		<dc:date>2026-08-10T00:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/kasen/sanrikuminamienganpabukome.html">
+		<title>三陸南沿岸海岸保全基本計画の改定に関する計画本文（素案）に対する御意見の募集について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/kasen/sanrikuminamienganpabukome.html</link>
+		<description>三陸南沿岸海岸保全基本計画の改定に関する計画本文（素案）に対するパブリックコメント（パブコメ）を実施するもの</description>
+		<dc:creator>土木部河川課 </dc:creator>
+		<dc:subject>宮城県,防災・安全</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>土木部河川課河川整備班 </dc:contributor>
+		<dc:date>2026-08-10T00:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/site/nh-khsgsin-e/deepside2026.html">
+		<title>東北怪考×栗原　栗原異聞KURIHARA DEEP SIDE JOURNEY　開催！</title>
+		<link>https://www.pref.miyagi.jp/site/nh-khsgsin-e/deepside2026.html</link>
+		<description>吉田悠軌氏（クレイジージャーニー出演）他をお迎えし、栗原のディープサイドを案内する怪談イベント、宿泊ツアーです。</description>
+		<dc:creator>北部地方振興事務所栗原地域事務所北部地方振興事務所栗原地域事務所　地方振興部 </dc:creator>
+		<dc:subject>宮城県,イベント</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>北部地方振興事務所栗原地域事務所北部地方振興事務所栗原地域事務所　地方振興部商工・振興班 </dc:contributor>
+		<dc:date>2026-08-08T09:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/kankou/r8_taiwantour2.html">
+		<title>令和8年度台湾訪日教育旅行モニターツアー事業委託業務の企画提案募集について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/kankou/r8_taiwantour2.html</link>
+		<description></description>
+		<dc:creator>経済商工観光部観光戦略課 </dc:creator>
+		<dc:subject>宮城県,観光・文化</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>経済商工観光部観光戦略課観光産業振興班 </dc:contributor>
+		<dc:date>2026-08-07T15:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/kigyo/nyuusatsu_dbo.html">
+		<title>みやぎ県北広域汚泥肥料化事業の入札公告について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/kigyo/nyuusatsu_dbo.html</link>
+		<description></description>
+		<dc:creator>企業局公営事業課 </dc:creator>
+		<dc:subject>宮城県,県政・地域情報</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>企業局公営事業課総務班 </dc:contributor>
+		<dc:date>2026-08-07T09:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/kyou-soumu/manawel.html">
+		<title>教育・福祉複合施設（まなウェルみやぎ）維持管理包括委託事業に係るアドバイザリー業務の企画提案募集について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/kyou-soumu/manawel.html</link>
+		<description></description>
+		<dc:creator>教育委員会総務課 </dc:creator>
+		<dc:subject>宮城県,子育て・教育</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>教育委員会総務課  </dc:contributor>
+		<dc:date>2026-08-07T09:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/sinrin/hutakuchi/hutakuchitopsyuusei.html">
+		<title>林道「二口線」(宮城県側）の通行規制について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/sinrin/hutakuchi/hutakuchitopsyuusei.html</link>
+		<description>林道二口線の概要,通行状況,冬季閉鎖</description>
+		<dc:creator>水産林政部森林整備課 </dc:creator>
+		<dc:subject>宮城県,しごと・産業</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>水産林政部森林整備課森林土木班 </dc:contributor>
+		<dc:date>2026-08-07T00:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/jyoho/bosyu3.html">
+		<title>令和8年度宮城県職員用パソコン広告募集のお知らせ</title>
+		<link>https://www.pref.miyagi.jp/soshiki/jyoho/bosyu3.html</link>
+		<description></description>
+		<dc:creator>企画部デジタルみやぎ推進課 </dc:creator>
+		<dc:subject>宮城県,しごと・産業</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>企画部デジタルみやぎ推進課  庶務担当</dc:contributor>
+		<dc:date>2026-08-07T00:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/suishin/miyagisuisannohi-marche.html">
+		<title>宮城県産水産物・水産加工品販売会について</title>
+		<link>https://www.pref.miyagi.jp/soshiki/suishin/miyagisuisannohi-marche.html</link>
+		<description></description>
+		<dc:creator>水産林政部水産業振興課 </dc:creator>
+		<dc:subject>宮城県,しごと・産業</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>水産林政部水産業振興課  </dc:contributor>
+		<dc:date>2026-08-07T00:00:00+09:00</dc:date>
+	</item>
+
+	<item rdf:about="https://www.pref.miyagi.jp/soshiki/zao-syounen/mankitsuaki.html">
+		<title>満喫！蔵王の秋</title>
+		<link>https://www.pref.miyagi.jp/soshiki/zao-syounen/mankitsuaki.html</link>
+		<description></description>
+		<dc:creator>教育委員会蔵王自然の家 </dc:creator>
+		<dc:subject>宮城県,子育て・教育</dc:subject>
+		<dc:publisher>宮城県</dc:publisher>
+		<dc:contributor>教育委員会蔵王自然の家  </dc:contributor>
+		<dc:date>2026-08-07T00:00:00+09:00</dc:date>
+	</item>
+
+</rdf:RDF>

@@ -571,3 +571,97 @@ describe('一覧ページのtitle_excludes', () => {
     expect(candidates.map(({ title }) => title)).toEqual(['【公募型プロポーザル】AI窓口業務']);
   });
 });
+
+describe('RSS 1.0（RDF）チェック', () => {
+  it('実取得fixtureをRSS 1.0として解析し、title・link・公開日を正規化する', async () => {
+    const result = analyzeRss(
+      await fixture('rss10-rdf.xml'),
+      makeSource({ collector_type: 'rss', url: 'https://www.pref.miyagi.jp/shinchaku/shinchaku.xml' }),
+      'pref.miyagi.jp',
+      100,
+    );
+
+    expect(result.rawItemCount).toBe(10);
+    expect(result.usableItemCount).toBe(10);
+    expect(result.samples[0]?.title)
+      .toContain('仙台湾沿岸海岸保全基本計画の改定に関する計画本文（素案）対する御意見の募集について');
+    expect(result.samples[0]?.url)
+      .toBe('https://www.pref.miyagi.jp/soshiki/kasen/sendaiwannenganpabukome.html');
+    expect(result.samples[0]?.publishedAt).toBe('2026-08-10');
+    expect(result.latestPublishedAt).toBe('2026-08-10');
+  });
+
+  it('dc:subjectをcategoryへ正規化し、category_includesで絞れる', async () => {
+    const result = analyzeRss(
+      await fixture('rss10-rdf.xml'),
+      makeSource({
+        collector_type: 'rss',
+        url: 'https://www.pref.miyagi.jp/shinchaku/shinchaku.xml',
+        category_includes: ['防災・安全'],
+      }),
+      'pref.miyagi.jp',
+      100,
+    );
+
+    expect(result.usableItemCount).toBe(2);
+    expect(result.exclusions)
+      .toContainEqual({ reason: 'category_includesで除外', count: 8 });
+    expect(result.samples[0]?.categories).toEqual(['宮城県', '防災・安全']);
+  });
+
+  it('title_excludesもRSS 2.0と同じように効く', async () => {
+    const result = analyzeRss(
+      await fixture('rss10-rdf.xml'),
+      makeSource({
+        collector_type: 'rss',
+        url: 'https://www.pref.miyagi.jp/shinchaku/shinchaku.xml',
+        title_excludes: ['御意見の募集'],
+      }),
+      'pref.miyagi.jp',
+      100,
+    );
+
+    expect(result.usableItemCount).toBe(8);
+    expect(result.exclusions).toContainEqual({ reason: 'title_excludesで除外', count: 2 });
+  });
+
+  it('dc:subjectが単一値のRSS 1.0も1件のcategoryとして扱う', () => {
+    const xml = [
+      '<?xml version="1.0" encoding="utf-8" ?>',
+      '<rdf:RDF xmlns="http://purl.org/rss/1.0/"',
+      ' xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"',
+      ' xmlns:dc="http://purl.org/dc/elements/1.1/">',
+      '<channel rdf:about="https://www.city.osaka.lg.jp/"><title>t</title></channel>',
+      '<item rdf:about="https://www.city.osaka.lg.jp/page/1">',
+      '<title>公募型プロポーザル</title>',
+      '<link>https://www.city.osaka.lg.jp/page/1</link>',
+      '<dc:subject>県政情報</dc:subject>',
+      '<dc:date>2026-08-07T09:00:00+09:00</dc:date>',
+      '</item>',
+      '</rdf:RDF>',
+    ].join('');
+
+    const result = analyzeRss(xml, makeSource({ collector_type: 'rss' }), OFFICIAL_DOMAIN, 3);
+
+    expect(result.usableItemCount).toBe(1);
+    expect(result.samples[0]?.categories).toEqual(['県政情報']);
+    expect(result.samples[0]?.publishedAt).toBe('2026-08-07');
+  });
+
+  it('itemが0件のrdf:RDFは従来と同じErrorにする', () => {
+    const xml = '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+      + '<channel rdf:about="https://www.city.osaka.lg.jp/" /></rdf:RDF>';
+
+    expect(() => analyzeRss(xml, makeSource({ collector_type: 'rss' }), OFFICIAL_DOMAIN, 3))
+      .toThrow('itemが0件');
+  });
+
+  it('RSSでもRDFでもないXMLは従来どおり拒否する', () => {
+    expect(() => analyzeRss(
+      '<not-rss></not-rss>',
+      makeSource({ collector_type: 'rss' }),
+      OFFICIAL_DOMAIN,
+      3,
+    )).toThrow('RSS 2.0');
+  });
+});

@@ -45,14 +45,7 @@ export function analyzeRss(
     throw new Error(`RSSをXMLとして解析できませんでした: ${detail}`);
   }
 
-  const root = asRecord(document);
-  const rss = asRecord(root?.rss);
-  if (rss === null || !Object.hasOwn(rss, 'channel')) {
-    throw new Error('RSS 2.0 の channel 要素が見つかりません。');
-  }
-  const channel = asRecord(rss.channel) ?? {};
-
-  const rawItems = toArray(channel.item);
+  const rawItems = selectFeedItems(asRecord(document));
   if (rawItems.length === 0) throw new Error('RSSのitemが0件です。');
 
   const warnings: string[] = [];
@@ -166,6 +159,50 @@ export function analyzeRss(
     exclusions: toExclusions(exclusions),
     latestPublishedAt: latestDate(usableCandidates),
   };
+}
+
+/**
+ * RSS 2.0 と RSS 1.0（RDF）のどちらからも item の並びを取り出す。
+ *
+ * RSS 2.0 は channel の下に item が並ぶ。RSS 1.0 は rdf:RDF の直下に channel と
+ * item が並び、公開日が dc:date、カテゴリが dc:subject になる。後続の判定を
+ * 1つに保つため、RSS 1.0 の item だけ RSS 2.0 と同じキーへ寄せる。
+ */
+function selectFeedItems(root: Record<string, unknown> | null): unknown[] {
+  const rss = asRecord(root?.rss);
+  if (rss !== null && Object.hasOwn(rss, 'channel')) {
+    return toArray((asRecord(rss.channel) ?? {}).item);
+  }
+
+  const rdf = asRecord(root?.['rdf:RDF']) ?? asRecord(root?.RDF);
+  if (rdf !== null) {
+    return toArray(rdf.item).map(toRss20ShapedItem);
+  }
+
+  throw new Error('RSS 2.0 の channel 要素、または RSS 1.0 の rdf:RDF 要素が見つかりません。');
+}
+
+/** RSS 1.0 の item を RSS 2.0 と同じキー（title / link / pubDate / category）へ寄せる。 */
+function toRss20ShapedItem(rawItem: unknown): unknown {
+  const item = asRecord(rawItem);
+  if (item === null) return rawItem;
+  return {
+    ...item,
+    pubDate: item.pubDate ?? item['dc:date'],
+    category: item.category ?? toDublinCoreSubjects(item['dc:subject']),
+  };
+}
+
+/**
+ * dc:subject を category の並びへ正規化する。
+ *
+ * 要素が繰り返される場合と、1要素へ区切り文字でまとめられる場合の両方がある。
+ */
+function toDublinCoreSubjects(value: unknown): string[] {
+  return toArray(value)
+    .flatMap((subject) => toText(subject).split(/[,、]/u))
+    .map((subject) => subject.trim())
+    .filter((subject) => subject !== '');
 }
 
 function toSample(candidate: RssCandidate): SourceCheckSample {

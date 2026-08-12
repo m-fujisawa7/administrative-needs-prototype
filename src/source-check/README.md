@@ -10,7 +10,7 @@
 
 初期版で対応する `collector_type`:
 
-- `rss`: RSS 2.0を解析し、台帳の `category_includes` と `title_excludes` を適用
+- `rss`: RSS 2.0とRSS 1.0（RDF）を解析し、台帳の `category_includes` と `title_excludes` を適用
 - `list_page`: `link_selector` で候補リンクを抽出
 
 次は `Unsupported` として表示します。
@@ -104,13 +104,15 @@ npm run sources:check -- \
 
 RSSは次の順で処理します。
 
-1. RSS 2.0として解析
+1. RSS 2.0 または RSS 1.0（RDF）として解析
 2. タイトルとURLを取得
 3. 公式ドメイン外URLと重複URLを除外
 4. `category_includes` に一致しないitemを除外
 5. `title_excludes` に一致するitemを除外
 
 フィルター適用後に候補が0件ならErrorです。RSS自体にitemがあっても、設定が厳しすぎる問題を検出できます。
+
+形式は自動判定します。`rss` 要素の下に `channel` があればRSS 2.0、ルートが `rdf:RDF` ならRSS 1.0です。どちらでもない場合はErrorにします。RSS 1.0はルート直下に `channel` と `item` が並び、公開日が `dc:date`、カテゴリが `dc:subject` になるため、`item` だけをRSS 2.0と同じキー（`title` / `link` / `pubDate` / `category`）へ寄せてから共通の判定へ渡します。`dc:subject` は要素が繰り返される場合と「宮城県,防災・安全」のように1要素へ区切り文字でまとめられる場合の両方があるため、読点とカンマで分割します。`pubDate` や `category` が元から存在する場合はそちらを優先するので、RSS 2.0の解析結果は変わりません。
 
 ## 一覧ページのリンク
 
@@ -184,7 +186,7 @@ npm test
 
 ## 現在の制約
 
-- RSS 2.0のみ対応し、Atomは未対応
+- RSS 2.0とRSS 1.0（RDF）に対応し、Atomは未対応
 - HTMLとXMLはUTF-8として読み込む
 - 個別ページと `content_selector` はこのコマンドでは確認しない
 - robots.txt解析、キャッシュ、リトライ、差分検知、定期実行は行わない
