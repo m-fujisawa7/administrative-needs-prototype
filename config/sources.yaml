@@ -89,6 +89,14 @@ organizations:
     parent_organization_id: kitakyushu-city
     notes: 北九州市の官民共創窓口Q-PORTを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。課題図鑑の実体はnote.com/kitaq_ccx/にあり公式ドメイン外のため、現時点で収集できる情報源は無い
 
+  - id: iwate-prefecture
+    name: 岩手県
+    organization_type: prefecture
+    prefecture: 岩手県
+    official_domain: pref.iwate.jp
+    enabled: true
+    notes: 公募・企画競争・情報提供依頼、公募型プロポーザル、DX施策の行政ニーズを収集する対象都道府県
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -783,5 +791,76 @@ sources:
       - 行政課題
       - 民間提案募集
     notes: 北九州市の官民共創窓口。課題図鑑に掲載される課題は【2604KQ】のような課題番号付きだが、実体がすべてnote.com/kitaq_ccx/の記事で、すべての課題一覧もnoteのマガジンである。noteは自治体の公式ドメインではなく共用ブログ基盤で、official_domainに加えると無関係なnoteページまで取得可能になるため登録しない。ページ自身の内部リンクは担当者紹介と提案フォームだけで候補にならない。課題が公式ドメインへ移った場合に有効化を再検討する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: iwate-public-offering
+    organization_id: iwate-prefecture
+    name: その他公募情報
+    url: https://www.pref.iwate.jp/kensei/nyuusatsu/1010807/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    initial_since: "2026-08-01"
+    link_selector: "#voice ul.newslist > li.box > span.newsli > a"
+    content_selector: "#content"
+    document_type_hints:
+      - 公募
+      - 企画競争
+      - 情報提供依頼
+    notes: 全庁の公募・企画競争・情報提供依頼を集約する一覧。155件すべてに掲載日があり、タイトルは【公募】【企画競争】【情報提供依頼（RFI）】の接頭辞付きで締切は含まないため、掲載日が正しく解釈される。2021年5月からのアーカイブなので初回はinitial_sinceで2026-08-01に絞る。確認時点で2026-07-01以降が18件、2026-08-01以降が6件だった。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: iwate-compe-recruit
+    organization_id: iwate-prefecture
+    name: コンペ参加者募集情報
+    url: https://www.pref.iwate.jp/kensei/nyuusatsu/compe/sanka/index.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    initial_since: "2026-08-01"
+    link_selector: "#voice ul.newslist > li.box > span.newsli > a"
+    content_selector: "#content"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案募集
+      - 企画競争
+    notes: 全庁の公募型プロポーザルと企画提案募集を集約する一覧。697件すべてに掲載日があるため期間フィルタが正常に効くが、2021年4月からのアーカイブなので初回はinitial_sinceで2026-08-01に絞る。確認時点で2026-07-01以降が28件、2026-08-01以降が8件だった。直近28件のうち11件は質問への回答や結果公表の続報で、list_pageではtitle_excludesが適用されないため台帳で除外できず後続のAI判定で選別する。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: iwate-matching-system
+    organization_id: iwate-prefecture
+    name: いわて公共サービス・マッチングシステム
+    url: https://www.pref.iwate.jp/kensei/gyoseikeiei/matching/1049900/index.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - 官民連携
+      - 協働団体募集
+    notes: 企業と県が地域貢献活動の連携を相談・提案する窓口。県から提案する連携事業はページ内の表で分野別に列挙され、詳細と連絡先はSDGsマーク入り一覧のExcelで提供される。個別URLが無く、リンクは運営要綱PDF、Excel、提案様式Word、mailtoだけである。現在のCollectorはsingle_page未対応のため無効状態で保持する。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: iwate-dx-portal
+    organization_id: iwate-prefecture
+    name: いわてDXポータル 計画・取組・届出関係等
+    url: https://www.pref.iwate.jp/kensei/seisaku/jouhouka/1053777/1055840/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: low
+    enabled: false
+    link_selector: "article#content > div#voice > ul.listlink > li > a"
+    content_selector: "#content"
+    document_type_hints:
+      - DX推進計画
+      - データ連携基盤
+    notes: 情報化担当が所管する計画・取組・届出のページ一覧。24件のうち19件は掲載日が無く毎回すべてが対象になるうえ、内訳は地上デジタル放送、携帯電話の不感地域の解消、小規模施設特定有線一般放送の届出などの恒久的な案内が9件、いわてDX大賞2022から2026が5件、アドバイザー講演が4件で、案件としての信号が薄い。岩手県DX推進計画とデータ連携基盤共同利用に関する指針の2件だけは政策シグナルとして価値があるため、必要なら無効のままnotion:registerで個別に登録する。
     last_verified_at: "2026-08-10"
     verification_status: verified
