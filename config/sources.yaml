@@ -97,6 +97,14 @@ organizations:
     enabled: true
     notes: 公募・企画競争・情報提供依頼、公募型プロポーザル、DX施策の行政ニーズを収集する対象都道府県
 
+  - id: akita-prefecture
+    name: 秋田県
+    organization_type: prefecture
+    prefecture: 秋田県
+    official_domain: pref.akita.lg.jp
+    enabled: true
+    notes: 企画提案競技、デジタル政策、公民連携（PPP/PFI）の行政ニーズを収集する対象都道府県。秋田県はプロポーザルを「企画提案競技」と呼ぶ
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -868,4 +876,112 @@ sources:
       - データ連携基盤
     notes: 情報化担当が所管する計画・取組・届出のページ一覧。24件のうち19件は掲載日が無く毎回すべてが対象になるうえ、内訳は地上デジタル放送、携帯電話の不感地域の解消、小規模施設特定有線一般放送の届出などの恒久的な案内が9件、いわてDX大賞2022から2026が5件、アドバイザー講演が4件で、案件としての信号が薄い。岩手県DX推進計画とデータ連携基盤共同利用に関する指針の2件だけは政策シグナルとして価値があるため、必要なら無効のままnotion:registerで個別に登録する。
     last_verified_at: "2026-08-10"
+    verification_status: verified
+
+  - id: akita-compe
+    organization_id: akita-prefecture
+    name: コンペ情報
+    url: https://www.pref.akita.lg.jp/pages/genre/12231
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    initial_since: "2026-08-01"
+    link_selector: "article.page-contents > div.page-body > ul.c-list--archive > li.c-list__item > a"
+    content_selector: "article.page-contents"
+    title_excludes:
+      - 審査結果
+      - 選定結果
+      - 実施結果
+      - 結果について
+      - 質問への回答
+      - 質問に対する回答
+    document_type_hints:
+      - 企画提案競技
+      - 公募型プロポーザル
+      - 情報提供依頼
+    notes: 全庁の企画提案競技を集約する一覧。秋田県はプロポーザルを企画提案競技と呼び、情報提供依頼（RFI）も同じ一覧に載る。172件すべてに掲載日があり、内訳は結果75件、質問回答34件、実施本体57件で続報が過半を占めるためtitle_excludesで除外する。除外すると172件が80件になる。2022年3月からのアーカイブなので初回はinitial_sinceで2026-08-01に絞り、確認時点では除外後3件だった。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: akita-digital-policy
+    organization_id: akita-prefecture
+    name: デジタル政策推進課
+    url: https://www.pref.akita.lg.jp/pages/genre/system
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "article.page-contents > div.page-body > ul.c-list--archive > li.c-list__item > a"
+    content_selector: "article.page-contents"
+    title_excludes:
+      - 審査結果
+      - 選定結果
+      - 実施結果
+      - 結果について
+      - 質問への回答
+      - 質問に対する回答
+      - 業務案内
+      - 特定個人情報保護評価書
+    document_type_hints:
+      - 企画提案競技
+      - DX推進計画
+      - データ連携基盤
+    notes: デジタル政策推進課が所管するページの一覧。2014年の項目まで含む所管課の索引で新着順ではないが、38件すべてに掲載日があるため期間フィルタで直近分だけが対象になる。確認時点で2026-07-01以降は3件だけなのでinitial_sinceは付けていない。マイナンバー制度や電子申請などの恒久的な案内も含むため優先度は中とし、続報と固定の案内ページはtitle_excludesで除外する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: akita-ppp-platform
+    organization_id: akita-prefecture
+    name: 公民連携（PPP/PFI）の取組
+    url: https://www.pref.akita.lg.jp/pages/genre/12283
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "article.page-contents > div.page-body > ul.c-list--archive > li.c-list__item > a"
+    content_selector: "article.page-contents"
+    title_excludes:
+      - 開催終了
+      - 入会申込み
+      - 入会申し込み
+    document_type_hints:
+      - サウンディング型市場調査
+      - 官民対話
+      - PPP/PFI
+    notes: あきた公民連携地域プラットフォームの取組一覧。県有施設のネーミングライツ導入に関するサウンディング型市場調査や官民対話の実施済み案件を含む。22件のうち16件は終了したセミナーと勉強会の案内で、タイトル先頭の状態表示が[開催終了]と〔開催終了〕の2種類あるため、括弧を含めず開催終了だけを除外語にして両方に一致させる。除外すると22件が6件になる。確認時点で2026-07-01以降は2件と少ないためinitial_sinceは付けていない。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: akita-new-industry
+    organization_id: akita-prefecture
+    name: 新産業創造課
+    url: https://www.pref.akita.lg.jp/pages/genre/95123
+    collector_type: list_page
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    link_selector: "article.page-contents > div.page-body > ul.c-list--archive > li.c-list__item > a"
+    content_selector: "article.page-contents"
+    document_type_hints:
+      - スタートアップ支援
+      - 起業支援
+    notes: 新産業創造課が所管するページの一覧。38件すべてに掲載日があるが、内訳はAKITA STARTUP IGNITIONなどのイベント参加者募集、起業・創業個別相談会の案内、公式SNS運用方針、アンケート調査が中心で、調達や民間提案の募集がほとんど無い。スタートアップ支援の動向としては参考になるため台帳には残し、AI判定の消費に見合わないため無効状態で保持する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: akita-news-rss
+    organization_id: akita-prefecture
+    name: 全庁新着情報 RSS
+    url: https://www.pref.akita.lg.jp/feed/news.xml
+    collector_type: rss
+    source_category: other
+    priority: low
+    enabled: false
+    content_selector: "article.page-contents"
+    document_type_hints:
+      - 企画提案競技
+      - 意見募集
+    notes: 全庁の新着情報を配信するRSS。RSS 2.0でpubDateを持ち既存のanalyzeRssで解析できるが、県営住宅の提供や庁内ネットワークの不具合、熱中症関連情報まで含む全庁横断で、確認時点の98件のうち調達・募集系は33件、そのうち実質の案件は数件だった。category要素が無いためcategory_includesで絞れず、title_excludesは除外リストなので範囲の広さ自体は解消できない。企画提案競技はakita-compe、デジタル施策はakita-digital-policyで取得できるため無効状態で保持する。
+    last_verified_at: "2026-08-12"
     verification_status: verified
