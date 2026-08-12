@@ -111,7 +111,15 @@ organizations:
     prefecture: 山形県
     official_domain: pref.yamagata.jp
     enabled: true
-    notes: 公募型プロポーザルとデジタル施策の行政ニーズを収集する対象都道府県。分野別RSSを多数配信しているがいずれもRSS 1.0（RDF）で、現在のanalyzeRssでは解析できない
+    notes: 公募型プロポーザルとデジタル施策の行政ニーズを収集する対象都道府県。分野別RSSを多数配信しており、いずれもRSS 1.0（RDF）である
+
+  - id: sapporo-city
+    name: 札幌市
+    organization_type: designated_city
+    prefecture: 北海道
+    official_domain: city.sapporo.jp
+    enabled: true
+    notes: 全庁の入札・契約と募集の行政ニーズを収集する対象自治体。SAPPORO CO-CREATION GATEのwww4.city.sapporo.jpはcity.sapporo.jpのサブドメインのため、別組織に分けず同一組織として管理する
 
 sources:
   - id: osaka-digital-rss
@@ -1046,6 +1054,96 @@ sources:
     document_type_hints:
       - 入札
       - 公募型プロポーザル
-    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。RSS 1.0対応の実データ検証を目的に有効化した最初のRSS 1.0情報源。初回の対象を絞るためinitial_sinceを設定している。category_includesは実際の候補内容と件数を確認してから判断するため、現時点では設定していない。同じ場所にshinchaku.xmlもあり同形式である。
+    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。RSS 1.0対応の実データ検証を目的に有効化した最初のRSS 1.0情報源。初回の対象を絞るためinitial_sinceを設定している。dc:subjectが全件「県政情報」の1種類でcategory_includesによる分野の絞り込みには使えないため設定していない。同じ場所にshinchaku.xmlもあり同形式である。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: sapporo-news-rss
+    organization_id: sapporo-city
+    name: 全庁新着情報 RSS
+    url: https://www.city.sapporo.jp/new/shinchaku.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: true
+    initial_since: "2026-08-01"
+    content_selector: "#tmp_contents"
+    category_includes:
+      - 入札・契約
+      - IT産業の振興
+    document_type_hints:
+      - 一般競争入札
+      - 公募型企画競争
+      - 情報提供依頼
+    notes: 全庁の新着情報を配信するRSS 1.0（RDF）。dc:dateで公開日を取得でき、dc:subjectが最上位・中位・末端の3階層で入るため、中位の入札・契約と末端のIT産業の振興でcategory_includesを効かせる。実データでは60件が4件に絞られ、入札等告示や一般競争入札等情報が残った。観光・産業・ビジネスや市政情報は最上位バケットで商店街や河川、職員採用まで含むため使わない。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: sapporo-boshu-rss
+    organization_id: sapporo-city
+    name: 募集情報 RSS
+    url: https://www.city.sapporo.jp/boshu/boshuu.xml
+    collector_type: rss
+    source_category: proposal
+    priority: high
+    enabled: true
+    initial_since: "2026-08-01"
+    content_selector: "#tmp_contents"
+    category_includes:
+      - 企業への支援
+      - 事業者向け
+    document_type_hints:
+      - 公募型プロポーザル
+      - 事業者募集
+      - 補助金
+    notes: 募集情報を配信するRSS 1.0（RDF）。全庁新着より範囲が狭く20件だが、保育所の会計年度任用職員募集やイベント参加者募集も含むため、dc:subjectの企業への支援と事業者向けでcategory_includesを効かせる。実データでは20件が4件に絞られ、道市連携海外展開推進事業の公募型プロポーザルや補助金情報が残った。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: sapporo-co-creation-gate
+    organization_id: sapporo-city
+    name: SAPPORO CO-CREATION GATE テーマ型募集課題
+    url: https://www4.city.sapporo.jp/scg/task/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 行政課題
+      - 民間提案募集
+    notes: 市が募集テーマを提示し民間提案を募る官民共創窓口。HTMLに含まれるのはタブ見出しなど133文字の静的な枠だけで、課題一覧は/scg/js/list-loader.jsが後から差し込むJavaScript描画のため取得できない。Impervaのボット保護も入っている。現在のCollectorはJavaScriptを実行しないため無効状態で保持する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: sapporo-it-procurement
+    organization_id: sapporo-city
+    name: デジタル戦略推進局情報システム部 入札・契約等情報
+    url: https://www.city.sapporo.jp/kikaku/it-keiyaku/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 一般競争入札
+      - 情報提供依頼
+      - 発注予定
+    notes: 情報システム部の入札・契約情報の入口。新着情報ボックスに入札告示が5件あるが、日付表記が（7月23日）と月日だけで年を含まないためparseDateCandidateが解釈できず掲載日不明になる。残りは一般競争入札等情報、指名競争入札及び随意契約の結果、発注予定案件、情報提供依頼（RFI）の4サブページへのリンクで個別案件ではない。全庁新着RSSに入札・契約カテゴリで同種の告示が載るため無効状態で保持する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: sapporo-smartcity-procurement
+    organization_id: sapporo-city
+    name: デジタル戦略推進局スマートシティ推進部 一般競争入札等情報
+    url: https://www.city.sapporo.jp/kikaku/keiyaku/ippan.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 一般競争入札
+      - 公募型企画競争
+    notes: スマートシティ推進部の一般競争入札等情報。ICT活用プラットフォーム運用保守やDX推進リーダー育成研修など対象性の高い案件が並ぶが、確認時点では見出し「公募中の契約情報」の直後が空で公募中が0件、48件すべてが「終了した契約情報（落札結果等）」だった。公募中セクションだけを対象にすると毎回ERRORになり、兄弟要素まで拾うと終了案件48件が候補になる。公募が出た時点で有効化を再検討する。
     last_verified_at: "2026-08-12"
     verification_status: verified
