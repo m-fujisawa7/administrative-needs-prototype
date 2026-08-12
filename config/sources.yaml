@@ -1040,11 +1040,12 @@ sources:
     collector_type: rss
     source_category: procurement
     priority: high
-    enabled: false
+    enabled: true
+    initial_since: "2026-08-01"
     content_selector: "#tmp_contents"
     document_type_hints:
       - 入札
       - 公募型プロポーザル
-    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しているが、いずれもRSS 1.0（RDF）でルートがrdf:RDF、日付がdc:dateである。analyzeRssはRSS 2.0のchannel要素だけを見るため、実データで「RSS 2.0 の channel 要素が見つかりません。」となり解析できない。宮城県のRSSと同じ形式で、RSS 1.0対応を実装するまで無効状態で保持する。公募型プロポーザルはyamagata-proposalで取得できる。同じ場所にshinchaku.xmlもあるが同形式である。
+    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。RSS 1.0対応の実データ検証を目的に有効化した最初のRSS 1.0情報源。初回の対象を絞るためinitial_sinceを設定している。category_includesは実際の候補内容と件数を確認してから判断するため、現時点では設定していない。同じ場所にshinchaku.xmlもあり同形式である。
     last_verified_at: "2026-08-12"
     verification_status: verified
