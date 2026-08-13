@@ -1,3 +1,4 @@
+import type { ClaudeUsageLimitStop } from '../collection-run/types.ts';
 import type { RegisterOneResult } from '../notion-register/types.ts';
 
 export type NotionBatchCliOptions = {
@@ -30,4 +31,6 @@ export type NotionBatchReport = {
   inputLines: number;
   validUniqueUrls: number;
   results: NotionBatchItemResult[];
+  /** Claude CLIの利用上限でURL処理を打ち切った場合だけ設定する。 */
+  usageLimit?: ClaudeUsageLimitStop;
 };

@@ -10,6 +10,16 @@ import {
   runCollection,
   type CollectionRunCommandDependencies,
 } from '../src/commands/collection-run.ts';
+import {
+  runNotionBatch,
+  type NotionBatchCommandDependencies,
+} from '../src/commands/notion-batch.ts';
+import {
+  runNotionRegister,
+  type NotionRegisterCommandDependencies,
+} from '../src/commands/notion-register.ts';
+import { processSelectedUrls } from '../src/notion-batch/batch.ts';
+import type { ParsedSelectedUrls } from '../src/notion-batch/types.ts';
 import { registerOneAdministrativeNeed } from '../src/notion-register/register-one.ts';
 import type {
   NotionConnectionReport,
@@ -216,7 +226,168 @@ describe('利用上限の伝播と後続停止', () => {
     expect(report.stopped?.message).toBe(LIMIT_LINE);
     expect(exitCode).toBe(1);
   });
+
+  it('notion:batchは利用上限を検知したitemで打ち切り、後続URLをClaudeへ渡さない', async () => {
+    const processed: string[] = [];
+    const report = await processSelectedUrls(
+      selectedUrls([URL_A, URL_B, URL_C]),
+      false,
+      async (officialUrl) => {
+        processed.push(officialUrl);
+        if (officialUrl === URL_B) throw new ClaudeUsageLimitError(LIMIT_LINE);
+        return previewed(officialUrl);
+      },
+    );
+
+    expect(processed).toEqual([URL_A, URL_B]);
+    expect(report.usageLimit?.message).toBe(LIMIT_LINE);
+  });
+
+  it('notion:batchは利用上限を残りURL全件のai_analysis失敗として並べない', async () => {
+    const report = await processSelectedUrls(
+      selectedUrls([URL_A, URL_B, URL_C]),
+      false,
+      async (officialUrl) => {
+        if (officialUrl === URL_B) throw new ClaudeUsageLimitError(LIMIT_LINE);
+        return previewed(officialUrl);
+      },
+    );
+
+    const failures = report.results.filter((result) => result.status === 'failed');
+    expect(failures).toHaveLength(1);
+    expect(report.results).toHaveLength(2);
+  });
+
+  it('notion:batchは利用上限より前に成功したitemの結果を保持する', async () => {
+    const report = await processSelectedUrls(
+      selectedUrls([URL_A, URL_B, URL_C]),
+      false,
+      async (officialUrl) => {
+        if (officialUrl === URL_B) throw new ClaudeUsageLimitError(LIMIT_LINE);
+        return previewed(officialUrl);
+      },
+    );
+
+    expect(report.results[0]?.status).toBe('previewed');
+    expect(report.results[0]?.officialUrl).toBe(URL_A);
+  });
+
+  it('notion:batchは通常のAiAnalyzerErrorを従来どおりper-item失敗として継続する', async () => {
+    const processed: string[] = [];
+    const report = await processSelectedUrls(
+      selectedUrls([URL_A, URL_B, URL_C]),
+      false,
+      async (officialUrl) => {
+        processed.push(officialUrl);
+        if (officialUrl === URL_A) throw new AiAnalyzerError('Claude analysis failed safely.');
+        return previewed(officialUrl);
+      },
+    );
+
+    expect(processed).toEqual([URL_A, URL_B, URL_C]);
+    expect(report.results.map((result) => result.status)).toEqual([
+      'failed',
+      'previewed',
+      'previewed',
+    ]);
+    expect(report.usageLimit).toBeUndefined();
+  });
+
+  it('notion:batchコマンドは利用上限を安全に整形して表示する', async () => {
+    const stderr: string[] = [];
+    const stdout: string[] = [];
+    const registerOne = vi.fn(async (input: { officialUrl: string }) => {
+      if (input.officialUrl === URL_B) throw new ClaudeUsageLimitError(LIMIT_LINE);
+      return created(input.officialUrl);
+    });
+
+    const exitCode = await runNotionBatch(
+      ['--source', 'osaka-digital-rss', '--file', './selected.txt', '--database-id', DATABASE_ID],
+      batchDependencies({ registerOne, stdout, stderr }),
+    );
+
+    expect(exitCode).toBe(1);
+    expect(registerOne).toHaveBeenCalledTimes(2);
+    const errorOutput = stderr.join('\n');
+    expect(errorOutput).toContain('Claude CLI usage limit reached.');
+    expect(errorOutput).toContain(LIMIT_LINE);
+    expect(stdout.join('\n')).toContain('Remaining URLs were not sent to Claude.');
+  });
+
+  it('notion:registerは利用上限を安全に整形して表示し、生の例外を素通ししない', async () => {
+    const stderr: string[] = [];
+    const exitCode = await runNotionRegister(
+      ['--source', 'osaka-digital-rss', '--url', URL_A, '--database-id', DATABASE_ID],
+      registerDependencies({
+        registerOne: async () => {
+          throw new ClaudeUsageLimitError(LIMIT_LINE);
+        },
+        stderr,
+      }),
+    );
+
+    expect(exitCode).toBe(1);
+    const errorOutput = stderr.join('\n');
+    expect(errorOutput).toContain('Claude CLI usage limit reached.');
+    expect(errorOutput).toContain(LIMIT_LINE);
+    expect(errorOutput).not.toContain('ClaudeUsageLimitError:');
+  });
+
+  it('notion:registerは利用上限以外の未知の例外を握りつぶさない', async () => {
+    const caught = await runNotionRegister(
+      ['--source', 'osaka-digital-rss', '--url', URL_A, '--database-id', DATABASE_ID],
+      registerDependencies({
+        registerOne: async () => {
+          throw new Error('unexpected failure');
+        },
+        stderr: [],
+      }),
+    ).then(() => null, (error: unknown) => error);
+
+    expect(caught).toBeInstanceOf(Error);
+  });
 });
+
+function selectedUrls(urls: readonly string[]): ParsedSelectedUrls {
+  return {
+    entries: urls.map((officialUrl) => ({ officialUrl, inputDuplicate: false })),
+    uniqueUrlCount: urls.length,
+  };
+}
+
+function batchDependencies(options: {
+  registerOne: NonNullable<NotionBatchCommandDependencies['registerOne']>;
+  stdout: string[];
+  stderr: string[];
+}): NotionBatchCommandDependencies {
+  return {
+    env: { NOTION_TOKEN: 'test-token' },
+    loadEnvironment: () => undefined,
+    loadRegistry: async () => registry(),
+    readSelectedUrls: async () => selectedUrls([URL_A, URL_B, URL_C]),
+    createClient: () => notionClient(),
+    checkConnection: async () => notionReport(),
+    registerOne: options.registerOne,
+    stdout: (message) => options.stdout.push(message),
+    stderr: (message) => options.stderr.push(message),
+  };
+}
+
+function registerDependencies(options: {
+  registerOne: NonNullable<NotionRegisterCommandDependencies['registerOne']>;
+  stderr: string[];
+}): NotionRegisterCommandDependencies {
+  return {
+    env: { NOTION_TOKEN: 'test-token' },
+    loadEnvironment: () => undefined,
+    loadRegistry: async () => registry(),
+    createClient: () => notionClient(),
+    checkConnection: async () => notionReport(),
+    registerOne: options.registerOne,
+    stdout: () => undefined,
+    stderr: (message) => options.stderr.push(message),
+  };
+}
 
 function runDependencies(options: {
   registerOne: NonNullable<CollectionRunCommandDependencies['registerOne']>;

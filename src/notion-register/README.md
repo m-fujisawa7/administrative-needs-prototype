@@ -66,6 +66,19 @@ Notionは、存在しない`select`または`multi_select`名をページ作成�
 
 非重複時は、解析後にも登録予定URLでもう一度検索します。重複検索とページ作成は別API呼び出しのため、複数プロセスを同時実行した場合の競合を完全には防げません。手動で1件ずつ実行してください。
 
+## Claude CLIの利用上限
+
+Claude CLIが利用上限に達した場合は、`ClaudeUsageLimitError`として判定し、`collect:run` / `collect:batch` と同じ停止表示を標準エラーへ出して終了コード1で終わります。stack traceは通常の出力に出しません。
+
+```text
+[ERROR] Claude CLI usage limit reached.
+You've hit your limit · resets 10pm (Asia/Tokyo)
+
+AI processing has been stopped for the rest of this run.
+```
+
+利用上限以外の未知の例外は握りつぶさず、そのまま呼び出し側へ渡します。自動再実行、リセット時刻までの待機、他Providerへのfallbackは行いません。
+
 ## トークン
 
 `.env`の`NOTION_TOKEN`を使用します。トークン、Authorizationヘッダー、入力本文全体を出力・保存しません。SDKログと自動リトライも無効です。

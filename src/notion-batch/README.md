@@ -54,3 +54,18 @@ Codex実行環境で実Claude CLIが応答しない場合は、結合確認を�
 1件が失敗しても後続URLを処理し、最後に件数と失敗ステージを表示します。失敗が1件以上あれば終了コード1、プレビュー・作成・重複スキップだけなら0です。
 
 Notionのスキーマや選択肢を自動変更せず、既存ページも更新・削除しません。実行履歴、AI結果、HTML・PDF本文をファイルへ保存しません。トークンやAuthorizationヘッダーも出力しません。
+
+## Claude CLIの利用上限
+
+Claude CLIが利用上限に達した場合だけは、`ai_analysis`の通常の失敗として後続URLを試し続けず、そのURLで処理を打ち切ります。利用上限はClaude全体の状態であり、残りのURLも同じ失敗になるためです。
+
+```text
+[ERROR] Claude CLI usage limit reached.
+You've hit your limit · resets 10pm (Asia/Tokyo)
+
+AI processing has been stopped for the rest of this run.
+```
+
+残りのURLへはClaudeを呼びません。打ち切りまでに完了したプレビュー・作成・重複スキップの結果はそのまま保持し、サマリの末尾に停止理由を追加して終了コード1になります。`collect:run` / `collect:batch` と同じ`ClaudeUsageLimitError`で判定します。未処理URLは、リセット後に同じ入力ファイルで再実行すれば登録済みURLが重複としてスキップされるため、そのまま消化できます。
+
+すでに作成済みのNotionページはロールバックしません。自動再実行、リセット時刻までの待機、他Providerへのfallbackは行いません。

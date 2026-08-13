@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { formatWarningLine } from '../ai/warning-severity.ts';
+import { formatClaudeUsageLimitStop } from '../collection-run/format.ts';
 import { processSelectedUrls } from '../notion-batch/batch.ts';
 import { NotionBatchConfigurationError } from '../notion-batch/errors.ts';
 import {
@@ -126,7 +127,11 @@ export async function runNotionBatch(
       stdout(formatNotionBatchItem(result, index, total));
     },
   );
+  if (batchReport.usageLimit !== undefined) {
+    stderr(formatClaudeUsageLimitStop(batchReport.usageLimit));
+  }
   stdout(formatNotionBatchSummary(batchReport));
+  if (batchReport.usageLimit !== undefined) return 1;
   return batchReport.results.some((result) => result.status === 'failed') ? 1 : 0;
 }
 

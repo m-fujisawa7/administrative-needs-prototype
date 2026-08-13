@@ -1,5 +1,7 @@
 import { pathToFileURL } from 'node:url';
+import { ClaudeUsageLimitError } from '../ai/errors.ts';
 import { formatWarningLine } from '../ai/warning-severity.ts';
+import { formatClaudeUsageLimitStop } from '../collection-run/format.ts';
 import { NotionConfigurationError } from '../notion-check/errors.ts';
 import {
   isNotionRegistrationConfigurationError,
@@ -111,7 +113,16 @@ export async function runNotionRegister(
     return isNotionRegistrationConfigurationError(originalError) ? 2 : 1;
   }
 
-  const result = await runtime.register(options.url, options.write);
+  let result: Awaited<ReturnType<typeof runtime.register>>;
+  try {
+    result = await runtime.register(options.url, options.write);
+  } catch (error) {
+    // 利用上限はClaude全体の状態なので、stack traceではなく整形した停止表示にする。
+    // それ以外の未知の例外は握りつぶさず、そのまま呼び出し側へ渡す。
+    if (!(error instanceof ClaudeUsageLimitError)) throw error;
+    stderr(formatClaudeUsageLimitStop({ message: error.limitMessage }));
+    return 1;
+  }
 
   for (const warning of result.warnings) {
     stderr(formatWarningLine(warning));

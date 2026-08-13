@@ -159,5 +159,15 @@ export function formatNotionBatchSummary(report: NotionBatchReport): string {
       );
     }
   }
+  if (report.usageLimit !== undefined) {
+    lines.push(
+      '',
+      'Stopped:',
+      'Claude CLI usage limit reached.',
+      report.usageLimit.message,
+      '',
+      'Remaining URLs were not sent to Claude.',
+    );
+  }
   return lines.join('\n');
 }
