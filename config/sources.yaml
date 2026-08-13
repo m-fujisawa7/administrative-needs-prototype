@@ -145,6 +145,14 @@ organizations:
     parent_organization_id: kawasaki-city
     notes: 川崎市の官民連携窓口Kawasaki Future Co-Labを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。記事から見つけた添付PDFに限り、parent_organization_idで参照する川崎市のcity.kawasaki.jp配下も取得を許可する
 
+  - id: hokkaido-prefecture
+    name: 北海道
+    organization_type: prefecture
+    prefecture: 北海道
+    official_domain: pref.hokkaido.lg.jp
+    enabled: true
+    notes: 全庁のプロポーザルと公募、AI・DX推進局DX推進課の施策、イノベーション推進局情報政策課の情報システム調達の行政ニーズを収集する対象都道府県。一覧ページと個別ページは同一CMSで、一覧はdiv.pages配下のarticleが1件で、その中のheader > h2 > aが案件リンク、個別ページの本文はarticle.bodyに入るため、link_selectorとcontent_selectorは4情報源で共通になる。地域課題の応募フォームは共同利用基盤のharp.lg.jpとharp.asp.lgwan.jpにあり公式ドメイン外のため取得できない。札幌市はcity.sapporo.jpの別組織として登録済みで、この組織とは親子関係を持たせていない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1328,4 +1336,114 @@ sources:
       - 民間提案募集
     notes: 川崎市が課題を提示し民間から提案を募る官民連携窓口。札幌のSCGと違い課題9件が静的HTMLに含まれるため取得できる。9件すべてに掲載日があり、確認時点では全件が募集中だった。ただし掲載日は2026年5月20日から25日に集中しており、共通の初回収集開始日2026-07-01では募集中の課題が1件も対象にならないため、initial_sinceを2026-05-01にしている。課題は年度単位で追加され長期間募集されるため、他Sourceより起点を前に置く必要がある。リンク文字列は状態と掲載日と課題名と分野を連結した長い文字列になるため、案件名は個別ページ取得時に確認する。
     last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: hokkaido-info-policy-division
+    organization_id: hokkaido-prefecture
+    name: イノベーション推進局情報政策課の全ページ一覧
+    url: https://www.pref.hokkaido.lg.jp/sm/jsk/docs/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "div.pages > article > header > h2 > a[href]"
+    content_selector: article.body
+    title_excludes:
+      - よくある質問
+      - FAQ
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 情報システム調達
+    notes: 総務部イノベーション推進局情報政策課が所管するページの索引。内容が情報システム調達の本体で、DHCP管理サーバ、SD-WAN光回線、LGWAN接続環境、kintoneライセンス、生成AI（RAG）提供業務の一般競争入札、多機能型情報システム導入支援業務とソフトウェア資産管理システム実施設計業務の公募型プロポーザル、北海道庁デジタル化取組方針（第4期）を含むため優先度は高。30件すべてがtime要素のdatetime属性で掲載日を持つ。確認時点の最新が2026-07-31で、他の都道府県に合わせて2026-08-01を起点にすると候補が0件になるため、initial_sinceは設定せず共通の2026-07-01を使う。除外後の2026-07-01以降は8件で、いずれも直近の入札・プロポーザル案件だった。2026-04-01付けの14件は調達FAQと電子入札・電子調達の恒久的な案内で、年度初日に日付が揃っている。期間フィルタでも当面は落ちるが、年度替わりに再浮上したときに備えてFAQ系8件をtitle_excludesで除外する。同じ2026-04-01のデジタル化取組方針は政策シグナルなので除外語に当てていない。ページャは3ページあるがCollectorは追わないため対象は先頭30件。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: hokkaido-proposal-list
+    organization_id: hokkaido-prefecture
+    name: プロポーザル
+    url: https://www.pref.hokkaido.lg.jp/category/d003/c006/s012/
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "div.pages > article > header > h2 > a[href]"
+    content_selector: article.body
+    title_excludes:
+      - 募集終了
+      - 終了しました
+      - 受付終了
+      - 公募終了
+      - 審査結果
+      - 報道発表
+      - 入札結果等の一覧
+      - 入札等結果
+      - 入札・プロポーザル情報
+      - 入札情報
+      - 入札・契約情報
+    document_type_hints:
+      - 公募型プロポーザル
+      - 総合評価一般競争入札
+      - 業務委託
+    notes: 全庁のプロポーザルを分野別カテゴリで集約する一覧。50件すべてに掲載日があるが、time要素にdatetime属性が無く本文の2026年8月13日形式をparseDateCandidateが解釈する。所管課別の索引ページと終了案件が過半を占めるためtitle_excludesで50件を28件に絞り、除外後の2026-07-01以降は12件だった。終了表示は【募集終了】【終了しました】【受付終了】［公募終了］《受付は終了しました》と括弧が複数種類あるため、括弧を含めず終了語だけを除外語にして全種類に一致させる。報道発表･公表･お知らせ、入札情報、入札結果等の一覧、入札等結果、入札・プロポーザル情報、入札・契約情報は所管課の恒久的な索引ページなので除外する。h2 > aのリンク文字列は末尾のspanに所管部課名が連結され「公募型プロポーザル方式の実施について（…）イノベーション推進局財産活用課」のようになるため、案件名と所管は個別ページ取得時に確認する。カテゴリのURLにd003/c006/s012の分類IDを使い年度を含まないため翌年度も同じ設定で動く。ページャは3ページあるがCollectorは追わないため対象は先頭50件。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: hokkaido-boshu-list
+    organization_id: hokkaido-prefecture
+    name: 公募（団体・事業者）
+    url: https://www.pref.hokkaido.lg.jp/category/d001/c001/s002/
+    collector_type: list_page
+    source_category: proposal
+    priority: medium
+    enabled: true
+    link_selector: "div.pages > article > header > h2 > a[href]"
+    content_selector: article.body
+    title_excludes:
+      - 募集終了
+      - 終了しました
+      - 受付終了
+    document_type_hints:
+      - 事業者募集
+      - 情報提供依頼
+      - サウンディング型市場調査
+    notes: 全庁の団体・事業者向け公募を分野別カテゴリで集約する一覧。50件すべてに掲載日があり、プロポーザル一覧と同じくtime要素の本文から解釈される。自治体DXの情報提供依頼（RFI）2件、既存道営住宅の活用に関するサウンディング型市場調査、地域課題対応ソリューション共創事業、デジタルチャレンジ推進事業などの対象候補を含む一方、道立施設の指定管理者公募が10件前後、体験作文・ポスター・ロゴマークの募集、表彰の候補者推薦、追悼式の案内なども混じるため優先度は中とし、対象性は後続のAI判定に任せる。指定管理は大阪市で関連度が低いと判断してosaka-shitei-kanriを無効にしているが、この一覧では有用な公募と同じカテゴリに並ぶため除外語には入れていない。終了表示の除外だけを行い50件が42件、除外後の2026-07-01以降は25件だった。初回の件数は多いが掲載日の最古が2026-05-01でアーカイブが短く、2026-08-01を起点にすると7月分のRFIとサウンディングを恒久的に取り逃すため、initial_sinceは設定せず--limitで消化する。ページャは3ページあるがCollectorは追わないため対象は先頭50件。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: hokkaido-dx-division
+    organization_id: hokkaido-prefecture
+    name: ＡＩ・ＤＸ推進局ＤＸ推進課の全ページ一覧
+    url: https://www.pref.hokkaido.lg.jp/kz/dxs/docs/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "div.pages > article > header > h2 > a[href]"
+    content_selector: article.body
+    title_excludes:
+      - 入札結果
+    document_type_hints:
+      - 公募型プロポーザル
+      - 総合評価一般競争入札
+      - DX施策
+    notes: 経済部AI・DX推進局DX推進課が所管するページの索引。ページ名は公式表記に合わせて全角のＡＩ・ＤＸを使う。30件すべてがtime要素のdatetime属性で掲載日を持ち、最新2026-08-12、最古2026-03-31だった。2026-08-01を起点にすると2件しか残らないため、initial_sinceは設定せず共通の2026-07-01を使い、除外後の2026-07-01以降は10件になる。ドローンフィールド北海道推進事業の公募型プロポーザル、DX関連産業振興事業とスタートアップ創出促進事業の総合評価一般競争入札、地域課題対応ソリューション共創事業を含むが、IT産業のページや北海道Society5.0推進会議のページなどの恒久的な索引、会議の開催案内、寄附への感謝状贈呈式も混じるため優先度は中とする。DX推進課の入札結果のページは恒久的な結果索引なのでtitle_excludesで除外する。同じ案件が全庁のプロポーザル一覧と公募一覧にも出るため、hokkaido-proposal-listとhokkaido-boshu-listと候補が重複する。ページャは5ページ以上あるがCollectorは追わないため対象は先頭30件。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: hokkaido-regional-issues
+    organization_id: hokkaido-prefecture
+    name: 北海道内の地域課題を掲載・募集しています。
+    url: https://www.pref.hokkaido.lg.jp/kz/dxs/iot/r4kadai.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: article.body
+    document_type_hints:
+      - 行政課題
+      - 民間提案募集
+      - デジタルソリューション募集
+    notes: 道内市町村の地域課題一覧を掲載し、市町村からの相談と全国の企業・団体が持つデジタルソリューションを募集する窓口。本文924文字にHTMLの一覧は無く、課題一覧は調査結果一覧R7_kekka.xlsxのExcel1件で提供される。応募フォームは共同利用基盤のharp.lg.jpとharp.asp.lgwan.jpにあり公式ドメイン外のため取得できない。ページ内の内部リンクはICT利活用と地域の情報化のカテゴリ2件だけで案件にならない。現在のCollectorはsingle_page未対応のため無効状態で保持する。URLはr4kadai.htmlだが令和4年度で止まった固定ページではなく、令和7年度の調査結果を載せて2026-03-25に更新されている。応募された課題は原則非公開で希望に応じて掲載される運用のため、この一覧に出るのは公開に同意した課題だけである。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-13"
     verification_status: verified
