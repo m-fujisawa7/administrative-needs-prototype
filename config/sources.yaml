@@ -129,6 +129,22 @@ organizations:
     enabled: true
     notes: 全庁の入札・契約、デジタル変革、産業振興の行政ニーズを収集する対象都道府県。所属単位のRSSを配信しており、いずれもRSS 1.0（RDF）である
 
+  - id: kawasaki-city
+    name: 川崎市
+    organization_type: designated_city
+    prefecture: 神奈川県
+    official_domain: city.kawasaki.jp
+    enabled: true
+    notes: 全庁のプロポーザル、サウンディング型市場調査、デジタル化施策の行政ニーズを収集する対象自治体。個別ページの本文コンテナはIDのmol_contentsとクラスのmol_contentsが混在するため、content_selectorはクラスセレクターの.mol_contentsで両方に当てている
+
+  - id: kawasaki-city-colab
+    name: 川崎市
+    organization_type: external_organization
+    official_domain: kawasakicity100.jp
+    enabled: true
+    parent_organization_id: kawasaki-city
+    notes: 川崎市の官民連携窓口Kawasaki Future Co-Labを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。記事から見つけた添付PDFに限り、parent_organization_idで参照する川崎市のcity.kawasaki.jp配下も取得を許可する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1240,5 +1256,76 @@ sources:
       - サウンディング
       - 官民対話
     notes: 2024年12月10日に設置されたPPP/PFI地域プラットフォームの趣旨説明ページ。活動内容にサウンディング（官民対話）の実施調整を掲げているが、リンクは設置要綱、活動計画書、活動報告書のPDF4件だけで案件ページが無い。現在のCollectorはsingle_page未対応のため無効状態で保持する。官民対話の案件ページが公開された時点で有効化を再検討する。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: kawasaki-proposal-list
+    organization_id: kawasaki-city
+    name: プロポーザル関連情報
+    url: https://www.city.kawasaki.jp/templates/proposal/0-Curr.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "ul.publicity_list > li a[href]"
+    content_selector: ".mol_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 業務委託
+    notes: 全庁の公募型プロポーザルを集約する新着一覧。23件のうち22件に掲載日がある。同じページのul.publicity_soshikiは34局へのリンクで個別案件を持たないため候補にしない。個別ページの本文コンテナはクラスのmol_contentsなので、IDではなくクラスセレクターを使う。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: kawasaki-sounding
+    organization_id: kawasaki-city
+    name: サウンディング型市場調査
+    url: https://www.city.kawasaki.jp/170/page/0000116040.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "#mol_contents > div:has(h2:contains('サウンディング調査の募集情報')) + div table td a[href]"
+    content_selector: ".mol_contents"
+    document_type_hints:
+      - サウンディング型市場調査
+      - 官民対話
+    notes: サウンディング調査の募集情報と過去分を年度別の表で並べるページ。表は9つあり過去分を含めると99件になるため、募集中の表だけを候補にする。見出しのh2は表と兄弟ではなく別のdivに入っているため、h2を含むdivを:hasで特定し、その次のdivの表を対象にする。年度をセレクターへ書かないので翌年度も同じ設定で動く。確認時点では募集中が1件で、募集が無い期間はlink_selectorが0件になりERRORとなる。件名は表のセルにあるがリンクではなく、リンク文字列は詳細は局HPになる。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: kawasaki-digital-division
+    organization_id: kawasaki-city
+    name: デジタル化施策推進室
+    url: https://www.city.kawasaki.jp/170/soshiki/45-21-0-0-0.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    initial_since: "2026-06-01"
+    link_selector: "div.main_naka ul.category_end > li a[href]"
+    content_selector: ".mol_contents"
+    document_type_hints:
+      - DX推進プラン
+      - オンライン手続き
+      - AI活用
+    notes: デジタル化施策推進室が所管するページの索引。135件すべてタイトル末尾に[2026年6月3日]形式の日付が入り掲載日として解釈できる。2015年3月からのアーカイブで最新が2026-07-24なので、2026-08-01では0件になる。直近分を拾える2026-06-01をinitial_sinceにした。川崎市DX推進プランの改定やオンライン手続、LINE公式アカウントのリニューアルなど恒久的な案内も含むため優先度は中。
+    last_verified_at: "2026-08-12"
+    verification_status: verified
+
+  - id: kawasaki-colab-themes
+    organization_id: kawasaki-city-colab
+    name: Kawasaki Future Co-Lab 提案募集中の課題
+    url: https://kawasakicity100.jp/theme-project/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    initial_since: "2026-05-01"
+    link_selector: "div.tab-content ul.none > li a[href]"
+    content_selector: "#content"
+    document_type_hints:
+      - 行政課題
+      - 民間提案募集
+    notes: 川崎市が課題を提示し民間から提案を募る官民連携窓口。札幌のSCGと違い課題9件が静的HTMLに含まれるため取得できる。9件すべてに掲載日があり、確認時点では全件が募集中だった。ただし掲載日は2026年5月20日から25日に集中しており、共通の初回収集開始日2026-07-01では募集中の課題が1件も対象にならないため、initial_sinceを2026-05-01にしている。課題は年度単位で追加され長期間募集されるため、他Sourceより起点を前に置く必要がある。リンク文字列は状態と掲載日と課題名と分野を連結した長い文字列になるため、案件名は個別ページ取得時に確認する。
     last_verified_at: "2026-08-12"
     verification_status: verified
