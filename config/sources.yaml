@@ -153,6 +153,22 @@ organizations:
     enabled: true
     notes: 全庁のプロポーザルと公募、AI・DX推進局DX推進課の施策、イノベーション推進局情報政策課の情報システム調達の行政ニーズを収集する対象都道府県。一覧ページと個別ページは同一CMSで、一覧はdiv.pages配下のarticleが1件で、その中のheader > h2 > aが案件リンク、個別ページの本文はarticle.bodyに入るため、link_selectorとcontent_selectorは4情報源で共通になる。地域課題の応募フォームは共同利用基盤のharp.lg.jpとharp.asp.lgwan.jpにあり公式ドメイン外のため取得できない。札幌市はcity.sapporo.jpの別組織として登録済みで、この組織とは親子関係を持たせていない
 
+  - id: fukuoka-city
+    name: 福岡市
+    organization_type: designated_city
+    prefecture: 福岡県
+    official_domain: city.fukuoka.lg.jp
+    enabled: true
+    notes: 全庁の提案競技・公募、DX戦略、PPP/PFI事業の行政ニーズを収集する対象自治体。実証実験フルサポート事業mirai@のmirai.city.fukuoka.lg.jpはcity.fukuoka.lg.jpのサブドメインのため、別組織に分けず同一組織として管理する。本体CMSは個別ページの本文が.wb-contentsに入る。#maincontentsはスキップリンクの着地点で中身が空なので、IDに引かれてcontent_selectorへ指定しないこと。北九州市はcity.kitakyushu.lg.jpの別組織として登録済みで、この組織とは親子関係を持たせていない
+
+  - id: fukuoka-city-100lab
+    name: 福岡市
+    organization_type: external_organization
+    official_domain: f-100lab.jp
+    enabled: true
+    parent_organization_id: fukuoka-city
+    notes: 福岡市の共創プラットフォーム福岡100ラボを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。記事から見つけた添付PDFに限り、parent_organization_idで参照する福岡市のcity.fukuoka.lg.jp配下も取得を許可する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1445,5 +1461,96 @@ sources:
       - 民間提案募集
       - デジタルソリューション募集
     notes: 道内市町村の地域課題一覧を掲載し、市町村からの相談と全国の企業・団体が持つデジタルソリューションを募集する窓口。本文924文字にHTMLの一覧は無く、課題一覧は調査結果一覧R7_kekka.xlsxのExcel1件で提供される。応募フォームは共同利用基盤のharp.lg.jpとharp.asp.lgwan.jpにあり公式ドメイン外のため取得できない。ページ内の内部リンクはICT利活用と地域の情報化のカテゴリ2件だけで案件にならない。現在のCollectorはsingle_page未対応のため無効状態で保持する。URLはr4kadai.htmlだが令和4年度で止まった固定ページではなく、令和7年度の調査結果を載せて2026-03-25に更新されている。応募された課題は原則非公開で希望に応じて掲載される運用のため、この一覧に出るのは公開に同意した課題だけである。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: fukuoka-teiankyogi
+    organization_id: fukuoka-city
+    name: 各所管課が公募する競争入札、提案競技等
+    url: https://www.city.fukuoka.lg.jp/business/keiyaku-kobo/teiankyogi.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "div.tl-block:has(h2:contains('募集状況')) + div.disappear ul > li > a[href]"
+    content_selector: .wb-contents
+    title_excludes:
+      - 結果について
+      - 審査結果
+      - 質問と回答
+      - 質問書に対する回答
+    document_type_hints:
+      - 提案競技
+      - 情報提供依頼
+      - 業務委託
+    notes: 全庁の所管課が公募する競争入札と提案競技を集約する一覧。福岡市はプロポーザルを提案競技と呼ぶ。ページには募集状況130件、質問と回答82件、結果186件の3ブロックが同じclassのdiv.disappearで並ぶため、見出しのh2を含むdiv.tl-blockを:hasで特定し、その次のdiv.disappearだけを対象にする。ブロックを区別せずdiv:has(h2)で書くと祖先のdivにも一致して220件になり、.right-content > divで書くと質問と回答の82件を拾うので、必ずdiv.tl-block基準にすること。募集状況130件はすべて掲載日を持ち2023-11-02からのアーカイブで、除外後の2026-07-01以降は31件、2026-08-01以降は10件だった。initial_sinceは設定していない。initial_sinceは自動収集の下限日にもなるため2026-08-01にすると、国民健康保険等システム再構築と交通局新財務会計システム再構築の情報提供依頼（RFI）2件が7月付けで恒久的に落ちる。初回の31件は--limitで消化する。募集状況ブロックにも結果や質問回答が6件混じるためtitle_excludesで除いた。【情報公開延期】や開催時間帯変更の検証業務のように延期・変更を含む実案件は落とさないよう、延期と変更は除外語に入れていない。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: fukuoka-ppp-pfi
+    organization_id: fukuoka-city
+    name: ＰＰＰ／ＰＦＩ事業
+    url: https://www.city.fukuoka.lg.jp/zaisei/jigyo-suishin/ppp_pfi/ppp_pfi_jigyou.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "h2:contains('事業者公募中の事業') + div table td a[href]"
+    content_selector: .wb-contents
+    document_type_hints:
+      - PPP/PFI
+      - 事業者公募
+      - 民間活力導入
+    notes: PPP/PFI事業を進捗段階別に並べるページ。可能性がある事業、事業化が進められている事業、事業者公募中の事業、事業者が決定した事業、モニタリング結果の5段階があり、公募中だけを対象にする。手書きHTMLでh2と表が同じdiv内の兄弟として並び、段落の入れ子が段階ごとに違うため、classではなく見出し文字列で位置を特定する。見出しの採番は「3 事業者公募中の事業」が半角数字で他の段階は全角なので、番号を含めず事業者公募中の事業だけを:containsに渡して表記揺れを避けている。確認時点の公募中は新西部工場（仮称）整備事業の1件で、公募が無い期間はlink_selectorが0件になりERRORとなり収集状態も進まない。ページに掲載日が無いため候補は毎回すべて期間内として扱われ、Notion登録済みURLで除外される。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: fukuoka-mirai-projects
+    organization_id: fukuoka-city
+    name: mirai@ プロジェクト
+    url: https://mirai.city.fukuoka.lg.jp/project/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "li.c-card-item > a[href]"
+    content_selector: main
+    document_type_hints:
+      - 実証実験
+      - 公民共働
+      - 行政課題
+    notes: 実証実験フルサポート事業mirai@が採択したプロジェクトの紹介一覧。9件のカードはli.c-card-item直下のaが案件リンクで、カード内には分野タグのaも3〜5件あるため直下のaだけに絞る。掲載中の9件は募集中の課題ではなく採択済みプロジェクトの事例で、MICE施設運営のスマート化、建設現場の熱中症未然防止、公共工事の写真管理の効率化など市が求める領域が読み取れるため、募集要項そのものではないぶん優先度は中とする。一覧側のカードはtime要素がHTMLコメントで無効化されており掲載日を取得できないため、候補は毎回すべて期間内として扱われ、Notion登録済みURLで除外される。個別ページ側にはtimeが生きており、content:checkでは2026-08-05が取得できたので、期間で絞れないのは一覧段階だけである。リンク文字列は参画企業名と公民共働・実証実験のラベルとテーマを連結した長い文字列になるため、案件名は個別ページ取得時に確認する。個別ページの本文はWordPressテーマのmainに入り、本体CMSの.wb-contentsとは異なる。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: fukuoka-dx-promotion
+    organization_id: fukuoka-city
+    name: デジタルトランスフォーメーションの推進
+    url: https://www.city.fukuoka.lg.jp/soki/dxsenryaku/shisei/dx.html
+    collector_type: single_page
+    source_category: plan
+    priority: medium
+    enabled: false
+    content_selector: .wb-contents
+    document_type_hints:
+      - DX戦略
+      - 実行項目
+      - 政策方針
+    notes: 総務企画局DX戦略課が福岡市DX戦略を掲載する単一ページ。本文1508文字で新着情報の見出しはあるが中身が無く、リンクは福岡市DX戦略の本編・概要・実行項目集・実施状況のPDF4件と印刷用1件、福岡市Supportの案内、外部のfukuoka-shinjoshiki.jpだけで案件の一覧を持たない。現在のCollectorはsingle_page未対応のため無効状態で保持する。DX戦略と実行項目の実施状況は上流の政策シグナルとして価値があるため、必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: fukuoka-100lab
+    organization_id: fukuoka-city-100lab
+    name: 福岡100ラボ
+    url: https://f-100lab.jp/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    document_type_hints:
+      - 共創プロジェクト
+      - 事業提案
+    notes: 人生100年時代の社会課題解決に取り組む福岡100の共創プラットフォーム。指定されたURLはトップページで、内容は福岡100ラボとは・トピックス・事業報告・参加するには・事業提案の案内が中心である。案件性のあるリンクは事業報告3件とトピックス4件の計7件しかなく、いずれもミートアップの開催案内か採択プロジェクトの結果報告で、募集中の課題ではない。さらに事業報告のリンクは掲載日が各項目ではなく共通の祖先要素にまとまっており、parseDateCandidateが3件すべてに最新の1件の日付を当ててしまうため期間判定が正しく効かない。誤った掲載日で登録しないよう無効状態で保持し、link_selectorとcontent_selectorは設定しない。有効化する場合は、トップページではなく一覧の実体である/topicsまたは/reportを情報源として登録し直すか、項目単位で日付を取れる構造か再確認する判断が必要である。事業提案の受付は/contactのフォームで、公募要項の形では公開されていない。
     last_verified_at: "2026-08-13"
     verification_status: verified
