@@ -169,6 +169,14 @@ organizations:
     parent_organization_id: fukuoka-city
     notes: 福岡市の共創プラットフォーム福岡100ラボを、独自公式ドメインへの安全なアクセス制限のため別組織として管理。記事から見つけた添付PDFに限り、parent_organization_idで参照する福岡市のcity.fukuoka.lg.jp配下も取得を許可する
 
+  - id: niigata-prefecture
+    name: 新潟県
+    organization_type: prefecture
+    prefecture: 新潟県
+    official_domain: pref.niigata.lg.jp
+    enabled: true
+    notes: 情報システム調達、全庁の入札・発注、創業・イノベーション施策、公民連携の行政ニーズを収集する対象都道府県。福島県と同じCMSベンダーで、所属別・分類別のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。各HTMLページの新着情報は5件から15件しか載せないが、同じ内容のRSSが40件から50件を保持するため、収集はRSSを採用する。個別ページの本文は#main_bodyに入る。#main、#main_a、#mymainbackはページ番号や印刷リンクを含む外側の入れ物なので使わない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1552,5 +1560,105 @@ sources:
       - 共創プロジェクト
       - 事業提案
     notes: 人生100年時代の社会課題解決に取り組む福岡100の共創プラットフォーム。指定されたURLはトップページで、内容は福岡100ラボとは・トピックス・事業報告・参加するには・事業提案の案内が中心である。案件性のあるリンクは事業報告3件とトピックス4件の計7件しかなく、いずれもミートアップの開催案内か採択プロジェクトの結果報告で、募集中の課題ではない。さらに事業報告のリンクは掲載日が各項目ではなく共通の祖先要素にまとまっており、parseDateCandidateが3件すべてに最新の1件の日付を当ててしまうため期間判定が正しく効かない。誤った掲載日で登録しないよう無効状態で保持し、link_selectorとcontent_selectorは設定しない。有効化する場合は、トップページではなく一覧の実体である/topicsまたは/reportを情報源として登録し直すか、項目単位で日付を取れる構造か再確認する判断が必要である。事業提案の受付は/contactのフォームで、公募要項の形では公開されていない。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: niigata-ict-rss
+    organization_id: niigata-prefecture
+    name: 知事政策局ＩＣＴ推進課 RSS
+    url: https://www.pref.niigata.lg.jp/rss/10/sec-1-13.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: true
+    content_selector: "#main_body"
+    title_excludes:
+      - 入札結果
+      - 審査結果
+      - 質問回答
+      - 質問・回答
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 情報システム調達
+    notes: 知事政策局ICT推進課の所属単位RSS。RSS 1.0（RDF）で40件すべてにdc:dateがある。内容が情報システム調達の本体で、新潟県LANシステム用サーバ機器の借上げ、団体内統合宛名システムのソフトウェア、LANシステム用ソフトウェア利用サービス提供業務の一般競争入札、市町村DX推進支援業務やデジタル人材育成研修のプロポーザルを含むため優先度は高。人間向けの入口はhttps://www.pref.niigata.lg.jp/sec/ict/だが、そのHTML新着情報はli:has(span.article_date)で5件しか取得できないため、40件を保持するこのRSSを採用した。dc:subjectは所属名の「知事政策局　ＩＣＴ推進課」1種類なのでcategory_includesでは絞れない。2021-03からのアーカイブだが期間フィルタで直近分だけが対象になり、確認時点では除外後の2026-07-01以降が3件、2026-08-01以降が1件だったためinitial_sinceは設定していない。質問回答と審査結果の続報はtitle_excludesで除外する。同じCMSの入札・発注・売却RSSには中黒入りの「質問・回答」表記もあり、NFKC正規化では中黒が消えず別表記として扱われるため両方を除外語に入れている。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: niigata-procurement-rss
+    organization_id: niigata-prefecture
+    name: 入札・発注・売却 RSS
+    url: https://www.pref.niigata.lg.jp/rss/10/sub8.xml
+    collector_type: rss
+    source_category: procurement
+    priority: medium
+    enabled: true
+    content_selector: "#main_body"
+    title_excludes:
+      - 入札結果
+      - 審査結果
+      - 評価結果
+      - 質問回答
+      - 質問・回答
+      - 落札者決定
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 業務委託
+    notes: 全庁の入札・発注・売却を分類単位で集約するRSS。RSS 1.0（RDF）で50件すべてにdc:dateがある。人間向けの入口はhttps://www.pref.niigata.lg.jp/life/sub/8/で、そのHTML新着情報は15件だがRSSは50件を保持する。保持期間は2026-07-31から2026-08-13の約2週間で回転が非常に速く、確認時点では50件すべてが2026-07-01以降だった。initial_sinceを付けても絞れないので設定していない。dc:subjectは出納局会計検査課や巻農業振興部など所属名がばらばらに入るためcategory_includesでは絞れない。結果公表がtitle_excludesで24件落ち残り26件になるが、内訳は物品購入と土木・設備工事が大半で、システム・デジタル関連は家屋評価システムサービス提供業務、山の下閘門排水機場水位予測モデル構築業務委託のプロポーザル、佐渡汽船ターミナルの太陽光発電設備導入（PPA）事業など8件だった。対象性の比率が低いぶん優先度は中とし、AI判定の消費は--limitで抑える。ICT推進課の案件はこのRSSにも出るためniigata-ict-rssと候補が重複する。総合評価落札方式の評価結果は結果公表なので評価結果を除外語へ入れた。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: niigata-sogyo-rss
+    organization_id: niigata-prefecture
+    name: 産業労働部創業・イノベーション推進課 RSS
+    url: https://www.pref.niigata.lg.jp/rss/10/sec-6-57.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    content_selector: "#main_body"
+    title_excludes:
+      - 漏えい
+      - 誤送信
+    document_type_hints:
+      - 事業者公募
+      - スタートアップ支援
+      - 補助金
+    notes: 産業労働部創業・イノベーション推進課の所属単位RSS。RSS 1.0（RDF）で50件すべてにdc:dateがある。人間向けの入口はhttps://www.pref.niigata.lg.jp/sec/sogyosuishin/だが、そのHTML新着情報は5件しか載せないためRSSを採用した。dc:subjectは所属名1種類なのでcategory_includesでは絞れない。2023-12からのアーカイブで、確認時点では除外後の2026-07-01以降が8件、2026-08-01以降が2件だったためinitial_sinceは設定していない。地域循環型再生可能エネルギー等形成促進事業補助金の公募、スタートアップ成長加速化総合支援事業NIIGATA PEAK、次世代経営者イノベーション創出事業の参加者募集などを含むが、調達より支援制度とイベントの告知が多いため優先度は中。メールアドレスの漏えいや誤送信による情報流出のお詫び2件は行政ニーズではないため、秋田で庁内ネットワークの復旧報告を除いたのと同じ考え方でtitle_excludesに入れている。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: niigata-kominkyodo
+    organization_id: niigata-prefecture
+    name: 新潟県公民協働プロジェクト検討プラットフォーム
+    url: https://www.pref.niigata.lg.jp/sec/seisaku/kouminkyoudo.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#main_body"
+    document_type_hints:
+      - 官民連携
+      - 共同宣言
+      - 会議資料
+    notes: 人口減少下の地域維持に向けて県と民間セクターが連携を検討する枠組みの説明ページ。content:checkで確認した本文は2957文字で、設置経緯、構成員、役割、第1回から第8回までの会議概要が並ぶが、HTMLの一覧や個別案件ページを持たず、リンクは構成員等名簿、次第・出席者名簿、配布資料一式、共同宣言、議事概要のPDFだけである。現在のCollectorはsingle_page未対応のため無効状態で保持する。第4回の共同宣言「選ばれる新潟」の実現に向けてなど公民連携の方向性が読めるため、必要な場合は無効のままnotion:registerでこのURLを単発登録できる。ただし配布資料一式のPDFは10.92MBから35.5MBあり、取得側の上限5MBを超えるため添付PDFとしては取得できない。本文とPDFのどちらを見たいかで扱いを分ける必要がある。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: niigata-ppp-pfi-forum
+    organization_id: niigata-prefecture
+    name: にいがたPPP/PFI研究フォーラム
+    url: https://www.pref.niigata.lg.jp/sec/kaikaku/ppp-pfi-forum.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#main_body"
+    document_type_hints:
+      - PPP/PFI
+      - 官民連携
+      - セミナー資料
+    notes: 県、市町村、地域の民間企業や金融機関が公民連携事業のノウハウと先進事例を研究する枠組みの説明ページ。content:checkで確認した本文は4038文字で、概要、第四北越銀行による地域プラットフォーム設立、令和5年度から7年度の活動実績が載る。個別URLを持つリンクは令和5年度から7年度のセミナー資料ページ6件だが、リンク文字列がすべて「資料はこちらからダウンロードできます」で案件名を判別できず、内容も開催済みセミナーの資料提供のため案件にならない。現在のCollectorはsingle_page未対応でもあり無効状態で保持する。サウンディングや官民対話の案件ページが公開された時点で、ふくしまPPP/PFI地域プラットフォームと同じく有効化を再検討する。
     last_verified_at: "2026-08-13"
     verification_status: verified
