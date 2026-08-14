@@ -67,6 +67,21 @@ npm run pdf:check -- \
 
 User-Agentは `PDF_CHECK_USER_AGENT` で指定できます。未指定時は `SOURCE_CHECK_USER_AGENT`、その次に既定値を使用します。
 
+## Math.sumPrecise のpolyfill
+
+unpdfが同梱するPDF.jsは `Math.sumPrecise` を使います（フォント再構築時のグリフサイズ合計、XFAのテーブル列幅、テキスト幅の算出）。この関数はTC39提案で、V8は14.6（Node 26.7.0）でもまだ実装していません。そのため該当コードパスへ入るPDFだけが `Math.sumPrecise is not a function` で解析に失敗していました。
+
+実測で確認したこと。
+
+- Node 25.2.1（V8 14.1.146.11）: `typeof Math.sumPrecise === 'undefined'`
+- Node 26.7.0（V8 14.6.202.34）: 同じく `undefined`。**Node更新では解消しない**
+- 有効化するV8フラグは存在しない（`--harmony` でも未定義）
+- unpdf 1.6.2 / 1.7.0 / 1.8.0 / 1.8.1 のいずれも同じ呼び出しを含む。**依存のバージョン変更でも回避できない**
+
+このためランタイム更新でも依存変更でも解決せず、`math-sum-precise.ts` で最小のpolyfillを入れています。Shewchukの非重複展開で丸め誤差を出さずに合計し、最後に1回だけ丸めます。空のiterableで `-0`、NaNや無限大の扱い、iterableでない引数や数値でない要素のTypeErrorも提案どおりにしています。
+
+`installMathSumPrecise` は既に存在する場合は上書きしません。**V8がこの関数を実装したら `math-sum-precise.ts` とその読み込みを削除できます。** 実装後はランタイム側が自動的に使われます。
+
 ## 結果と終了コード
 
 - `OK`: 全ページから問題なくテキストを抽出できた
@@ -106,6 +121,7 @@ npm test
 現在の制約:
 
 - テキスト埋め込みPDFだけを対象とし、OCRは行わない
+- パスワード保護されたPDFは解析できず `No password given` のErrorになる
 - PDF上の見た目、段組み、表、読み順を完全には再現しない
 - 文字数や空ページは技術的な品質指標であり、内容の正しさを保証しない
 - robots.txt解析、リトライ、キャッシュ、差分検知、定期実行は行わない

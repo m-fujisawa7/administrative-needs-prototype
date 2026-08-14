@@ -1,9 +1,14 @@
 import { extractText, getDocumentProxy } from 'unpdf';
+import { installMathSumPrecise } from './math-sum-precise.ts';
 import {
   PdfCheckError,
   type PdfExtractionResult,
   type PdfExtractionWarning,
 } from './types.ts';
+
+// PDF.jsのフォント再構築などが Math.sumPrecise を使う。V8未実装のランタイムでは
+// 一部PDFが解析できないため、pdfjsの遅延importより先にここで補う。
+installMathSumPrecise();
 
 export const DEFAULT_MAX_PDF_PAGES = 500;
 export const DEFAULT_MAX_PDF_IMAGE_SIZE = 16_777_216;
