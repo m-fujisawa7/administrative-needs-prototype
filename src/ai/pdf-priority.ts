@@ -35,6 +35,9 @@ const LOW_KEYWORDS = [
   // 「質問書」「質問票」「質問及び回答」「質問と回答」を1語でまとめる。
   // 表記の揺れが多く、PDF名に質問が入る資料はどれも要求事項の本体ではない。
   '質問',
+  // 第1段階の実測で、3枠目に入っていた添付資料。行政ニーズの本体を含まない。
+  // 「個人情報」「見積」「設営」のような広い語は使わず、資料名として現れる形で持つ。
+  '特記事項', '見積書', '見積額', '配置図', '作成要領',
 ] as const;
 
 /** 選択順。高 → 中 → その他 → 低。 */
@@ -101,12 +104,21 @@ export function classifyPdfPriority(link: PdfLink): PdfPriority {
  */
 export function selectPdfsByPriority(links: readonly PdfLink[], max: number): PdfLink[] {
   if (max <= 0) return [];
+  return orderPdfCandidates(links).slice(0, max);
+}
+
+/**
+ * AI入力の候補を優先度順に並べる。件数で切らないので、呼び出し側は本文が取れた
+ * PDFだけを数えながら上限に達するまで順に試せる（画像PDFで枠を消費しないため）。
+ *
+ * 低優先の扱いは selectPdfsByPriority と同じ方針で、それ以外が1件でもあれば外す。
+ */
+export function orderPdfCandidates(links: readonly PdfLink[]): PdfLink[] {
   const valuable = links.filter((link) => classifyPdfPriority(link) !== 'low');
   const candidates = valuable.length > 0 ? valuable : links;
   return candidates
     .map((link, index) => ({ link, index, order: PRIORITY_ORDER[classifyPdfPriority(link)] }))
     .sort((a, b) => (a.order - b.order) || (a.index - b.index))
-    .slice(0, max)
     .map((entry) => entry.link);
 }
 

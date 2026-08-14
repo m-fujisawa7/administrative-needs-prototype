@@ -95,6 +95,7 @@ export type AiCheckWarningCode =
   | 'pdf_limit'
   | 'pdf_failed'
   | 'pdf_warning'
+  | 'pdf_empty_text'
   | 'html_truncated'
   | 'pdf_truncated'
   | 'ai_json_parse_retry'

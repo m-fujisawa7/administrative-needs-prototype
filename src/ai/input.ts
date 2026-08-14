@@ -14,12 +14,23 @@ export const DEFAULT_AI_INPUT_LIMITS = {
   htmlCharacters: 30_000,
   pdfCharacters: 50_000,
   maxPdfs: 3,
+  /**
+   * 1PDFあたりの上限。合計上限(50,000)の40%に当たる。
+   *
+   * 実測した高優先PDFは最大12,307文字で、20,000でも余裕がある。一方で1件が
+   * 49,846文字を占める例があり、合計上限だけでは1ファイルが予算をほぼ独占して
+   * 他の資料が入らなくなる。20,000なら3件が上限に張り付いても均等配分が働く。
+   * Relevant Chunk化までの暫定措置。
+   */
+  charactersPerPdf: 20_000,
 } as const;
 
 export type AiInputLimits = {
   htmlCharacters: number;
   pdfCharacters: number;
   maxPdfs: number;
+  /** 省略時は DEFAULT_AI_INPUT_LIMITS.charactersPerPdf を使う。 */
+  charactersPerPdf?: number;
 };
 
 export function aiInputLimitsFromEnvironment(
@@ -46,6 +57,13 @@ export function aiInputLimitsFromEnvironment(
       'AI_MAX_PDFS',
       1,
       10,
+    ),
+    charactersPerPdf: parseLimit(
+      env.AI_MAX_CHARACTERS_PER_PDF,
+      DEFAULT_AI_INPUT_LIMITS.charactersPerPdf,
+      'AI_MAX_CHARACTERS_PER_PDF',
+      1_000,
+      500_000,
     ),
   };
 }
@@ -89,6 +107,7 @@ export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
   const documentLimits = allocateCharacterLimits(
     options.pdfDocuments.map((document) => document.text.length),
     limits.pdfCharacters,
+    limits.charactersPerPdf ?? DEFAULT_AI_INPUT_LIMITS.charactersPerPdf,
   );
   const pdfDocuments: AnalysisPdfDocument[] = [];
   let pdfWasTruncated = false;
@@ -161,11 +180,15 @@ export function formatAiInputBlock(
   summary: AiInputSummary,
   inputTokens?: number,
 ): string[] {
+  // 切り詰めが起きた候補だけ抽出全文を併記する。行数は増やさない。
+  const pdfCharacters = summary.pdfSentCharacters < summary.pdfOriginalCharacters
+    ? `${summary.pdfSentCharacters} (extracted ${summary.pdfOriginalCharacters})`
+    : String(summary.pdfSentCharacters);
   const lines = [
     'AI input:',
     `HTML characters: ${summary.htmlSentCharacters}`,
     `PDF documents included: ${summary.pdfIncluded}`,
-    `PDF characters: ${summary.pdfSentCharacters}`,
+    `PDF characters: ${pdfCharacters}`,
     `Total source characters: ${summary.totalSourceCharacters}`,
   ];
   if (inputTokens !== undefined) {
@@ -292,25 +315,34 @@ function pdfLabel(url: string): string {
 }
 
 /**
- * PDF本文合計の上限を各PDFへ公平に配分する。
+ * PDF本文の上限を各PDFへ配分する。上限は2段階ある。
  *
- * 合計が上限以内ならそのまま全文を使う。超える場合は残り予算を残り件数で均等割りし、
- * その枠より短いPDFは全文を確定させて余りを他へ再配分する。どのPDFも枠に収まらなく
- * なった時点で均等配分し、端数を先頭から1文字ずつ配る。
+ * まず1PDFあたりの上限で各PDFを切り、長大な1件が合計予算を独占するのを防ぐ。
+ * そのうえで合計が上限以内ならそのまま使う。超える場合は残り予算を残り件数で
+ * 均等割りし、その枠より短いPDFは確定させて余りを他へ再配分する。どのPDFも枠に
+ * 収まらなくなった時点で均等配分し、端数を先頭から1文字ずつ配る。
  * 乱数も時刻も使わないため、同じ入力なら毎回同じ配分になる。
+ *
+ * 切り取り方（先頭70%＋末尾30%）は truncateHeadTail のまま変えていない。
  */
-function allocateCharacterLimits(lengths: number[], totalLimit: number): number[] {
+function allocateCharacterLimits(
+  lengths: number[],
+  totalLimit: number,
+  perPdfLimit: number,
+): number[] {
   if (lengths.length === 0) return [];
-  if (lengths.reduce((total, length) => total + length, 0) <= totalLimit) {
-    return [...lengths];
+  // 1件上限を先に当てる。短いPDFは従来どおり全文が残る。
+  const capped = lengths.map((length) => Math.min(length, perPdfLimit));
+  if (capped.reduce((total, length) => total + length, 0) <= totalLimit) {
+    return capped;
   }
 
-  const limits = Array.from({ length: lengths.length }, () => 0);
-  const remainingIndexes = new Set(lengths.map((_length, index) => index));
+  const limits = Array.from({ length: capped.length }, () => 0);
+  const remainingIndexes = new Set(capped.map((_length, index) => index));
   let remainingLimit = totalLimit;
   while (remainingIndexes.size > 0) {
     const share = Math.floor(remainingLimit / remainingIndexes.size);
-    const fitting = [...remainingIndexes].filter((index) => lengths[index]! <= share);
+    const fitting = [...remainingIndexes].filter((index) => capped[index]! <= share);
     if (fitting.length === 0) {
       for (const index of remainingIndexes) {
         limits[index] = share;
@@ -324,8 +356,8 @@ function allocateCharacterLimits(lengths: number[], totalLimit: number): number[
       break;
     }
     for (const index of fitting) {
-      limits[index] = lengths[index]!;
-      remainingLimit -= lengths[index]!;
+      limits[index] = capped[index]!;
+      remainingLimit -= capped[index]!;
       remainingIndexes.delete(index);
     }
   }

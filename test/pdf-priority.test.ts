@@ -66,6 +66,40 @@ describe('classifyPdfPriority', () => {
     }
   });
 
+  it('実測で3枠目に入っていた添付資料を低優先にする', () => {
+    for (const text of [
+      '別記個人情報取扱特記事項（PDF：153KB）',
+      '委託業務特記事項',
+      '（別添）CMS業者への再委託見積額（PDF：286KB）',
+      '見積書',
+      '４ 配置図 (PDF 821KB)',
+      '・企画提案書作成要領 (PDF 125KB)',
+    ]) {
+      expect(classifyPdfPriority(link(text)), text).toBe('low');
+    }
+  });
+
+  it('特記事項や見積を含んでも仕様書・要領なら高優先を維持する', () => {
+    for (const text of [
+      '業務仕様書（特記事項含む）',
+      '実施要領（見積書の書き方を含む）',
+      '公募要領及び配置図',
+    ]) {
+      expect(classifyPdfPriority(link(text)), text).toBe('high');
+    }
+  });
+
+  it('有用PDFがあるとき特記事項・見積額はAI入力へ送らない', () => {
+    const links = [
+      link('公募型プロポーザル実施要領', 'a.pdf'),
+      link('業務委託仕様書', 'b.pdf'),
+      link('別記個人情報取扱特記事項', 'c.pdf'),
+      link('（別添）再委託見積額', 'd.pdf'),
+    ];
+    expect(names(selectPdfsByPriority(links, 3)))
+      .toEqual(['公募型プロポーザル実施要領', '業務委託仕様書']);
+  });
+
   it('キーワードに該当しない文書はその他にする', () => {
     expect(classifyPdfPriority(link('議事録'))).toBe('other');
     expect(classifyPdfPriority(link(''))).toBe('other');

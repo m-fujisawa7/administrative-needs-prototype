@@ -296,7 +296,7 @@ describe('AI入力組み立て', () => {
     expect(prepared.warnings.map((warning) => warning.code)).toContain('pdf_truncated');
   });
 
-  it('PDF本文合計が上限内なら文書間の配分で切り詰めない', () => {
+  it('PDF合計が上限内でも1件上限を超えるPDFだけは切り詰める', () => {
     const prepared = prepareAnalysisInput({
       ...basePrepareOptions(),
       pdfDocuments: [
@@ -307,8 +307,11 @@ describe('AI入力組み立て', () => {
       pdfAttempted: 2,
       limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
     });
-    expect(prepared.summary.pdfSentCharacters).toBe(36_655);
-    expect(prepared.warnings.map((warning) => warning.code)).not.toContain('pdf_truncated');
+    // 合計36,655は50,000以内だが、31,731のPDFは1件上限20,000へ収める。
+    expect(prepared.input.pdfDocuments.map((document) => document.text.length))
+      .toEqual([20_000, 4_924]);
+    expect(prepared.summary.pdfSentCharacters).toBe(24_924);
+    expect(prepared.warnings.map((warning) => warning.code)).toContain('pdf_truncated');
   });
 
   /** 指定した文字数のPDFを渡し、実際に送信された文字数を返す。 */
@@ -331,16 +334,42 @@ describe('AI入力組み立て', () => {
     };
   }
 
-  it('PDF1件で上限を超えても上限以内に収める', () => {
+  it('1PDFあたりの上限で長大PDF1件の予算独占を防ぐ', () => {
+    const result = allocate([49_846]);
+    expect(result.sent[0]).toBe(20_000);
+    expect(result.total).toBe(20_000);
+  });
+
+  it('短いPDFは1PDFあたり上限に関係なく全文を使う', () => {
+    const result = allocate([9_681, 7_708, 4_037]);
+    expect(result.sent).toEqual([9_681, 7_708, 4_037]);
+    expect(result.warnings.map((warning) => warning.code)).not.toContain('pdf_truncated');
+  });
+
+  it('巨大PDF1件があっても他のPDFの取り分を残す', () => {
+    const result = allocate([49_846, 8_000, 4_000]);
+    expect(result.sent).toEqual([20_000, 8_000, 4_000]);
+    expect(result.total).toBe(32_000);
+  });
+
+  it('1PDFあたり上限を環境変数で変更できる', () => {
+    expect(aiInputLimitsFromEnvironment({ AI_MAX_CHARACTERS_PER_PDF: '25000' }))
+      .toMatchObject({ charactersPerPdf: 25_000 });
+    expect(aiInputLimitsFromEnvironment({})).toMatchObject({ charactersPerPdf: 20_000 });
+    expect(() => aiInputLimitsFromEnvironment({ AI_MAX_CHARACTERS_PER_PDF: '999' })).toThrow();
+  });
+
+  it('PDF1件で上限を超えても合計上限と1件上限の両方に収める', () => {
     const result = allocate([60_000]);
     expect(result.total).toBeLessThanOrEqual(50_000);
-    expect(result.sent[0]).toBe(50_000);
+    expect(result.sent[0]).toBe(20_000);
   });
 
   it('PDF2件で上限を超えても両方が入力に含まれる', () => {
     const result = allocate([40_000, 30_000]);
-    expect(result.total).toBe(50_000);
-    expect(result.sent.every((length) => length > 0)).toBe(true);
+    // 1件上限20,000を各PDFへ当てるため合計は40,000に収まる。
+    expect(result.total).toBe(40_000);
+    expect(result.sent).toEqual([20_000, 20_000]);
   });
 
   it('PDF3件で上限を超えても3件すべてが入力に含まれる', () => {
@@ -359,8 +388,8 @@ describe('AI入力組み立て', () => {
 
   it('極端に偏っていても短いPDFが落ちない', () => {
     const result = allocate([49_999, 1, 1]);
-    expect(result.sent).toEqual([49_998, 1, 1]);
-    expect(result.total).toBe(50_000);
+    expect(result.sent).toEqual([20_000, 1, 1]);
+    expect(result.total).toBe(20_002);
   });
 
   it('どのPDFも均等枠に収まらない場合は均等配分し端数を配る', () => {
@@ -1201,6 +1230,131 @@ describe('HTML・PDF・AI連携', () => {
     expect(analyzerInput?.htmlText).toBe(body);
   });
 
+  it('本文0文字のPDFはAI入力枠を消費せず、次順位の候補を試す', async () => {
+    const fetched: string[] = [];
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 2 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '別記仕様書' },
+          { url: PDF_B, text: '公告文' },
+          { url: PDF_C, text: '入札説明書' },
+        ],
+      }),
+      extractPdf: async ({ url }) => {
+        fetched.push(url);
+        // 画像PDFを模して先頭候補だけ本文が空になる。
+        return url === PDF_A ? { ...makePdf(url), text: '   \n ' } : makePdf(url);
+      },
+    });
+
+    expect(fetched).toEqual([PDF_A, PDF_B, PDF_C]);
+    expect(result.inputSummary.pdfIncluded).toBe(2);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['公告文', '入札説明書']);
+    expect(result.warnings.map((warning) => warning.code)).toContain('pdf_empty_text');
+  });
+
+  it('有効PDFが上限に達したら残りの候補を取得しない', async () => {
+    const fetched: string[] = [];
+    await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 2 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '仕様書' },
+          { url: PDF_B, text: '実施要領' },
+          { url: PDF_C, text: '業務概要' },
+        ],
+      }),
+      extractPdf: async ({ url }) => {
+        fetched.push(url);
+        return makePdf(url);
+      },
+    });
+
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+  });
+
+  it('全PDFが0文字でも解析を続け、既存のempty_pages警告を残す', async () => {
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '仕様書' },
+          { url: PDF_B, text: '実施要領' },
+        ],
+      }),
+      extractPdf: async ({ url }) => ({
+        ...makePdf(url),
+        text: '',
+        pageTexts: [''],
+        characterCount: 0,
+        pagesWithText: 0,
+        emptyPageCount: 1,
+        warnings: [{ code: 'empty_pages', message: 'テキストを抽出できないページが1件あります。' }],
+      }),
+    });
+
+    expect(result.inputSummary.pdfIncluded).toBe(0);
+    expect(result.inputSummary.pdfInputs).toEqual([]);
+    expect(result.analysis.is_target).toBe(true);
+    const codes = result.warnings.map((warning) => warning.code);
+    expect(codes).toContain('pdf_warning');
+    expect(codes).toContain('pdf_empty_text');
+    expect(result.warnings.find((warning) => warning.code === 'pdf_warning')?.detail)
+      .toBe('empty_pages');
+  });
+
+  it('抽出失敗は従来どおりAI入力枠を消費し、補充で余分に取得しない', async () => {
+    const fetched: string[] = [];
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 2 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '仕様書' },
+          { url: PDF_B, text: '実施要領' },
+          { url: PDF_C, text: '業務概要' },
+        ],
+      }),
+      extractPdf: async ({ url }) => {
+        fetched.push(url);
+        if (url === PDF_B) throw new Error('fixture PDF failure');
+        return makePdf(url);
+      },
+    });
+
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+    expect(result.inputSummary.pdfIncluded).toBe(1);
+    expect(result.warnings.map((warning) => warning.code)).toContain('pdf_failed');
+  });
+
   it('--no-pdfではPDF取得を行わない', async () => {
     let pdfCalled = false;
     const result = await checkAdministrativeNeed({
@@ -1329,6 +1483,24 @@ describe('ai:checkコマンド', () => {
     expect(formatted).toContain('PDF skipped from AI input:');
     expect(formatted).toContain('- 評価基準');
     expect(formatted).toContain('- 様式1 参加申込書');
+  });
+
+  it('切り詰めが起きたときだけ抽出全文の文字数を併記する', () => {
+    const truncated = formatAiCheckResult(makeAiCheckResult({
+      inputSummary: {
+        ...makeAiCheckResult().inputSummary,
+        pdfDiscovered: 1,
+        pdfAttempted: 1,
+        pdfIncluded: 1,
+        pdfOriginalCharacters: 49_846,
+        pdfSentCharacters: 20_000,
+        totalSourceCharacters: 20_500,
+        pdfInputs: [{ label: '募集要項', url: PDF_A, characters: 20_000 }],
+      },
+    }));
+    expect(truncated).toContain('PDF characters: 20000 (extracted 49846)');
+    // 切り詰めが無い候補では併記しない。
+    expect(formatAiCheckResult(makeAiCheckResult())).toContain('PDF characters: 0\n');
   });
 
   it('入力トークン数が取れたときだけ表示する', () => {

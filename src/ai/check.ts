@@ -9,7 +9,7 @@ import {
 } from '../pdf-check/index.ts';
 import type { ExtractedPdf } from '../pdf-check/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
-import { describePdfLink, selectPdfsByPriority } from './pdf-priority.ts';
+import { describePdfLink, orderPdfCandidates } from './pdf-priority.ts';
 import {
   DEFAULT_AI_INPUT_LIMITS,
   prepareAnalysisInput,
@@ -67,26 +67,20 @@ export async function checkAdministrativeNeed(
   }));
 
   const pdfLinks = deduplicatePdfLinks(document.pdfLinks);
-  const selectedPdfLinks = input.noPdf ? [] : selectPdfsByPriority(pdfLinks, limits.maxPdfs);
-  if (!input.noPdf && pdfLinks.length > selectedPdfLinks.length) {
-    const selectedLabels = selectedPdfLinks.map((link) => describePdfLink(link)).join(' / ');
-    warnings.push({
-      code: 'pdf_limit',
-      message: `検出したPDF ${pdfLinks.length}件から、優先度に基づき${selectedPdfLinks.length}件を解析します: ${selectedLabels}`,
-    });
-  }
-
-  // 選ばなかったPDFを記録する。優先度で外したものと件数上限で外したものの両方が入る。
-  const selectedUrls = new Set(selectedPdfLinks.map((link) => link.url));
-  const pdfSkipped = pdfLinks
-    .filter((link) => !selectedUrls.has(link.url))
-    .map((link) => ({ label: describePdfLink(link), url: link.url }));
+  const candidates = input.noPdf ? [] : orderPdfCandidates(pdfLinks);
 
   const pdfDocuments: AnalysisPdfDocument[] = [];
-  // pdfDocuments と同じ並びを保つため、取得に成功したものだけ同時に push する。
+  // pdfDocuments と同じ並びを保つため、本文が取れたものだけ同時に push する。
   const pdfLabels: string[] = [];
-  for (const link of selectedPdfLinks) {
+  const usedUrls = new Set<string>();
+  // AI入力枠の消費数。成功と取得失敗は枠を使い、本文0文字だけは使わない。
+  let slotsUsed = 0;
+  let attempted = 0;
+
+  for (const link of candidates) {
+    if (slotsUsed >= limits.maxPdfs) break;
     const { url } = link;
+    attempted += 1;
     try {
       const pdf = await extractPdf({
         source: input.source,
@@ -94,8 +88,6 @@ export async function checkAdministrativeNeed(
         url,
         trustedPdfDomains: input.trustedPdfDomains ?? [],
       });
-      pdfDocuments.push({ url: pdf.url, text: pdf.text });
-      pdfLabels.push(describePdfLink(link));
       for (const warning of pdf.warnings) {
         warnings.push({
           code: 'pdf_warning',
@@ -104,14 +96,42 @@ export async function checkAdministrativeNeed(
           detail: warning.code,
         });
       }
+      // 画像PDFなどAIへ渡せる本文が無いものは枠を消費させず次候補へ回す。
+      // 抽出できなかった事実は既存の pdf_warning（empty_pages）が示す。
+      if (pdf.text.trim() === '') {
+        warnings.push({
+          code: 'pdf_empty_text',
+          message: `PDF本文が0文字のためAI入力に含めず次の候補を試します: ${pdf.url}`,
+        });
+        continue;
+      }
+      pdfDocuments.push({ url: pdf.url, text: pdf.text });
+      pdfLabels.push(describePdfLink(link));
+      usedUrls.add(url);
+      slotsUsed += 1;
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       warnings.push({
         code: 'pdf_failed',
         message: `PDF本文を取得できないためHTMLだけで続行します: ${url}: ${detail}`,
       });
+      // 取得失敗は従来どおり枠を消費する。補充は本文0文字の場合だけに限る。
+      slotsUsed += 1;
     }
   }
+
+  if (!input.noPdf && pdfLinks.length > pdfDocuments.length) {
+    const includedLabels = pdfLabels.join(' / ');
+    warnings.push({
+      code: 'pdf_limit',
+      message: `検出したPDF ${pdfLinks.length}件から、優先度に基づき${pdfDocuments.length}件を解析します: ${includedLabels}`,
+    });
+  }
+
+  // AI入力へ渡さなかったPDF。優先度で外したもの、件数上限、本文0文字がここに入る。
+  const pdfSkipped = pdfLinks
+    .filter((link) => !usedUrls.has(link.url))
+    .map((link) => ({ label: describePdfLink(link), url: link.url }));
 
   const prepared = prepareAnalysisInput({
     title: document.title,
@@ -121,7 +141,7 @@ export async function checkAdministrativeNeed(
     htmlText: document.bodyText,
     pdfDocuments,
     pdfDiscovered: pdfLinks.length,
-    pdfAttempted: selectedPdfLinks.length,
+    pdfAttempted: attempted,
     companyFitCriteria: input.companyFitCriteria,
     limits,
     pdfLabels,

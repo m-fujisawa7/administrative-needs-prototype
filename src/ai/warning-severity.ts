@@ -9,7 +9,12 @@ import type { AiCheckWarning } from './types.ts';
 export type WarningSeverity = 'notice' | 'warning';
 
 /** code だけで NOTICE と判断できるもの。 */
-const NOTICE_CODES = new Set(['pdf_limit', 'pdf_truncated', 'ai_json_parse_retry']);
+// pdf_empty_text は「枠を消費せず次候補へ回した」という処理の説明。
+// 抽出できなかったこと自体は pdf_warning（empty_pages）がWARNINGで示すため、
+// ここで二重にWARNINGへ数えない。
+const NOTICE_CODES = new Set([
+  'pdf_limit', 'pdf_truncated', 'ai_json_parse_retry', 'pdf_empty_text',
+]);
 
 /**
  * pdf_warning の内訳のうち NOTICE 扱いにするもの。
