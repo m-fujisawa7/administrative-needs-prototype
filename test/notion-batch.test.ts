@@ -215,7 +215,7 @@ describe('notion:batchコマンド', () => {
           pdfOriginalCharacters: 3_100,
           pdfSentCharacters: 3_100,
           totalSourceCharacters: 4_000,
-          pdfInputs: [{ label: '公募要領', url: 'https://example.lg.jp/a.pdf', characters: 3_100 }],
+          pdfInputs: [{ label: '公募要領', url: 'https://example.lg.jp/a.pdf', characters: 3_100, extractedCharacters: 3_100, strategy: 'full' as const, chunkCount: 1 }],
           pdfSkipped: [{ label: '様式1 参加申込書', url: 'https://example.lg.jp/b.pdf' }],
         },
       }),

@@ -112,11 +112,17 @@ export type AiCheckWarning = {
   detail?: string;
 };
 
-/** Claude入力へ実際に渡したPDF1件の内訳。characters は切り詰め後の文字数。 */
+/** Claude入力へ実際に渡したPDF1件の内訳。characters は選択・切り詰め後の文字数。 */
 export type AiInputPdfDetail = {
   label: string;
   url: string;
   characters: number;
+  /** 抽出できた全文の文字数。characters との差が落とした量。 */
+  extractedCharacters: number;
+  /** full（全文）、relevant_chunks（重要箇所を選択）、fallback_truncate（先頭70%＋末尾30%）。 */
+  strategy: 'full' | 'relevant_chunks' | 'fallback_truncate';
+  /** 連続ブロック数。 */
+  chunkCount: number;
 };
 
 /** 優先度判定または件数上限でClaude入力から外したPDF。 */

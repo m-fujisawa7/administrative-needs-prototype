@@ -1,3 +1,4 @@
+import type { PdfSelectionResult } from './pdf-chunks.ts';
 import type {
   AdministrativeNeedAnalysis,
   AdministrativeNeedAnalysisInput,
@@ -9,6 +10,7 @@ import type {
   CompanyFitCriteria,
 } from './types.ts';
 import { AiConfigurationError } from './errors.ts';
+import { selectPdfTextForBudget } from './pdf-chunks.ts';
 
 export const DEFAULT_AI_INPUT_LIMITS = {
   htmlCharacters: 30_000,
@@ -83,6 +85,11 @@ export type PrepareAnalysisInputOptions = {
   pdfLabels?: readonly string[];
   /** 優先度判定または件数上限でClaude入力から外したPDF。 */
   pdfSkipped?: readonly AiInputSkippedPdf[];
+  /**
+   * pdfDocuments と同じ並びのページ本文。長大PDFのRelevant Chunk選択で
+   * ページ境界として使う。省略時は段落構造へ落とす。
+   */
+  pdfPageTexts?: readonly (readonly string[])[];
 };
 
 export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
@@ -110,12 +117,22 @@ export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
     limits.charactersPerPdf ?? DEFAULT_AI_INPUT_LIMITS.charactersPerPdf,
   );
   const pdfDocuments: AnalysisPdfDocument[] = [];
+  const selections: PdfSelectionResult[] = [];
   let pdfWasTruncated = false;
   for (const [index, document] of options.pdfDocuments.entries()) {
+    // budgetを決めてからその範囲内でRelevant Chunkを選ぶ。選択後に再度
+    // 切り詰めないため、重要箇所が後段で落ちることはない。
     const documentLimit = documentLimits[index] ?? 0;
-    const truncated = truncateHeadTail(document.text, documentLimit);
-    pdfDocuments.push({ url: document.url, text: truncated.text });
-    pdfWasTruncated ||= truncated.truncated;
+    const selection = selectPdfTextForBudget({
+      text: document.text,
+      budget: documentLimit,
+      ...(options.pdfPageTexts?.[index] === undefined
+        ? {}
+        : { pageTexts: options.pdfPageTexts[index] }),
+    });
+    pdfDocuments.push({ url: document.url, text: selection.text });
+    selections.push(selection);
+    pdfWasTruncated ||= selection.strategy !== 'full';
   }
   const pdfSentCharacters = pdfDocuments.reduce(
     (total, document) => total + document.text.length,
@@ -141,6 +158,9 @@ export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
     label: options.pdfLabels?.[index] ?? pdfLabel(document.url),
     url: document.url,
     characters: document.text.length,
+    extractedCharacters: options.pdfDocuments[index]?.text.length ?? document.text.length,
+    strategy: selections[index]?.strategy ?? 'full',
+    chunkCount: selections[index]?.chunkCount ?? 1,
   }));
 
   return {
@@ -197,7 +217,11 @@ export function formatAiInputBlock(
   if (summary.pdfInputs.length > 0) {
     lines.push('', 'PDF input:');
     for (const pdf of summary.pdfInputs) {
-      lines.push(`- ${pdf.label}: ${pdf.characters} chars`);
+      // 全文を渡したPDFは従来どおり1行。選択・切り詰めが起きた場合だけ内訳を足す。
+      const detail = pdf.strategy === 'full'
+        ? ''
+        : ` (extracted ${pdf.extractedCharacters}, ${pdf.strategy}, ${pdf.chunkCount} chunks)`;
+      lines.push(`- ${pdf.label}: ${pdf.characters} chars${detail}`);
     }
   }
   if (summary.pdfSkipped.length > 0) {
@@ -220,6 +244,9 @@ export function aiInputSection(
   return ['', ...formatAiInputBlock(result.inputSummary, result.inputTokens)];
 }
 
+/** 中間を落としたことを示す区切り。切り詰めとChunk選択で同じ文字列を使う。 */
+export const OMITTED_MARKER = '\n\n[...中間部分を省略...]\n\n';
+
 export function truncateHeadTail(value: string, maxCharacters: number): {
   text: string;
   truncated: boolean;
@@ -229,7 +256,7 @@ export function truncateHeadTail(value: string, maxCharacters: number): {
   }
   if (value.length <= maxCharacters) return { text: value, truncated: false };
 
-  const marker = '\n\n[...中間部分を省略...]\n\n';
+  const marker = OMITTED_MARKER;
   if (marker.length >= maxCharacters) {
     return { text: value.slice(0, maxCharacters), truncated: true };
   }

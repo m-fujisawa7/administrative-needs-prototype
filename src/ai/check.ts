@@ -73,6 +73,8 @@ export async function checkAdministrativeNeed(
   const pdfDocuments: AnalysisPdfDocument[] = [];
   // pdfDocuments と同じ並びを保つため、本文が取れたものだけ同時に push する。
   const pdfLabels: string[] = [];
+  // 長大PDFのRelevant Chunk選択でページ境界として使う。
+  const pdfPageTexts: string[][] = [];
   const usedUrls = new Set<string>();
   // AI入力枠の消費数。成功と取得失敗は枠を使い、本文0文字だけは使わない。
   let slotsUsed = 0;
@@ -108,6 +110,7 @@ export async function checkAdministrativeNeed(
       }
       pdfDocuments.push({ url: pdf.url, text: pdf.text });
       pdfLabels.push(describePdfLink(link));
+      pdfPageTexts.push([...pdf.pageTexts]);
       usedUrls.add(url);
       slotsUsed += 1;
     } catch (error) {
@@ -157,6 +160,7 @@ export async function checkAdministrativeNeed(
     limits,
     pdfLabels,
     pdfSkipped,
+    pdfPageTexts,
   });
   warnings.push(...prepared.warnings);
   const analysis = await input.analyzer.analyze(prepared.input);

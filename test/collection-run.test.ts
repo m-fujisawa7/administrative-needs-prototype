@@ -155,7 +155,7 @@ describe('collect:runコマンド', () => {
           pdfOriginalCharacters: 12_400,
           pdfSentCharacters: 12_400,
           totalSourceCharacters: 14_205,
-          pdfInputs: [{ label: '基本仕様書', url: 'https://example.lg.jp/a.pdf', characters: 12_400 }],
+          pdfInputs: [{ label: '基本仕様書', url: 'https://example.lg.jp/a.pdf', characters: 12_400, extractedCharacters: 12_400, strategy: 'full' as const, chunkCount: 1 }],
           pdfSkipped: [{ label: '評価基準', url: 'https://example.lg.jp/b.pdf' }],
         },
       }),

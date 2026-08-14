@@ -235,8 +235,8 @@ describe('AI入力組み立て', () => {
     expect(prepared.summary.pdfSentCharacters).toBe(18_420);
     expect(prepared.summary.totalSourceCharacters).toBe(20_225);
     expect(prepared.summary.pdfInputs).toEqual([
-      { label: '基本仕様書', url: PDF_A, characters: 12_400 },
-      { label: '公募実施要領', url: PDF_B, characters: 6_020 },
+      { label: '基本仕様書', url: PDF_A, characters: 12_400, extractedCharacters: 12_400, strategy: 'full', chunkCount: 1 },
+      { label: '公募実施要領', url: PDF_B, characters: 6_020, extractedCharacters: 6_020, strategy: 'full', chunkCount: 1 },
     ]);
     expect(prepared.summary.pdfSkipped.map((pdf) => pdf.label))
       .toEqual(['評価基準', '様式1 参加申込書']);
@@ -279,6 +279,83 @@ describe('AI入力組み立て', () => {
       pdfAttempted: 1,
     });
     expect(prepared.summary.pdfInputs[0]?.label).toBe('a.pdf');
+  });
+
+  /** 見出し付きの長大PDFをページ配列で作る。 */
+  function specPages(count: number, length = 900): string[] {
+    return Array.from({ length: count }, (_v, index) => {
+      const heading = index % 2 === 0 ? `${index + 1} 業務内容` : `${index + 1} 参加資格`;
+      const body = index % 2 === 0
+        ? '受注者は窓口対応と入力処理を行う。機能要件は別紙のとおり。'
+        : '提出書類は様式第1号による。評価基準は採点表による。';
+      const filler = body.repeat(Math.ceil(length / body.length));
+      return `${heading}\n${filler.slice(0, length - heading.length - 1)}`;
+    });
+  }
+
+  it('複数PDFでも各PDFの割り当てbudget内でRelevant選択する', () => {
+    const huge = specPages(60);
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [
+        { url: PDF_A, text: huge.join('\n\n') },
+        { url: PDF_B, text: 'B'.repeat(8_000) },
+        { url: PDF_C, text: 'C'.repeat(4_000) },
+      ],
+      pdfPageTexts: [huge, undefined as unknown as string[], undefined as unknown as string[]],
+      pdfLabels: ['長大仕様書', '実施要領', '公募要領'],
+      pdfDiscovered: 3,
+      pdfAttempted: 3,
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    });
+    const [first, second, third] = prepared.summary.pdfInputs;
+    // 巨大PDFは1件上限20,000以内で選択され、短い2件は全文のまま残る。
+    expect(first?.characters).toBeLessThanOrEqual(20_000);
+    expect(first?.strategy).toBe('relevant_chunks');
+    expect(second).toMatchObject({ characters: 8_000, strategy: 'full' });
+    expect(third).toMatchObject({ characters: 4_000, strategy: 'full' });
+    expect(prepared.summary.pdfSentCharacters).toBeLessThanOrEqual(50_000);
+  });
+
+  it('Relevant選択後に70/30で再切り詰めしない', () => {
+    const huge = specPages(60);
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [{ url: PDF_A, text: huge.join('\n\n') }],
+      pdfPageTexts: [huge],
+      pdfDiscovered: 1,
+      pdfAttempted: 1,
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    });
+    const sent = prepared.input.pdfDocuments[0]!.text;
+    // 70/30切り詰めは中央に省略マーカーを1つだけ入れる。Relevant選択の結果は
+    // ブロック数に応じた区切りになるため、選択が上書きされていないことを見る。
+    expect(prepared.summary.pdfInputs[0]?.strategy).toBe('relevant_chunks');
+    expect(sent).toContain('業務内容');
+    expect(sent.length).toBeLessThanOrEqual(20_000);
+  });
+
+  it('3PDF合計が上限を超える場合も各budget内で選択する', () => {
+    const pagesOf = (count: number) => specPages(count);
+    const a = pagesOf(40);
+    const b = pagesOf(40);
+    const c = pagesOf(40);
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [
+        { url: PDF_A, text: a.join('\n\n') },
+        { url: PDF_B, text: b.join('\n\n') },
+        { url: PDF_C, text: c.join('\n\n') },
+      ],
+      pdfPageTexts: [a, b, c],
+      pdfDiscovered: 3,
+      pdfAttempted: 3,
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    });
+    expect(prepared.summary.pdfSentCharacters).toBeLessThanOrEqual(50_000);
+    for (const pdf of prepared.summary.pdfInputs) {
+      expect(pdf.characters).toBeLessThanOrEqual(20_000);
+    }
   });
 
   it('PDF本文合計の上限を複数PDFへ配分する', () => {
@@ -1562,8 +1639,8 @@ describe('ai:checkコマンド', () => {
         pdfSentCharacters: 18_420,
         totalSourceCharacters: 20_225,
         pdfInputs: [
-          { label: '基本仕様書', url: PDF_A, characters: 12_400 },
-          { label: '公募実施要領', url: PDF_B, characters: 6_020 },
+          { label: '基本仕様書', url: PDF_A, characters: 12_400, extractedCharacters: 12_400, strategy: 'full' as const, chunkCount: 1 },
+          { label: '公募実施要領', url: PDF_B, characters: 6_020, extractedCharacters: 6_020, strategy: 'full' as const, chunkCount: 1 },
         ],
         pdfSkipped: [
           { label: '評価基準', url: PDF_C },
@@ -1589,7 +1666,7 @@ describe('ai:checkコマンド', () => {
         pdfOriginalCharacters: 49_846,
         pdfSentCharacters: 20_000,
         totalSourceCharacters: 20_500,
-        pdfInputs: [{ label: '募集要項', url: PDF_A, characters: 20_000 }],
+        pdfInputs: [{ label: '募集要項', url: PDF_A, characters: 20_000, extractedCharacters: 49_846, strategy: 'relevant_chunks' as const, chunkCount: 5 }],
       },
     }));
     expect(truncated).toContain('PDF characters: 20000 (extracted 49846)');
