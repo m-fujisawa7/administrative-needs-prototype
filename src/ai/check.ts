@@ -7,6 +7,7 @@ import {
   fetchAndExtractPdf,
   type FetchAndExtractPdfInput,
 } from '../pdf-check/index.ts';
+import { isPasswordProtectedPdfError } from '../pdf-check/index.ts';
 import type { ExtractedPdf } from '../pdf-check/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
 import { describePdfLink, orderPdfCandidates } from './pdf-priority.ts';
@@ -111,11 +112,21 @@ export async function checkAdministrativeNeed(
       slotsUsed += 1;
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
+      // パスワード保護PDFは本文を1文字も渡せないので、0文字PDFと同じく枠を消費しない。
+      // 解除・推測は行わず、保護されていた事実はWARNINGとして残す。
+      if (isPasswordProtectedPdfError(error)) {
+        warnings.push({
+          code: 'pdf_failed',
+          message: `PDFがパスワード保護されているためAI入力に含めず次の候補を試します: ${url}`,
+          detail: 'password_protected',
+        });
+        continue;
+      }
       warnings.push({
         code: 'pdf_failed',
         message: `PDF本文を取得できないためHTMLだけで続行します: ${url}: ${detail}`,
       });
-      // 取得失敗は従来どおり枠を消費する。補充は本文0文字の場合だけに限る。
+      // パスワード保護以外の取得失敗は従来どおり枠を消費する。
       slotsUsed += 1;
     }
   }

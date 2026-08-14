@@ -60,6 +60,12 @@ export type PdfCheckErrorCode =
   | 'too_many_pages'
   | 'parse_timeout'
   | 'parse_failed'
+  /**
+   * パスワード保護PDF。本文を1文字も取得できないため、
+   * 呼び出し側はAI入力枠を消費させず次候補へ回せる。
+   * 解除・推測は行わない。
+   */
+  | 'password_protected'
   | 'no_text';
 
 export class PdfCheckError extends Error {
@@ -74,4 +80,12 @@ export class PdfCheckError extends Error {
     super(message, options);
     this.code = code;
   }
+}
+
+/**
+ * パスワード保護で本文を取得できなかったか。
+ * AI入力枠を消費させず次候補へ回す判定に使う。
+ */
+export function isPasswordProtectedPdfError(error: unknown): boolean {
+  return error instanceof PdfCheckError && error.code === 'password_protected';
 }

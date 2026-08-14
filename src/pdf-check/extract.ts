@@ -10,6 +10,14 @@ import {
 // 一部PDFが解析できないため、pdfjsの遅延importより先にここで補う。
 installMathSumPrecise();
 
+/**
+ * PDF.jsのパスワード例外か。`name` で判定するため、
+ * `No password given` と `Incorrect Password` の表記差に依存しない。
+ */
+function isPdfPasswordException(error: unknown): boolean {
+  return error instanceof Error && error.name === 'PasswordException';
+}
+
 export const DEFAULT_MAX_PDF_PAGES = 500;
 export const DEFAULT_MAX_PDF_IMAGE_SIZE = 16_777_216;
 export const DEFAULT_PDF_PARSE_TIMEOUT_MS = 30_000;
@@ -100,6 +108,14 @@ export async function extractPdfFromBytes(
     };
   } catch (error) {
     if (error instanceof PdfCheckError) throw error;
+    if (isPdfPasswordException(error)) {
+      // パスワードの解除・推測・総当たりは行わない。原因が分かる形で拒否するだけ。
+      throw new PdfCheckError(
+        'password_protected',
+        'PDFがパスワード保護されているため本文を取得できません。',
+        { cause: error },
+      );
+    }
     const detail = error instanceof Error ? error.message : String(error);
     throw new PdfCheckError(
       'parse_failed',

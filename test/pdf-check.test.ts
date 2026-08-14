@@ -86,6 +86,51 @@ describe('PDFテキスト抽出', () => {
       parser: neverOpens,
     })).rejects.toMatchObject({ code: 'parse_timeout' });
   });
+
+  it('パスワード保護PDFを専用コードと原因の分かる文言で拒否する', async () => {
+    // PDF.jsは name=PasswordException / code=1(NEED_PASSWORD) で投げる。
+    const passwordException = Object.assign(new Error('No password given'), {
+      name: 'PasswordException',
+      code: 1,
+    });
+    const locked: PdfParserDependencies = {
+      openDocument: async () => {
+        throw passwordException;
+      },
+      extractPageTexts: async () => [],
+    };
+
+    const error = await extractPdfFromBytes(PDF_BYTES, { parser: locked })
+      .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: 'password_protected' });
+    expect((error as Error).message).toContain('パスワード');
+    // 解除や推測は行わないので、元の例外は cause として残すだけにする。
+    expect((error as Error).cause).toBe(passwordException);
+  });
+
+  it('パスワード保護の判定はメッセージ表記に依存しない', async () => {
+    for (const message of ['No password given', 'Incorrect Password']) {
+      const locked: PdfParserDependencies = {
+        openDocument: async () => {
+          throw Object.assign(new Error(message), { name: 'PasswordException' });
+        },
+        extractPageTexts: async () => [],
+      };
+      await expect(extractPdfFromBytes(PDF_BYTES, { parser: locked }))
+        .rejects.toMatchObject({ code: 'password_protected' });
+    }
+  });
+
+  it('パスワード保護以外の解析失敗は従来どおりparse_failedにする', async () => {
+    const broken: PdfParserDependencies = {
+      openDocument: async () => {
+        throw new Error('unexpected parser failure');
+      },
+      extractPageTexts: async () => [],
+    };
+    await expect(extractPdfFromBytes(PDF_BYTES, { parser: broken }))
+      .rejects.toMatchObject({ code: 'parse_failed' });
+  });
 });
 
 describe('PDF取得', () => {

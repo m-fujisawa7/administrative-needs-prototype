@@ -19,6 +19,7 @@ import {
   renderAiCheckPrompt,
 } from '../src/ai/prompt.ts';
 import { runChildProcess, type ChildProcessRequest } from '../src/ai/process.ts';
+import { warningSeverity } from '../src/ai/warning-severity.ts';
 import {
   administrativeNeedJsonSchema,
   parseAdministrativeNeedAnalysis,
@@ -35,7 +36,7 @@ import {
   runAiCheck,
 } from '../src/commands/ai-check.ts';
 import type { ExtractedDocument } from '../src/content-check/types.ts';
-import type { ExtractedPdf } from '../src/pdf-check/types.ts';
+import { PdfCheckError, type ExtractedPdf } from '../src/pdf-check/types.ts';
 import type {
   Organization,
   Source,
@@ -1355,6 +1356,99 @@ describe('HTML・PDF・AI連携', () => {
     expect(result.warnings.map((warning) => warning.code)).toContain('pdf_failed');
   });
 
+  it('パスワード保護PDFはAI入力枠を消費せず、次順位の候補を試す', async () => {
+    const fetched: string[] = [];
+    let analyzerInput: AdministrativeNeedAnalysisInput | undefined;
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: {
+        provider: 'mock',
+        model: null,
+        analyze: async (input: AdministrativeNeedAnalysisInput) => {
+          analyzerInput = input;
+          return validAnalysis();
+        },
+      },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 1 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '別記仕様書' },
+          { url: PDF_B, text: '公告文' },
+        ],
+      }),
+      extractPdf: async ({ url }) => {
+        fetched.push(url);
+        if (url === PDF_A) throw passwordProtectedError();
+        return makePdf(url);
+      },
+    });
+
+    // 上限1件でも、パスワード保護は枠を消費しないので次候補まで進む。
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+    expect(analyzerInput?.pdfDocuments.map((pdf) => pdf.url)).toEqual([PDF_B]);
+    expect(result.inputSummary.pdfIncluded).toBe(1);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['公告文']);
+  });
+
+  it('パスワード保護PDFはAI入力件数に含めず、WARNINGとして残す', async () => {
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [{ url: PDF_A, text: '別記仕様書' }],
+      }),
+      extractPdf: async () => {
+        throw passwordProtectedError();
+      },
+    });
+
+    expect(result.inputSummary.pdfIncluded).toBe(0);
+    expect(result.inputSummary.pdfInputs).toEqual([]);
+    expect(result.inputSummary.pdfSkipped.map((pdf) => pdf.label)).toEqual(['別記仕様書']);
+    const failure = result.warnings.find((warning) => warning.code === 'pdf_failed');
+    expect(failure?.detail).toBe('password_protected');
+    expect(failure?.message).toContain('パスワード');
+    // WARNING のままにする（NOTICEへ格下げしない）。
+    expect(warningSeverity(failure!)).toBe('warning');
+  });
+
+  it('パスワード保護PDFしか無くても解析を続ける', async () => {
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '仕様書' },
+          { url: PDF_B, text: '実施要領' },
+        ],
+      }),
+      extractPdf: async () => {
+        throw passwordProtectedError();
+      },
+    });
+
+    expect(result.analysis.is_target).toBe(true);
+    expect(result.inputSummary.pdfIncluded).toBe(0);
+    expect(result.warnings.filter((warning) => warning.code === 'pdf_failed')).toHaveLength(2);
+  });
+
   it('--no-pdfではPDF取得を行わない', async () => {
     let pdfCalled = false;
     const result = await checkAdministrativeNeed({
@@ -1627,6 +1721,15 @@ function makeDocument(overrides: Partial<ExtractedDocument> = {}): ExtractedDocu
     warnings: [],
     ...overrides,
   };
+}
+
+/** PDF.jsのPasswordExceptionをPdfCheckErrorで包んだ形を再現する。 */
+function passwordProtectedError(): PdfCheckError {
+  return new PdfCheckError(
+    'password_protected',
+    'PDFがパスワード保護されているため本文を取得できません。',
+    { cause: Object.assign(new Error('No password given'), { name: 'PasswordException' }) },
+  );
 }
 
 function makePdf(url: string): ExtractedPdf {

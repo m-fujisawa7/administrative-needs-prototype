@@ -8,6 +8,7 @@ import type {
 } from './types.ts';
 
 export { extractPdfFromBytes, hasPdfHeader, normalizePdfPageText } from './extract.ts';
+export { isPasswordProtectedPdfError } from './types.ts';
 export type {
   ExtractedPdf,
   PdfCheckReport,
