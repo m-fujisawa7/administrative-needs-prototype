@@ -177,6 +177,14 @@ organizations:
     enabled: true
     notes: 情報システム調達、全庁の入札・発注、創業・イノベーション施策、公民連携の行政ニーズを収集する対象都道府県。福島県と同じCMSベンダーで、所属別・分類別のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。各HTMLページの新着情報は5件から15件しか載せないが、同じ内容のRSSが40件から50件を保持するため、収集はRSSを採用する。個別ページの本文は#main_bodyに入る。#main、#main_a、#mymainbackはページ番号や印刷リンクを含む外側の入れ物なので使わない
 
+  - id: toyama-prefecture
+    name: 富山県
+    organization_type: prefecture
+    prefecture: 富山県
+    official_domain: pref.toyama.jp
+    enabled: true
+    notes: 全庁の公募型プロポーザル、民間提案制度、デジタル戦略の行政ニーズを収集する対象都道府県。石川県や宮城県と同じ#tmp_接頭辞のCMSで、本文は#tmp_contentsに入る。#tmp_mainはパンくずと関連リンクを含む外側の入れ物なので使わない。掲載日はtime要素ではなくタイトル先頭の【令和8年8月12日公告】形式の和暦で、parseDateCandidateが解釈する。配信しているRSSは/emergency.xmlの緊急情報だけで、新潟県や福島県のような所属別RSSは無い。noteのtoyama-pref.note.jpに記事があるが共用ブログ基盤のためofficial_domainに含めない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1660,5 +1668,77 @@ sources:
       - 官民連携
       - セミナー資料
     notes: 県、市町村、地域の民間企業や金融機関が公民連携事業のノウハウと先進事例を研究する枠組みの説明ページ。content:checkで確認した本文は4038文字で、概要、第四北越銀行による地域プラットフォーム設立、令和5年度から7年度の活動実績が載る。個別URLを持つリンクは令和5年度から7年度のセミナー資料ページ6件だが、リンク文字列がすべて「資料はこちらからダウンロードできます」で案件名を判別できず、内容も開催済みセミナーの資料提供のため案件にならない。現在のCollectorはsingle_page未対応でもあり無効状態で保持する。サウンディングや官民対話の案件ページが公開された時点で、ふくしまPPP/PFI地域プラットフォームと同じく有効化を再検討する。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: toyama-boshu-list
+    organization_id: toyama-prefecture
+    name: 募集
+    url: https://www.pref.toyama.jp/sangyou/nyuusatsu/koubo/bosyuu.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    title_excludes:
+      - 質問回答
+      - 質問に対する回答
+    document_type_hints:
+      - 公募型プロポーザル
+      - 業務委託
+      - 事業者募集
+    notes: 全庁の公募型プロポーザルを集約する一覧。198件が単一のulに並び、掲載日はタイトル先頭の【令和8年8月12日公告】形式の和暦で全件解釈できる。接頭辞の内訳は公告93件、質問回答系95件、掲載3件などで、質問回答の続報が約半数を占めるためtitle_excludesで除外し198件が101件になる。質問回答の項目は原公告とは別URLの質問回答専用ページを指しており、URL重複は0件で原公告の項目は別に残るため、除外しても案件そのものを取り逃さない。除外後は2026-07-01以降が14件、2026-08-01以降が5件だった。2024-04-22からのアーカイブだが、initial_sinceを2026-08-01にすると富山県立氷見高等学校DX加速化推進事業やVRを活用した消防団員訓練映像制作など7月の案件が下限日で恒久的に落ちるため設定していない。市町村デジタル人材確保支援業務、食品安全総合ウェブサイト構築業務、ウェルビーイング調査分析業務など対象性の高い案件を含む。なお【令和8月4月24日質問回答】のように年を月と誤記した項目がサイト側に1件あり、そのままでは掲載日を解釈できないが、質問回答としてtitle_excludesで除外されるため実害はない。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: toyama-minkan-teian
+    organization_id: toyama-prefecture
+    name: 民間提案制度について
+    url: https://www.pref.toyama.jp/110611/kensei/kannminnrennkei/teian2024.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 民間提案募集
+      - 行政課題
+      - 官民連携
+    notes: 県が提示するテーマへ民間から提案を募る制度の説明ページ。本文4466文字に提案を求めるテーマ、スケジュール、参加要件、求める提案内容、事業化までの流れ、過去の実績状況が入る。確認時点のテーマは「うるおい景観とやま賞」受賞作品の周知・活用の1件で、テーマも過去実績も見出しと本文で提示され個別URLを持たない。リンクは募集要項PDF、様式のWordファイル、審査結果PDF、SCOP TOYAMAとnoteの外部サイトだけである。現在のCollectorはsingle_page未対応のため無効状態で保持する。URLはteian2024.htmlだが令和6年度で止まった固定ページではなく2026-05-13に更新されている。テーマ本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: toyama-digi-poc
+    organization_id: toyama-prefecture
+    name: Digi-PoC TOYAMA（デジポックとやま）
+    url: https://www.pref.toyama.jp/140511/kensei/kenseiunei/jouhouka/r4digipoctoyama/top.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 実証実験
+      - 行政課題
+      - 民間提案募集
+    notes: 県の課題に民間のデジタル技術で挑む実証実験プロジェクト。指定URLは年度別アーカイブのハブで本文は788文字しかなく、冒頭で最新情報は外部の特設サイトdigi-poc-toyama.jpへ誘導している。県ドメイン側のリンクは令和4年度から7年度の成果報告会と実証実験プロジェクトのページで、いずれも実施済みの報告である。現在のCollectorはsingle_page未対応でもあり無効状態で保持する。募集テーマの実体は同じ県ドメインのr7digipoctoyama/thema_list.htmlにあり、確認時点ではとやまデジタル県民コミュニティ、誘客効果の測定、介護サービスの担い手確保、河川モニタリング、林業の担い手確保、農地の現地調査、持続可能な農業の7テーマが載っていた。ただし7テーマとも見出しと本文で提示され個別URLを持たないため、神戸のUrban Innovation KOBEと同じくlist_pageにはできない。年度ごとにパスのr7の部分が変わる点も含め、有効化するときは人が実URLを確認したうえで別Sourceとして登録する判断が必要である。
+    last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: toyama-digital-strategy
+    organization_id: toyama-prefecture
+    name: デジタル化推進室 デジタル戦略課
+    url: https://www.pref.toyama.jp/140511/kensei/kenseiunei/kensei/soshiki/20/102001.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: low
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - DX推進計画
+      - デジタル条例
+      - デジタルデバイド対策
+    notes: デジタル化推進室デジタル戦略課の組織案内ページ。content:checkで確認した本文は1134文字で、基本情報、課の取組み、条例・計画、問い合わせ先が並ぶ。内部リンク24件のうち案件性があるのはeスポーツ関係人口創出事業補助金の1件程度で、残りはTOYAMA Free Wi-Fiの整備、ケーブルテレビ、テレビ受信障害対策、スマホサポーター養成講座、小規模施設特定有線一般放送の届出、後援名義申請などの恒久的な案内である。掲載日を持つ要素が無いため候補は毎回24件すべてが期間内として扱われ、AI判定の消費に見合わないため無効状態で保持する。岩手のいわてDXポータルと同じ判断である。富山県デジタルによる変革推進条例と富山県DX・働き方改革推進計画は上流の政策シグナルとして価値があるため、必要なら無効のままnotion:registerで個別に登録する。有効化する場合は山形県のDX推進課と同じく、条例・計画の見出し配下だけへlink_selectorを絞る設計を先に決める必要がある。
     last_verified_at: "2026-08-13"
     verification_status: verified
