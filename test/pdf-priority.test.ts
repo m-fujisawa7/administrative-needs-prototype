@@ -38,6 +38,34 @@ describe('classifyPdfPriority', () => {
     }
   });
 
+  it('要求事項を読み取れる仕様書・要領・概要を高優先にする', () => {
+    for (const text of [
+      '基本仕様書', '業務仕様書', '要求仕様書', '調達仕様書',
+      '募集要領', '公募要領', '実施要領', '業務概要', '事業概要',
+    ]) {
+      expect(classifyPdfPriority(link(text)), text).toBe('high');
+    }
+  });
+
+  it('評価・様式・契約手続きの資料を低優先にする', () => {
+    for (const text of [
+      '評価基準', '審査基準', '採点表', '評価項目',
+      '申請書', '参加申込書', '質問書', '質問票',
+      '契約書案', '契約約款', '入札書', '委任状',
+    ]) {
+      expect(classifyPdfPriority(link(text)), text).toBe('low');
+    }
+  });
+
+  it('括弧付きの契約書と質問回答の言い回しの違いを吸収して低優先にする', () => {
+    for (const text of [
+      '契約書案', '契約書（案）', '契約書(案)', '業務委託契約書',
+      '質問書', '質問票', '質問及び回答（8月5日回答）', '質問と回答', '質問への回答',
+    ]) {
+      expect(classifyPdfPriority(link(text)), text).toBe('low');
+    }
+  });
+
   it('キーワードに該当しない文書はその他にする', () => {
     expect(classifyPdfPriority(link('議事録'))).toBe('other');
     expect(classifyPdfPriority(link(''))).toBe('other');
@@ -83,14 +111,45 @@ describe('classifyPdfPriority', () => {
 });
 
 describe('selectPdfsByPriority', () => {
-  it('3件以下なら全件を掲載順のまま選ぶ', () => {
+  it('上限以下でも、高価値PDFがあれば低優先PDFをAI入力へ送らない', () => {
     const links = [link('チラシ', 'a.pdf'), link('仕様書', 'b.pdf')];
-    expect(names(selectPdfsByPriority(links, 3))).toEqual(['チラシ', '仕様書']);
+    expect(names(selectPdfsByPriority(links, 3))).toEqual(['仕様書']);
   });
 
-  it('ちょうど3件でも全件選ぶ', () => {
+  it('ちょうど上限件数でも、枠を埋めるために低優先PDFを送らない', () => {
     const links = [link('チラシ', 'a.pdf'), link('地図', 'b.pdf'), link('仕様書', 'c.pdf')];
-    expect(selectPdfsByPriority(links, 3)).toHaveLength(3);
+    expect(names(selectPdfsByPriority(links, 3))).toEqual(['仕様書']);
+  });
+
+  it('仕様書・募集要領・評価基準の3件では評価基準を送らない', () => {
+    const links = [
+      link('基本仕様書', 'a.pdf'),
+      link('公募実施要領', 'b.pdf'),
+      link('評価基準', 'c.pdf'),
+    ];
+    expect(names(selectPdfsByPriority(links, 3))).toEqual(['基本仕様書', '公募実施要領']);
+  });
+
+  it('低優先しか無い場合はPDFを捨てず全件を候補にする', () => {
+    const links = [
+      link('評価基準', 'a.pdf'),
+      link('様式1 参加申込書', 'b.pdf'),
+      link('委任状', 'c.pdf'),
+    ];
+    expect(names(selectPdfsByPriority(links, 3)))
+      .toEqual(['評価基準', '様式1 参加申込書', '委任状']);
+  });
+
+  it('低優先PDFが1件だけの場合もそのまま送る', () => {
+    expect(names(selectPdfsByPriority([link('評価基準', 'a.pdf')], 3))).toEqual(['評価基準']);
+  });
+
+  it('低優先しか無く上限を超える場合は上限まで掲載順で送る', () => {
+    const links = [
+      link('様式1', 'a.pdf'), link('様式2', 'b.pdf'),
+      link('様式3', 'c.pdf'), link('様式4', 'd.pdf'),
+    ];
+    expect(names(selectPdfsByPriority(links, 3))).toEqual(['様式1', '様式2', '様式3']);
   });
 
   it('4件以上でも最大3件に絞る', () => {
@@ -150,16 +209,14 @@ describe('selectPdfsByPriority', () => {
     expect(names(selectPdfsByPriority(links, 3))).toEqual(['仕様書', '参考資料', '議事録']);
   });
 
-  it('高優先・中優先・その他が足りなければ低優先で埋める', () => {
+  it('高優先が1件でも、残り枠を低優先で埋めない', () => {
     const links = [
       link('仕様書', 'a.pdf'),
       link('チラシ', 'b.pdf'),
       link('申込書', 'c.pdf'),
       link('会場地図', 'd.pdf'),
     ];
-    const selected = names(selectPdfsByPriority(links, 3));
-    expect(selected[0]).toBe('仕様書');
-    expect(selected.slice(1)).toEqual(['チラシ', '申込書']);
+    expect(names(selectPdfsByPriority(links, 3))).toEqual(['仕様書']);
   });
 
   it('同じ優先度では元の掲載順を維持する', () => {

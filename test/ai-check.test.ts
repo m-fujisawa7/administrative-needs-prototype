@@ -213,6 +213,73 @@ describe('AI入力組み立て', () => {
     expect(prepared.warnings.map((warning) => warning.code)).toContain('html_truncated');
   });
 
+  it('Claudeへ渡す原文の内訳と合計をsummaryに残す', () => {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      htmlText: 'H'.repeat(1_805),
+      pdfDocuments: [
+        { url: PDF_A, text: 'A'.repeat(12_400) },
+        { url: PDF_B, text: 'B'.repeat(6_020) },
+      ],
+      pdfLabels: ['基本仕様書', '公募実施要領'],
+      pdfSkipped: [
+        { label: '評価基準', url: PDF_C },
+        { label: '様式1 参加申込書', url: `${PDF_C}?v=2` },
+      ],
+      pdfDiscovered: 4,
+      pdfAttempted: 2,
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    });
+    expect(prepared.summary.htmlSentCharacters).toBe(1_805);
+    expect(prepared.summary.pdfSentCharacters).toBe(18_420);
+    expect(prepared.summary.totalSourceCharacters).toBe(20_225);
+    expect(prepared.summary.pdfInputs).toEqual([
+      { label: '基本仕様書', url: PDF_A, characters: 12_400 },
+      { label: '公募実施要領', url: PDF_B, characters: 6_020 },
+    ]);
+    expect(prepared.summary.pdfSkipped.map((pdf) => pdf.label))
+      .toEqual(['評価基準', '様式1 参加申込書']);
+  });
+
+  it('切り詰めが起きたときpdfInputsは送信後の文字数を持つ', () => {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [
+        { url: PDF_A, text: 'A'.repeat(80) },
+        { url: PDF_B, text: 'B'.repeat(80) },
+      ],
+      pdfLabels: ['仕様書', '実施要領'],
+      pdfDiscovered: 2,
+      pdfAttempted: 2,
+      limits: { htmlCharacters: 1_000, pdfCharacters: 60, maxPdfs: 3 },
+    });
+    expect(prepared.summary.pdfInputs.map((pdf) => pdf.characters)).toEqual([30, 30]);
+    expect(prepared.summary.pdfSentCharacters).toBe(60);
+  });
+
+  it('PDFなしcandidateでは内訳が空で合計はHTMLだけになる', () => {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      htmlText: 'H'.repeat(742),
+      pdfDocuments: [],
+      pdfDiscovered: 0,
+      pdfAttempted: 0,
+    });
+    expect(prepared.summary.pdfInputs).toEqual([]);
+    expect(prepared.summary.pdfSkipped).toEqual([]);
+    expect(prepared.summary.totalSourceCharacters).toBe(742);
+  });
+
+  it('ラベルが渡されない場合はファイル名を内訳ラベルに使う', () => {
+    const prepared = prepareAnalysisInput({
+      ...basePrepareOptions(),
+      pdfDocuments: [{ url: PDF_A, text: 'A'.repeat(10) }],
+      pdfDiscovered: 1,
+      pdfAttempted: 1,
+    });
+    expect(prepared.summary.pdfInputs[0]?.label).toBe('a.pdf');
+  });
+
   it('PDF本文合計の上限を複数PDFへ配分する', () => {
     const prepared = prepareAnalysisInput({
       ...basePrepareOptions(),
@@ -536,6 +603,50 @@ describe('Analyzer', () => {
       systemPrompt: 'prompt',
       env: { AI_PROVIDER: 'unsupported' },
     })).toThrow('Unsupported AI_PROVIDER');
+  });
+
+  it('外側JSONにusageがあれば入力トークン数をrunInfoへ残す', async () => {
+    const analyzer = new ClaudeCliAnalyzer({
+      executable: '/path/to/claude',
+      timeoutMs: 10_000,
+      systemPrompt: 'system prompt',
+      runner: async () => ({
+        stdout: JSON.stringify({
+          type: 'result',
+          subtype: 'success',
+          is_error: false,
+          result: JSON.stringify(validAnalysis()),
+          usage: { input_tokens: 12_345, output_tokens: 678 },
+        }),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+      }),
+    });
+    await analyzer.analyze(makeInput());
+    expect(analyzer.getLastRunInfo()).toMatchObject({ inputTokens: 12_345 });
+  });
+
+  it('usageが無い、または型が違う場合はinputTokensを持たない', async () => {
+    for (const envelope of [
+      { type: 'result', subtype: 'success', is_error: false, result: JSON.stringify(validAnalysis()) },
+      {
+        type: 'result', subtype: 'success', is_error: false,
+        result: JSON.stringify(validAnalysis()),
+        usage: { input_tokens: 'many' },
+      },
+    ]) {
+      const analyzer = new ClaudeCliAnalyzer({
+        executable: '/path/to/claude',
+        timeoutMs: 10_000,
+        systemPrompt: 'system prompt',
+        runner: async () => ({
+          stdout: JSON.stringify(envelope), stderr: '', exitCode: 0, signal: null,
+        }),
+      });
+      await analyzer.analyze(makeInput());
+      expect(analyzer.getLastRunInfo().inputTokens).toBeUndefined();
+    }
   });
 
   it('Claude CLIを最小引数で起動し、指示・スキーマ・本文をstdinで渡す', async () => {
@@ -960,6 +1071,136 @@ describe('HTML・PDF・AI連携', () => {
     expect(result.warnings.map((warning) => warning.code)).toContain('pdf_failed');
   });
 
+  it('低優先PDFを取得せず、外した資料をsummaryへ残す', async () => {
+    const fetched: string[] = [];
+    let analyzerInput: AdministrativeNeedAnalysisInput | undefined;
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: {
+        provider: 'mock',
+        model: null,
+        analyze: async (input: AdministrativeNeedAnalysisInput) => {
+          analyzerInput = input;
+          return validAnalysis();
+        },
+      },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '基本仕様書' },
+          { url: PDF_B, text: '評価基準' },
+          { url: PDF_C, text: '様式1 参加申込書' },
+        ],
+      }),
+      extractPdf: async ({ url }) => {
+        fetched.push(url);
+        return makePdf(url);
+      },
+    });
+
+    // 低優先PDFは取得自体を行わないため、AI入力だけでなくPDF取得の通信も減る。
+    expect(fetched).toEqual([PDF_A]);
+    expect(analyzerInput?.pdfDocuments.map((pdf) => pdf.url)).toEqual([PDF_A]);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['基本仕様書']);
+    expect(result.inputSummary.pdfSkipped.map((pdf) => pdf.label))
+      .toEqual(['評価基準', '様式1 参加申込書']);
+    expect(result.inputSummary.totalSourceCharacters)
+      .toBe(result.inputSummary.htmlSentCharacters + result.inputSummary.pdfSentCharacters);
+  });
+
+  it('低優先PDFしか無いcandidateではPDFを捨てず従来どおり解析する', async () => {
+    const fetched: string[] = [];
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '評価基準' },
+          { url: PDF_B, text: '様式1 参加申込書' },
+        ],
+      }),
+      extractPdf: async ({ url }) => {
+        fetched.push(url);
+        return makePdf(url);
+      },
+    });
+
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+    expect(result.inputSummary.pdfIncluded).toBe(2);
+    expect(result.inputSummary.pdfSkipped).toEqual([]);
+    // 除外していないので既存のpdf_limit通知は出ない。
+    expect(result.warnings.map((warning) => warning.code)).not.toContain('pdf_limit');
+  });
+
+  it('低優先PDFを外した場合も既存のpdf_limit通知で件数と採用資料を示す', async () => {
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        pdfLinks: [
+          { url: PDF_A, text: '業務仕様書' },
+          { url: PDF_B, text: '審査基準' },
+          { url: PDF_C, text: '委任状' },
+        ],
+      }),
+      extractPdf: async ({ url }) => makePdf(url),
+    });
+
+    const limit = result.warnings.find((warning) => warning.code === 'pdf_limit');
+    expect(limit?.message).toContain('検出したPDF 3件');
+    expect(limit?.message).toContain('1件を解析します');
+    expect(limit?.message).toContain('業務仕様書');
+  });
+
+  it('低優先PDFを外してもHTML本文はそのままClaudeへ渡す', async () => {
+    let analyzerInput: AdministrativeNeedAnalysisInput | undefined;
+    const body = '行政課題の本文'.repeat(50);
+    await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: {
+        provider: 'mock',
+        model: null,
+        analyze: async (input: AdministrativeNeedAnalysisInput) => {
+          analyzerInput = input;
+          return validAnalysis();
+        },
+      },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs: 3 },
+    }, {
+      extractContent: async () => makeDocument({
+        bodyText: body,
+        pdfLinks: [
+          { url: PDF_A, text: '仕様書' },
+          { url: PDF_B, text: '評価基準' },
+        ],
+      }),
+      extractPdf: async ({ url }) => makePdf(url),
+    });
+
+    expect(analyzerInput?.htmlText).toBe(body);
+  });
+
   it('--no-pdfではPDF取得を行わない', async () => {
     let pdfCalled = false;
     const result = await checkAdministrativeNeed({
@@ -1059,6 +1300,41 @@ describe('ai:checkコマンド', () => {
     expect(formatted).toContain('Company relevance: A');
     expect(formatted).toContain('Evidence matched: 1/1');
     expect(formatted).toContain('PDF documents: 0/0');
+  });
+
+  it('Claudeへ渡した原文の合計と内訳を表示する', () => {
+    const formatted = formatAiCheckResult(makeAiCheckResult({
+      inputSummary: {
+        htmlOriginalCharacters: 1_805,
+        htmlSentCharacters: 1_805,
+        pdfDiscovered: 4,
+        pdfAttempted: 2,
+        pdfIncluded: 2,
+        pdfOriginalCharacters: 18_420,
+        pdfSentCharacters: 18_420,
+        totalSourceCharacters: 20_225,
+        pdfInputs: [
+          { label: '基本仕様書', url: PDF_A, characters: 12_400 },
+          { label: '公募実施要領', url: PDF_B, characters: 6_020 },
+        ],
+        pdfSkipped: [
+          { label: '評価基準', url: PDF_C },
+          { label: '様式1 参加申込書', url: `${PDF_C}?v=2` },
+        ],
+      },
+    }));
+    expect(formatted).toContain('Total source characters: 20225');
+    expect(formatted).toContain('- 基本仕様書: 12400 chars');
+    expect(formatted).toContain('- 公募実施要領: 6020 chars');
+    expect(formatted).toContain('PDF skipped from AI input:');
+    expect(formatted).toContain('- 評価基準');
+    expect(formatted).toContain('- 様式1 参加申込書');
+  });
+
+  it('入力トークン数が取れたときだけ表示する', () => {
+    expect(formatAiCheckResult(makeAiCheckResult({ inputTokens: 12_345 })))
+      .toContain('Claude input tokens: 12345');
+    expect(formatAiCheckResult(makeAiCheckResult())).not.toContain('Claude input tokens');
   });
 });
 
@@ -1223,6 +1499,9 @@ function makeAiCheckResult(overrides: Partial<AiCheckResult> = {}): AiCheckResul
       pdfIncluded: 0,
       pdfOriginalCharacters: 0,
       pdfSentCharacters: 0,
+      totalSourceCharacters: 500,
+      pdfInputs: [],
+      pdfSkipped: [],
     },
     evidenceMatched: 1,
     warnings: [],

@@ -1,3 +1,4 @@
+import { aiInputSection } from '../ai/input.ts';
 import type {
   NotionBatchItemResult,
   NotionBatchReport,
@@ -80,6 +81,7 @@ export function formatNotionBatchItem(
       '',
       'Notion write:',
       'Skipped',
+      ...aiInputSection(result),
     ].join('\n');
   }
   if (result.status === 'created') {
@@ -97,6 +99,7 @@ export function formatNotionBatchItem(
       '',
       'Notion page URL:',
       result.notionPageUrl,
+      ...aiInputSection(result),
     ].join('\n');
   }
   const lines = [

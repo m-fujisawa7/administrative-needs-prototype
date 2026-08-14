@@ -1,6 +1,11 @@
 import { checkAdministrativeNeed } from '../ai/check.ts';
 import { AiAnalyzerError, ClaudeUsageLimitError } from '../ai/errors.ts';
 import type { AiInputLimits } from '../ai/input.ts';
+import type {
+  AiCheckResult,
+  AiCheckWarning,
+  AiInputSummary,
+} from '../ai/types.ts';
 import { ContentExtractionError } from '../content-check/errors.ts';
 import { NotionCheckError } from '../notion-check/errors.ts';
 import type {
@@ -134,7 +139,7 @@ export async function registerOneAdministrativeNeed(
       existingPageUrl: preview.duplicate.url,
       phase: 'before_create',
       preview,
-      warnings: analysisResult.warnings,
+      ...analysisDiagnostics(analysisResult),
     };
   }
   if (!input.write) {
@@ -143,7 +148,7 @@ export async function registerOneAdministrativeNeed(
       officialUrl: preview.values.officialUrl,
       title: preview.values.title,
       preview,
-      warnings: analysisResult.warnings,
+      ...analysisDiagnostics(analysisResult),
     };
   }
   if (preview.missingOptions.length > 0) {
@@ -154,7 +159,7 @@ export async function registerOneAdministrativeNeed(
       message: 'Notion registration was blocked because creating missing select options would change the data source schema.',
       configurationError: false,
       preview,
-      warnings: analysisResult.warnings,
+      ...analysisDiagnostics(analysisResult),
     };
   }
 
@@ -167,7 +172,7 @@ export async function registerOneAdministrativeNeed(
       notionPageId: page.id,
       notionPageUrl: page.url,
       preview,
-      warnings: analysisResult.warnings,
+      ...analysisDiagnostics(analysisResult),
     };
   } catch (error) {
     return failure(
@@ -177,6 +182,24 @@ export async function registerOneAdministrativeNeed(
       analysisResult.warnings,
     );
   }
+}
+
+/**
+ * Claude解析まで到達した結果へ共通で載せる診断情報。
+ * inputSummary を持たせるのは、候補ごとに実際のAI入力量を追えるようにするため。
+ */
+function analysisDiagnostics(analysisResult: AiCheckResult): {
+  warnings: AiCheckWarning[];
+  inputSummary: AiInputSummary;
+  inputTokens?: number;
+} {
+  return {
+    warnings: analysisResult.warnings,
+    inputSummary: analysisResult.inputSummary,
+    ...(analysisResult.inputTokens === undefined
+      ? {}
+      : { inputTokens: analysisResult.inputTokens }),
+  };
 }
 
 function failure(

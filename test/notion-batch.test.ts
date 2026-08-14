@@ -200,6 +200,33 @@ describe('notion:batchコマンド', () => {
     expect(stdout.join('\n')).toContain('[2/2] Preview completed');
   });
 
+  it('item ごとにClaudeへ渡した入力量を表示する', async () => {
+    const stdout: string[] = [];
+    await runNotionBatch(args(), commandDependencies({
+      stdout,
+      registerOne: async (input) => ({
+        ...previewed(input.officialUrl),
+        inputSummary: {
+          htmlOriginalCharacters: 900,
+          htmlSentCharacters: 900,
+          pdfDiscovered: 2,
+          pdfAttempted: 1,
+          pdfIncluded: 1,
+          pdfOriginalCharacters: 3_100,
+          pdfSentCharacters: 3_100,
+          totalSourceCharacters: 4_000,
+          pdfInputs: [{ label: '公募要領', url: 'https://example.lg.jp/a.pdf', characters: 3_100 }],
+          pdfSkipped: [{ label: '様式1 参加申込書', url: 'https://example.lg.jp/b.pdf' }],
+        },
+      }),
+    }));
+    const output = stdout.join('\n');
+    expect(output).toContain('AI input:');
+    expect(output).toContain('Total source characters: 4000');
+    expect(output).toContain('- 公募要領: 3100 chars');
+    expect(output).toContain('- 様式1 参加申込書');
+  });
+
   it('入力ファイルエラー時はNotionやAnalyzerへ進まない', async () => {
     const createClient = vi.fn();
     const analyzerFactory = vi.fn();

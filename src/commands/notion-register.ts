@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { ClaudeUsageLimitError } from '../ai/errors.ts';
 import { formatWarningLine } from '../ai/warning-severity.ts';
+import { aiInputSection } from '../ai/input.ts';
 import { formatClaudeUsageLimitStop } from '../collection-run/format.ts';
 import { NotionConfigurationError } from '../notion-check/errors.ts';
 import {
@@ -140,6 +141,7 @@ export async function runNotionRegister(
   }
   if (result.status === 'previewed') {
     stdout(formatNotionRegistrationPreview(result.preview));
+    stdout(aiInputSection(result).join('\n'));
     return 0;
   }
   if (result.status === 'created') {
@@ -148,6 +150,7 @@ export async function runNotionRegister(
       id: result.notionPageId,
       url: result.notionPageUrl,
     }));
+    stdout(aiInputSection(result).join('\n'));
     return 0;
   }
   if (result.preview !== undefined) {

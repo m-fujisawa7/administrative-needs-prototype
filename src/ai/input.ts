@@ -2,6 +2,8 @@ import type {
   AdministrativeNeedAnalysis,
   AdministrativeNeedAnalysisInput,
   AiCheckWarning,
+  AiInputPdfDetail,
+  AiInputSkippedPdf,
   AiInputSummary,
   AnalysisPdfDocument,
   CompanyFitCriteria,
@@ -59,6 +61,10 @@ export type PrepareAnalysisInputOptions = {
   pdfAttempted: number;
   companyFitCriteria: CompanyFitCriteria;
   limits?: AiInputLimits;
+  /** pdfDocuments と同じ並びの表示ラベル。省略した要素はファイル名を使う。 */
+  pdfLabels?: readonly string[];
+  /** 優先度判定または件数上限でClaude入力から外したPDF。 */
+  pdfSkipped?: readonly AiInputSkippedPdf[];
 };
 
 export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
@@ -111,6 +117,13 @@ export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
     });
   }
 
+  // 取得全文ではなく、Claudeへ渡した原文の内訳を残す。
+  const pdfInputs: AiInputPdfDetail[] = pdfDocuments.map((document, index) => ({
+    label: options.pdfLabels?.[index] ?? pdfLabel(document.url),
+    url: document.url,
+    characters: document.text.length,
+  }));
+
   return {
     input: {
       title: options.title,
@@ -129,9 +142,59 @@ export function prepareAnalysisInput(options: PrepareAnalysisInputOptions): {
       pdfIncluded: pdfDocuments.length,
       pdfOriginalCharacters,
       pdfSentCharacters,
+      totalSourceCharacters: html.text.length + pdfSentCharacters,
+      pdfInputs,
+      pdfSkipped: [...(options.pdfSkipped ?? [])],
     },
     warnings,
   };
+}
+
+/**
+ * Claudeへ実際に渡した入力の可視化ブロックを組み立てる。
+ *
+ * 取得全文ではなく送信量を出す。ai:check、source:verify、collect:run、
+ * notion:batch、notion:register が同じ表示を共有するため、ここに1つだけ置く。
+ * 行配列で返すので、呼び出し側は既存の空行区切りブロックへそのまま差し込める。
+ */
+export function formatAiInputBlock(
+  summary: AiInputSummary,
+  inputTokens?: number,
+): string[] {
+  const lines = [
+    'AI input:',
+    `HTML characters: ${summary.htmlSentCharacters}`,
+    `PDF documents included: ${summary.pdfIncluded}`,
+    `PDF characters: ${summary.pdfSentCharacters}`,
+    `Total source characters: ${summary.totalSourceCharacters}`,
+  ];
+  if (inputTokens !== undefined) {
+    lines.push(`Claude input tokens: ${inputTokens}`);
+  }
+  if (summary.pdfInputs.length > 0) {
+    lines.push('', 'PDF input:');
+    for (const pdf of summary.pdfInputs) {
+      lines.push(`- ${pdf.label}: ${pdf.characters} chars`);
+    }
+  }
+  if (summary.pdfSkipped.length > 0) {
+    lines.push('', 'PDF skipped from AI input:');
+    for (const pdf of summary.pdfSkipped) {
+      lines.push(`- ${pdf.label}`);
+    }
+  }
+  return lines;
+}
+
+/**
+ * Claude解析まで到達した結果にだけ、空行区切りの可視化ブロックを付ける。
+ * 重複スキップや取得失敗では inputSummary が無いので何も足さない。
+ */
+export function aiInputSection(
+  result: { inputSummary?: AiInputSummary; inputTokens?: number },
+): string[] {
+  if (result.inputSummary === undefined) return [];
+  return ['', ...formatAiInputBlock(result.inputSummary, result.inputTokens)];
 }
 
 export function truncateHeadTail(value: string, maxCharacters: number): {

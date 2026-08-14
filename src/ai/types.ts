@@ -76,6 +76,11 @@ export type AdministrativeNeedAnalysis = {
 
 export type AdministrativeNeedAnalyzerRunInfo = {
   jsonParseRetryCount: number;
+  /**
+   * Claude CLIの外側JSONが返した入力トークン数。
+   * usage が無い、または数値でない場合は undefined のままにする。
+   */
+  inputTokens?: number;
 };
 
 export interface AdministrativeNeedAnalyzer {
@@ -106,6 +111,19 @@ export type AiCheckWarning = {
   detail?: string;
 };
 
+/** Claude入力へ実際に渡したPDF1件の内訳。characters は切り詰め後の文字数。 */
+export type AiInputPdfDetail = {
+  label: string;
+  url: string;
+  characters: number;
+};
+
+/** 優先度判定または件数上限でClaude入力から外したPDF。 */
+export type AiInputSkippedPdf = {
+  label: string;
+  url: string;
+};
+
 export type AiInputSummary = {
   htmlOriginalCharacters: number;
   htmlSentCharacters: number;
@@ -114,6 +132,10 @@ export type AiInputSummary = {
   pdfIncluded: number;
   pdfOriginalCharacters: number;
   pdfSentCharacters: number;
+  /** Claudeへ渡した原文の合計（HTML + PDF）。取得全文ではなく送信量。 */
+  totalSourceCharacters: number;
+  pdfInputs: AiInputPdfDetail[];
+  pdfSkipped: AiInputSkippedPdf[];
 };
 
 export type AiCheckResult = {
@@ -127,6 +149,8 @@ export type AiCheckResult = {
   model: string | null;
   analysis: AdministrativeNeedAnalysis;
   inputSummary: AiInputSummary;
+  /** Claude CLIがusageを返した場合の入力トークン数。取れない場合は undefined。 */
+  inputTokens?: number;
   evidenceMatched: number;
   warnings: AiCheckWarning[];
 };

@@ -9,7 +9,8 @@ export type PdfPriority = 'high' | 'medium' | 'other' | 'low';
  */
 const HIGH_KEYWORDS = [
   '情報提供依頼', 'rfi', 'rfc', '仕様書', '要求仕様', '実施要領',
-  '募集要項', '公募要領', '提案募集', '業務内容', '事業概要', '実証要領',
+  '募集要項', '募集要領', '公募要領', '提案募集', '業務内容',
+  '業務概要', '事業概要', '実証要領',
 ] as const;
 
 /** 案件理解に役立つ可能性がある文書。 */
@@ -17,10 +18,23 @@ const MEDIUM_KEYWORDS = [
   '概要', '説明資料', '参考資料', '計画', 'ガイドライン',
 ] as const;
 
-/** 行政ニーズ分析への寄与が比較的小さい可能性が高い文書。完全には除外しない。 */
+/**
+ * 行政ニーズ（課題・目的・要求事項）がほとんど書かれていない文書。
+ *
+ * 選定基準や様式、契約手続きの書式は、案件の存在は示すが「何に困っていて何を
+ * 求めているか」を含まない。より有用なPDFがある場合はClaude入力から外す。
+ * ただし低優先しか無い場合は情報を失わないよう従来どおり送る（selectPdfsByPriority）。
+ */
 const LOW_KEYWORDS = [
-  '申込書', '応募様式', '様式', 'チラシ', 'フライヤー',
+  '申込書', '申請書', '応募様式', '様式', 'チラシ', 'フライヤー',
   'アクセスマップ', '地図', '料金表',
+  '評価基準', '審査基準', '採点表', '評価項目',
+  // 「契約書案」ではなく「契約書」で持つ。normalizeForMatch は NFKC までで括弧を
+  // 落とさないため、実データに多い「契約書（案）」が「契約書案」に一致しない。
+  '契約書', '契約約款', '入札書', '委任状',
+  // 「質問書」「質問票」「質問及び回答」「質問と回答」を1語でまとめる。
+  // 表記の揺れが多く、PDF名に質問が入る資料はどれも要求事項の本体ではない。
+  '質問',
 ] as const;
 
 /** 選択順。高 → 中 → その他 → 低。 */
@@ -75,16 +89,21 @@ export function classifyPdfPriority(link: PdfLink): PdfPriority {
 }
 
 /**
- * 優先度順に最大 max 件を選ぶ（設計上の上限は呼び出し側の maxPdfs）。
+ * Claude入力へ渡すPDFを優先度順に最大 max 件選ぶ（上限は呼び出し側の maxPdfs）。
  * 同じ優先度では元の掲載順を維持するため、同じ入力なら毎回同じ結果になる。
  *
- * max 件以下なら並べ替えず、掲載順のまま全件返す。切り捨てが起きないため
- * 優先度を判定する必要がなく、従来の挙動をそのまま保てる。
+ * 低優先PDFは、それ以外のPDFが1件でもあれば選ばない。max 件に余りがあっても
+ * 枠を埋めるために送らない。評価基準や様式は案件の存在を示すだけで、行政ニーズの
+ * 判定材料をほとんど含まないため、Claude入力から外しても判定品質を落とさない。
+ *
+ * 低優先しか無い場合は候補を絞らず全件を対象にする。PDFを1件も渡さないと
+ * 判定材料がHTML本文だけになり、必要以上に情報を失うため。
  */
 export function selectPdfsByPriority(links: readonly PdfLink[], max: number): PdfLink[] {
   if (max <= 0) return [];
-  if (links.length <= max) return [...links];
-  return links
+  const valuable = links.filter((link) => classifyPdfPriority(link) !== 'low');
+  const candidates = valuable.length > 0 ? valuable : links;
+  return candidates
     .map((link, index) => ({ link, index, order: PRIORITY_ORDER[classifyPdfPriority(link)] }))
     .sort((a, b) => (a.order - b.order) || (a.index - b.index))
     .slice(0, max)

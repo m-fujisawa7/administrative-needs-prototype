@@ -76,8 +76,17 @@ export async function checkAdministrativeNeed(
     });
   }
 
+  // 選ばなかったPDFを記録する。優先度で外したものと件数上限で外したものの両方が入る。
+  const selectedUrls = new Set(selectedPdfLinks.map((link) => link.url));
+  const pdfSkipped = pdfLinks
+    .filter((link) => !selectedUrls.has(link.url))
+    .map((link) => ({ label: describePdfLink(link), url: link.url }));
+
   const pdfDocuments: AnalysisPdfDocument[] = [];
-  for (const { url } of selectedPdfLinks) {
+  // pdfDocuments と同じ並びを保つため、取得に成功したものだけ同時に push する。
+  const pdfLabels: string[] = [];
+  for (const link of selectedPdfLinks) {
+    const { url } = link;
     try {
       const pdf = await extractPdf({
         source: input.source,
@@ -86,6 +95,7 @@ export async function checkAdministrativeNeed(
         trustedPdfDomains: input.trustedPdfDomains ?? [],
       });
       pdfDocuments.push({ url: pdf.url, text: pdf.text });
+      pdfLabels.push(describePdfLink(link));
       for (const warning of pdf.warnings) {
         warnings.push({
           code: 'pdf_warning',
@@ -114,6 +124,8 @@ export async function checkAdministrativeNeed(
     pdfAttempted: selectedPdfLinks.length,
     companyFitCriteria: input.companyFitCriteria,
     limits,
+    pdfLabels,
+    pdfSkipped,
   });
   warnings.push(...prepared.warnings);
   const analysis = await input.analyzer.analyze(prepared.input);
@@ -138,6 +150,10 @@ export async function checkAdministrativeNeed(
     model: input.analyzer.model,
     analysis,
     inputSummary: prepared.summary,
+    // Providerがusageを返さない場合は undefined のままにする（表示側で省略する）。
+    ...(analyzerRunInfo?.inputTokens === undefined
+      ? {}
+      : { inputTokens: analyzerRunInfo.inputTokens }),
     evidenceMatched: evidence.matched,
     warnings,
   };

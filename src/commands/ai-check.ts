@@ -4,7 +4,7 @@ import { checkAdministrativeNeed } from '../ai/check.ts';
 import { loadCompanyFitCriteria } from '../ai/company-fit-criteria.ts';
 import { createAnalyzer } from '../ai/create-analyzer.ts';
 import { AiConfigurationError } from '../ai/errors.ts';
-import { aiInputLimitsFromEnvironment } from '../ai/input.ts';
+import { aiInputLimitsFromEnvironment, formatAiInputBlock } from '../ai/input.ts';
 import { loadAiCheckPrompt } from '../ai/prompt.ts';
 import type {
   AdministrativeNeedAnalyzer,
@@ -183,12 +183,17 @@ export function formatAiCheckResult(result: AiCheckResult): string {
     lines.push(`  - [${evidence.source_type}] ${evidence.quote}`);
     lines.push(`    ${evidence.source_url}`);
   }
+  const summary = result.inputSummary;
   lines.push(
     `Evidence matched: ${result.evidenceMatched}/${analysis.evidence_quotes.length}`,
     'Input summary:',
-    `  HTML characters: ${result.inputSummary.htmlSentCharacters}/${result.inputSummary.htmlOriginalCharacters}`,
-    `  PDF documents: ${result.inputSummary.pdfIncluded}/${result.inputSummary.pdfDiscovered} (attempted ${result.inputSummary.pdfAttempted})`,
-    `  PDF characters: ${result.inputSummary.pdfSentCharacters}/${result.inputSummary.pdfOriginalCharacters}`,
+    `  HTML characters: ${summary.htmlSentCharacters}/${summary.htmlOriginalCharacters}`,
+    `  PDF documents: ${summary.pdfIncluded}/${summary.pdfDiscovered} (attempted ${summary.pdfAttempted})`,
+    `  PDF characters: ${summary.pdfSentCharacters}/${summary.pdfOriginalCharacters}`,
+    // Claudeへ実際に渡した原文の量。取得全文ではなく送信量を見るためのブロック。
+    ...formatAiInputBlock(summary, result.inputTokens),
+  );
+  lines.push(
     `Notices: ${countWarningsBySeverity(result.warnings).notices}`,
     `Warnings: ${countWarningsBySeverity(result.warnings).warnings}`,
   );

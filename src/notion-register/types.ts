@@ -3,6 +3,7 @@ import type {
   AdministrativeNeedAnalyzer,
   AiCheckResult,
   AiCheckWarning,
+  AiInputSummary,
   CompanyFitCriteria,
 } from '../ai/types.ts';
 import type {
@@ -81,6 +82,13 @@ export type RegisterOneFailureStage =
 type RegisterOneBaseResult = {
   officialUrl: string;
   warnings: AiCheckWarning[];
+  /**
+   * Claudeへ渡した入力の内訳。Claude解析まで到達した場合だけ入る。
+   * 重複スキップや取得失敗では undefined のままにする。
+   */
+  inputSummary?: AiInputSummary;
+  /** Claude CLIがusageを返した場合の入力トークン数。 */
+  inputTokens?: number;
 };
 
 export type RegisterOneResult =

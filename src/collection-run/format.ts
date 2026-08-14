@@ -1,3 +1,4 @@
+import { aiInputSection } from '../ai/input.ts';
 import type { CollectionBatchReport } from './batch.ts';
 import type {
   ClaudeUsageLimitStop,
@@ -123,6 +124,7 @@ export function formatCollectionRunItem(
       '',
       'Notion write:',
       'Skipped',
+      ...aiInputSection(result),
     ].join('\n');
   }
   if (result.status === 'created') {
@@ -140,6 +142,7 @@ export function formatCollectionRunItem(
       '',
       'Notion page URL:',
       result.notionPageUrl,
+      ...aiInputSection(result),
     ].join('\n');
   }
   const lines = [

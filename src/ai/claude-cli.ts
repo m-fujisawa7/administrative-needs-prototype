@@ -103,6 +103,11 @@ export class ClaudeCliAnalyzer implements AdministrativeNeedAnalyzer {
         `Claude CLI returned empty stdout (${formatProcessSummary(result)}).${formatStderr(result.stderr)}`,
       );
     }
+    // usage が取れたときだけ記録する。取得のために引数も呼び出し方式も変えない。
+    const inputTokens = extractInputTokens(result.stdout);
+    if (inputTokens !== undefined) {
+      this.lastRunInfo = { ...this.lastRunInfo, inputTokens };
+    }
     try {
       return parseClaudeOutput(result.stdout);
     } catch (error) {
@@ -324,6 +329,27 @@ function formatJsonParseRetryPrompt(initialPrompt: string): string {
     String.raw`JSON文字列の値にダブルクォート（"）を含める場合は、必ずバックスラッシュでエスケープして \" としてください。`,
     'Markdownコードフェンス、説明文、見出し、注釈を付けず、有効なJSONオブジェクトだけを返してください。',
   ].join('\n');
+}
+
+/**
+ * 外側JSONの usage.input_tokens を取れたときだけ返す。
+ *
+ * usage は Claude CLI 側の都合で変わり得るため、欠落・型違い・JSON不正はすべて
+ * undefined として扱い、行政ニーズの解析そのものは絶対に失敗させない。
+ * 表示は診断目的なので、取れない環境では文字数だけで運用する。
+ */
+function extractInputTokens(stdout: string): number | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return undefined;
+  }
+  const envelope = asRecord(parsed);
+  if (envelope === null) return undefined;
+  const usage = asRecord(envelope.usage);
+  const tokens = usage?.input_tokens;
+  return typeof tokens === 'number' && Number.isFinite(tokens) ? tokens : undefined;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

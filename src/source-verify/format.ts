@@ -1,3 +1,4 @@
+import { aiInputSection } from '../ai/input.ts';
 import { countWarningsBySeverity } from '../ai/warning-severity.ts';
 import type { AdministrativeNeedAnalysis } from '../ai/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
@@ -120,6 +121,7 @@ export function formatSourceVerificationItem(
     '',
     'PDF characters:',
     String(summary.pdfOriginalCharacters),
+    ...aiInputSection(result),
     '',
     'AI analysis:',
     'OK',

@@ -139,6 +139,46 @@ describe('collect:runコマンド', () => {
     expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([URL_A, URL_B]);
   });
 
+  it('候補ごとにClaudeへ渡した入力量とPDF内訳を表示する', async () => {
+    const stdout: string[] = [];
+    const exitCode = await runCollection(args(), dependencies({
+      stdout,
+      collectCandidates: async () => [candidate(URL_A)],
+      registerOne: async (input) => ({
+        ...previewed(input.officialUrl),
+        inputSummary: {
+          htmlOriginalCharacters: 1_805,
+          htmlSentCharacters: 1_805,
+          pdfDiscovered: 3,
+          pdfAttempted: 1,
+          pdfIncluded: 1,
+          pdfOriginalCharacters: 12_400,
+          pdfSentCharacters: 12_400,
+          totalSourceCharacters: 14_205,
+          pdfInputs: [{ label: '基本仕様書', url: 'https://example.lg.jp/a.pdf', characters: 12_400 }],
+          pdfSkipped: [{ label: '評価基準', url: 'https://example.lg.jp/b.pdf' }],
+        },
+      }),
+    }));
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    expect(output).toContain('AI input:');
+    expect(output).toContain('Total source characters: 14205');
+    expect(output).toContain('- 基本仕様書: 12400 chars');
+    expect(output).toContain('PDF skipped from AI input:');
+    expect(output).toContain('- 評価基準');
+  });
+
+  it('Claude解析へ進まなかった候補にはAI入力ブロックを出さない', async () => {
+    const stdout: string[] = [];
+    await runCollection(args(), dependencies({
+      stdout,
+      collectCandidates: async () => [candidate(URL_A)],
+      registerOne: async (input) => duplicate(input.officialUrl),
+    }));
+    expect(stdout.join('\n')).not.toContain('AI input:');
+  });
+
   it('候補0件を正常終了し、Notion接続と登録処理を開始しない', async () => {
     const createClient = vi.fn();
     const registerOne = vi.fn();
