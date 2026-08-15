@@ -42,6 +42,10 @@ export function analyzeListPage(
 
   const rawItemCount = elements.length;
   if (rawItemCount === 0) {
+    // 募集中のものだけを載せる一覧は、募集が途切れた期間に0件になるのが正常状態である。
+    // その期間を失敗として扱うと収集状態が進まないため、台帳で明示的に許容した情報源だけ
+    // 空の結果を返す。未設定の情報源は従来どおりERRORのままにする。
+    if (source.allow_empty_candidates === true) return emptyAnalysis(source.link_selector);
     throw new Error(`link_selector に一致するリンクが0件です: ${source.link_selector}`);
   }
 
@@ -155,6 +159,24 @@ export function analyzeListPage(
     warnings,
     exclusions: toExclusions(exclusions),
     latestPublishedAt: latestDate(usableCandidates),
+    linkSelectorStatus: 'ok',
+    contentSelectorStatus: 'not_checked',
+  };
+}
+
+// 0件を許容した場合の結果。件数と選択状態は残し、0件だった事実はWARNINGで見えるようにする。
+// 除外は1件も行っていないため exclusions は空にする。
+function emptyAnalysis(linkSelector: string): SourceContentAnalysis {
+  return {
+    rawItemCount: 0,
+    structurallyValidItemCount: 0,
+    usableItemCount: 0,
+    samples: [],
+    warnings: [
+      `link_selector に一致するリンクが0件でしたが、台帳の allow_empty_candidates により正常として扱いました: ${linkSelector}`,
+    ],
+    exclusions: [],
+    latestPublishedAt: null,
     linkSelectorStatus: 'ok',
     contentSelectorStatus: 'not_checked',
   };

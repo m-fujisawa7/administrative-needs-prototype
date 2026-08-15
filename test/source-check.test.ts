@@ -797,3 +797,141 @@ describe('RSS 1.0（RDF）チェック', () => {
     )).toThrow('RSS 2.0');
   });
 });
+
+describe('allow_empty_candidates', () => {
+  const EMPTY_HTML = '<main id="main"></main>';
+
+  it('未設定なら0件は従来どおりErrorにする', () => {
+    expect(() => analyzeListPage(EMPTY_HTML, makeSource(), OFFICIAL_DOMAIN, 10))
+      .toThrow('0件');
+  });
+
+  it('falseを明示した場合も従来どおりErrorにする', () => {
+    expect(() => analyzeListPage(
+      EMPTY_HTML,
+      makeSource({ allow_empty_candidates: false }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('0件');
+  });
+
+  it('trueなら0件を正常終了として扱い、件数0と空のサンプルを返す', () => {
+    const result = analyzeListPage(
+      EMPTY_HTML,
+      makeSource({ allow_empty_candidates: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.rawItemCount).toBe(0);
+    expect(result.structurallyValidItemCount).toBe(0);
+    expect(result.usableItemCount).toBe(0);
+    expect(result.samples).toEqual([]);
+    expect(result.latestPublishedAt).toBeNull();
+    expect(result.linkSelectorStatus).toBe('ok');
+    expect(result.contentSelectorStatus).toBe('not_checked');
+  });
+
+  it('0件だった事実をWARNINGとして残し、除外は1件も計上しない', () => {
+    const result = analyzeListPage(
+      EMPTY_HTML,
+      makeSource({ allow_empty_candidates: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.warnings.join('\n')).toContain('allow_empty_candidates');
+    expect(result.warnings.join('\n')).toContain('#main a');
+    expect(result.exclusions).toEqual([]);
+  });
+
+  it('候補があるときの挙動は変わらない', () => {
+    const html = '<main id="main"><a href="/proposal/1">システム構築業務</a></main>';
+    const withFlag = analyzeListPage(
+      html,
+      makeSource({ allow_empty_candidates: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    const withoutFlag = analyzeListPage(html, makeSource(), OFFICIAL_DOMAIN, 10);
+    expect(withFlag).toEqual(withoutFlag);
+    expect(withFlag.usableItemCount).toBe(1);
+    expect(withFlag.warnings).toEqual([]);
+  });
+
+  it('link_selector未設定はtrueでもErrorのままにする', () => {
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="/1">案件</a></main>',
+      makeSource({ allow_empty_candidates: true, link_selector: undefined }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('link_selector');
+  });
+
+  it('不正なセレクターはtrueでもErrorのままにする', () => {
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="/1">案件</a></main>',
+      makeSource({ allow_empty_candidates: true, link_selector: '#main a[' }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('link_selector が正しくありません');
+  });
+
+  it('タイトルと公式ドメイン内URLを持つ候補が0件ならtrueでもErrorにする', () => {
+    // セレクターが案件以外を掴んでいるシグナルなので、0件許容の対象にしない。
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="https://example.com/1">外部サイト</a></main>',
+      makeSource({ allow_empty_candidates: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('候補リンクがありません');
+  });
+
+  it('title_excludes適用後に0件ならtrueでもErrorにする', () => {
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="/1">入札結果の公表</a></main>',
+      makeSource({ allow_empty_candidates: true, title_excludes: ['入札結果'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('title_excludes');
+  });
+
+  it('title_includes適用後に0件ならtrueでもErrorにする', () => {
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="/1">比較器の購入</a></main>',
+      makeSource({ allow_empty_candidates: true, title_includes: ['システム'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('title_includes');
+  });
+
+  it('RSSのitem0件はtrueでも従来どおりErrorにする', () => {
+    expect(() => analyzeRss(
+      '<rss version="2.0"><channel></channel></rss>',
+      makeSource({ collector_type: 'rss', allow_empty_candidates: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('itemが0件');
+  });
+
+  it('共通Collector経由では空配列を返し、例外にならない', async () => {
+    const source = makeSource({ allow_empty_candidates: true });
+    const candidates = await collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+      { fetchSource: async ({ url }) => fetched(EMPTY_HTML, url, 'text/html') },
+    );
+    expect(candidates).toEqual([]);
+  });
+
+  it('checkSourceRegistryではErrorではなくWarningになる', async () => {
+    const source = makeSource({ allow_empty_candidates: true });
+    const results = await checkSourceRegistry(
+      makeRegistry([source]),
+      { selection: { mode: 'source', sourceId: source.id }, limit: 10 },
+      { fetchSource: async ({ url }) => fetched(EMPTY_HTML, url, 'text/html') },
+    );
+    expect(results[0]?.status).toBe('warning');
+    expect(results[0]?.error).toBeUndefined();
+    expect(results[0]?.usableItemCount).toBe(0);
+    expect(sourceCheckExitCode(results, { mode: 'source', sourceId: source.id })).toBe(0);
+  });
+});

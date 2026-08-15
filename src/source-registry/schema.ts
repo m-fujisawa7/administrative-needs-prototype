@@ -88,6 +88,8 @@ export const sourceSchema = z.strictObject({
   verification_status: z.enum(VERIFICATION_STATUSES).optional(),
   /** この情報源だけ初回収集の開始日を変える場合に指定する。省略時は共通の初回収集開始日を使う。 */
   initial_since: z.iso.date().optional(),
+  /** 募集中のものだけを載せる一覧など、候補0件が正常状態になり得る場合に true にする。`list_page` だけが読み取る。 */
+  allow_empty_candidates: z.boolean().optional(),
 });
 
 export const sourceRegistrySchema = z

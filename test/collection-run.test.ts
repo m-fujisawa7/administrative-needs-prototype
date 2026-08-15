@@ -195,6 +195,20 @@ describe('collect:runコマンド', () => {
     expect(stdout.join('\n')).toContain('Candidates collected:\n0');
   });
 
+  it('候補0件のPreviewはstateを更新しない', async () => {
+    const writeState = vi.fn();
+    const stdout: string[] = [];
+    const exitCode = await runCollection(args(), dependencies({
+      stdout,
+      writeState,
+      collectCandidates: async () => [],
+      registerOne: vi.fn(),
+    }));
+    expect(exitCode).toBe(0);
+    expect(writeState).not.toHaveBeenCalled();
+    expect(stdout.join('\n')).toContain('Reason:\nPreview mode.');
+  });
+
   it('stateなしのPreviewは2026-07-01から開始し、stateを書かない', async () => {
     const stdout: string[] = [];
     const writeState = vi.fn();

@@ -158,6 +158,48 @@ function registryWithInitialSince(initialSince: string | undefined): unknown {
   };
 }
 
+describe('allow_empty_candidatesの検証', () => {
+  it('真偽値を受理し、未指定はundefinedのままにする', () => {
+    expect(validateSourceRegistry(registryWithAllowEmpty(true)).sources[0]?.allow_empty_candidates)
+      .toBe(true);
+    expect(validateSourceRegistry(registryWithAllowEmpty(false)).sources[0]?.allow_empty_candidates)
+      .toBe(false);
+    expect(
+      validateSourceRegistry(registryWithAllowEmpty(undefined)).sources[0]?.allow_empty_candidates,
+    ).toBeUndefined();
+  });
+
+  it.each(['true', 1, null, 'yes'])('真偽値以外の %s を拒否する', (value) => {
+    expect(() => validateSourceRegistry(registryWithAllowEmpty(value))).toThrow();
+  });
+
+});
+
+function registryWithAllowEmpty(allowEmpty: unknown): unknown {
+  return {
+    version: 1,
+    organizations: [{
+      id: 'kobe-city',
+      name: '神戸市',
+      organization_type: 'designated_city',
+      official_domain: 'city.kobe.lg.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'kobe-rfi-rfc',
+      organization_id: 'kobe-city',
+      name: 'RFI・RFC',
+      url: 'https://www.city.kobe.lg.jp/rfi.html',
+      collector_type: 'list_page',
+      source_category: 'rfi',
+      priority: 'high',
+      enabled: true,
+      link_selector: '#tmp_contents a',
+      ...(allowEmpty === undefined ? {} : { allow_empty_candidates: allowEmpty }),
+    }],
+  };
+}
+
 describe('list_pageのtitle_excludes設定', () => {
   it('kitakyushu-dx-divisionの実台帳がtitle_excludesを持ち検証を通る', async () => {
     const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
