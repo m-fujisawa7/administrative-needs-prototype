@@ -173,6 +173,27 @@ describe('allow_empty_candidatesの検証', () => {
     expect(() => validateSourceRegistry(registryWithAllowEmpty(value))).toThrow();
   });
 
+  it('実台帳で設定した情報源が検証を通り、対象4件と札幌に付いている', async () => {
+    const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
+    const registry = await loadSourceRegistry();
+    const configured = registry.sources
+      .filter((source) => source.allow_empty_candidates === true)
+      .map((source) => source.id)
+      .sort();
+    expect(configured).toEqual([
+      'fukuoka-ppp-pfi',
+      'kawasaki-sounding',
+      'kobe-rfi-rfc',
+      'kobe-sounding',
+      'sapporo-smartcity-procurement',
+    ]);
+    // 一覧ページ解析だけが読み取る設定なので、他のcollector_typeへは付けない。
+    for (const source of registry.sources) {
+      if (source.allow_empty_candidates === undefined) continue;
+      expect(source.collector_type).toBe('list_page');
+      expect(source.link_selector).toBeDefined();
+    }
+  });
 });
 
 function registryWithAllowEmpty(allowEmpty: unknown): unknown {

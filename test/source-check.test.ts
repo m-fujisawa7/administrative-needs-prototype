@@ -934,4 +934,34 @@ describe('allow_empty_candidates', () => {
     expect(results[0]?.usableItemCount).toBe(0);
     expect(sourceCheckExitCode(results, { mode: 'source', sourceId: source.id })).toBe(0);
   });
+
+  it('募集中セクションだけを見る2見出し構造で、0件と募集ありの両方を扱える', () => {
+    // 札幌市の一般競争入札等情報と同じ、見出しと案件がフラットに並ぶ構造。
+    // 公募中の後続p集合から終了見出しの後続p集合を:notで差し引く。
+    const selector = "#tmp_contents h2:contains('公募中の契約情報')"
+      + " ~ p:not(h2:contains('終了した契約情報') ~ p) a[href]";
+    const page = (openItems: string) => [
+      '<div id="tmp_contents">',
+      '<h2>公募中の契約情報</h2>',
+      openItems,
+      '<h2>終了した契約情報（落札結果等）</h2>',
+      '<p><a href="/keiyaku/owari1.html">終了案件1</a></p>',
+      '<p><a href="/keiyaku/owari2.html">終了案件2</a></p>',
+      '</div>',
+    ].join('');
+    const source = makeSource({ allow_empty_candidates: true, link_selector: selector });
+
+    const empty = analyzeListPage(page('<p></p>'), source, OFFICIAL_DOMAIN, 10);
+    expect(empty.usableItemCount).toBe(0);
+    expect(empty.warnings.join('\n')).toContain('allow_empty_candidates');
+
+    const open = analyzeListPage(
+      page('<p><a href="/keiyaku/koubo1.html">ICT活用プラットフォーム運用保守業務</a></p>'),
+      source,
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(open.samples.map(({ title }) => title))
+      .toEqual(['ICT活用プラットフォーム運用保守業務']);
+  });
 });

@@ -762,11 +762,12 @@ sources:
     enabled: true
     link_selector: "#tmp_contents table.box_info_table a[href]"
     content_selector: "#tmp_contents"
+    allow_empty_candidates: true
     document_type_hints:
       - RFI
       - RFC
       - 情報提供招請
-    notes: 情報システム調達に先立つ情報提供招請と意見招請の一覧。募集中のものだけを掲載する運用で、確認時点では1件だった。募集が途切れて表が空になる期間はlink_selectorが0件になりERRORとなるため、そのときは失敗として扱われ収集状態も進まない。
+    notes: 情報システム調達に先立つ情報提供招請と意見招請の一覧。募集中のものだけを掲載する運用で、確認時点では1件だった。募集が途切れて表が空になる期間はlink_selectorが0件になるが、これは異常ではなく正常状態なのでallow_empty_candidatesで許容し、WARNING付きの正常終了として収集状態を進められるようにしている。
     last_verified_at: "2026-08-10"
     verification_status: verified
 
@@ -797,11 +798,12 @@ sources:
     enabled: true
     link_selector: "#tmp_contents h2:contains('現在実施中の調査') + ul > li > a"
     content_selector: "#tmp_contents"
+    allow_empty_candidates: true
     document_type_hints:
       - サウンディング型市場調査
       - 官民対話
       - 公共用地活用
-    notes: 公共用地の利活用などを対象とするサウンディング型市場調査。過去の調査は調査結果PDFが並ぶだけなので、見出し「現在実施中の調査」の直後のulだけを候補にする。ulにclassが無いため並び順ではなく見出し文字列で位置を特定する。確認時点では1件で、実施中が無い期間はERRORになる。
+    notes: 公共用地の利活用などを対象とするサウンディング型市場調査。過去の調査は調査結果PDFが並ぶだけなので、見出し「現在実施中の調査」の直後のulだけを候補にする。ulにclassが無いため並び順ではなく見出し文字列で位置を特定する。確認時点では1件で、実施中が無い期間は0件になるが正常状態なのでallow_empty_candidatesで許容する。
     last_verified_at: "2026-08-10"
     verification_status: verified
 
@@ -1211,13 +1213,15 @@ sources:
     collector_type: list_page
     source_category: procurement
     priority: high
-    enabled: false
+    enabled: true
+    link_selector: "#tmp_contents h2:contains('公募中の契約情報') ~ p:not(h2:contains('終了した契約情報') ~ p) a[href]"
     content_selector: "#tmp_contents"
+    allow_empty_candidates: true
     document_type_hints:
       - 一般競争入札
       - 公募型企画競争
-    notes: スマートシティ推進部の一般競争入札等情報。ICT活用プラットフォーム運用保守やDX推進リーダー育成研修など対象性の高い案件が並ぶが、確認時点では見出し「公募中の契約情報」の直後が空で公募中が0件、48件すべてが「終了した契約情報（落札結果等）」だった。公募中セクションだけを対象にすると毎回ERRORになり、兄弟要素まで拾うと終了案件48件が候補になる。公募が出た時点で有効化を再検討する。
-    last_verified_at: "2026-08-12"
+    notes: スマートシティ推進部の一般競争入札等情報。ICT活用プラットフォーム運用保守やDX推進リーダー育成研修など対象性の高い案件が並ぶ。#tmp_contents直下がフラットで、公募中の契約情報と終了した契約情報（落札結果等）の2つのh2が同じ階層に並び、案件は各見出しに続くp要素として置かれる。CSSに「2つの見出しの間」を表す結合子が無いため、公募中の後続p集合から終了見出しの後続p集合を:notで差し引いて公募中セクションだけを取り出す。単純な~だと終了案件48件を巻き込み、+だと直後の1要素しか見ない。確認時点では公募中が0件で終了が48件だが、これは異常ではなく正常状態なのでallow_empty_candidatesで許容する。
+    last_verified_at: "2026-08-16"
     verification_status: verified
 
   - id: fukushima-procurement
@@ -1334,10 +1338,11 @@ sources:
     enabled: true
     link_selector: "#mol_contents > div:has(h2:contains('サウンディング調査の募集情報')) + div table td a[href]"
     content_selector: ".mol_contents"
+    allow_empty_candidates: true
     document_type_hints:
       - サウンディング型市場調査
       - 官民対話
-    notes: サウンディング調査の募集情報と過去分を年度別の表で並べるページ。表は9つあり過去分を含めると99件になるため、募集中の表だけを候補にする。見出しのh2は表と兄弟ではなく別のdivに入っているため、h2を含むdivを:hasで特定し、その次のdivの表を対象にする。年度をセレクターへ書かないので翌年度も同じ設定で動く。確認時点では募集中が1件で、募集が無い期間はlink_selectorが0件になりERRORとなる。件名は表のセルにあるがリンクではなく、リンク文字列は詳細は局HPになる。
+    notes: サウンディング調査の募集情報と過去分を年度別の表で並べるページ。表は9つあり過去分を含めると99件になるため、募集中の表だけを候補にする。見出しのh2は表と兄弟ではなく別のdivに入っているため、h2を含むdivを:hasで特定し、その次のdivの表を対象にする。年度をセレクターへ書かないので翌年度も同じ設定で動く。確認時点では募集中が1件で、募集が無い期間は0件になるが正常状態なのでallow_empty_candidatesで許容する。件名は表のセルにあるがリンクではなく、リンク文字列は詳細は局HPになる。
     last_verified_at: "2026-08-12"
     verification_status: verified
 
@@ -1521,11 +1526,12 @@ sources:
     enabled: true
     link_selector: "h2:contains('事業者公募中の事業') + div table td a[href]"
     content_selector: .wb-contents
+    allow_empty_candidates: true
     document_type_hints:
       - PPP/PFI
       - 事業者公募
       - 民間活力導入
-    notes: PPP/PFI事業を進捗段階別に並べるページ。可能性がある事業、事業化が進められている事業、事業者公募中の事業、事業者が決定した事業、モニタリング結果の5段階があり、公募中だけを対象にする。手書きHTMLでh2と表が同じdiv内の兄弟として並び、段落の入れ子が段階ごとに違うため、classではなく見出し文字列で位置を特定する。見出しの採番は「3 事業者公募中の事業」が半角数字で他の段階は全角なので、番号を含めず事業者公募中の事業だけを:containsに渡して表記揺れを避けている。確認時点の公募中は新西部工場（仮称）整備事業の1件で、公募が無い期間はlink_selectorが0件になりERRORとなり収集状態も進まない。ページに掲載日が無いため候補は毎回すべて期間内として扱われ、Notion登録済みURLで除外される。
+    notes: PPP/PFI事業を進捗段階別に並べるページ。可能性がある事業、事業化が進められている事業、事業者公募中の事業、事業者が決定した事業、モニタリング結果の5段階があり、公募中だけを対象にする。手書きHTMLでh2と表が同じdiv内の兄弟として並び、段落の入れ子が段階ごとに違うため、classではなく見出し文字列で位置を特定する。見出しの採番は「3 事業者公募中の事業」が半角数字で他の段階は全角なので、番号を含めず事業者公募中の事業だけを:containsに渡して表記揺れを避けている。確認時点の公募中は新西部工場（仮称）整備事業の1件で、公募が無い期間は0件になるが正常状態なのでallow_empty_candidatesで許容し、収集状態を進められるようにしている。ページに掲載日が無いため候補は毎回すべて期間内として扱われ、Notion登録済みURLで除外される。
     last_verified_at: "2026-08-13"
     verification_status: verified
 
