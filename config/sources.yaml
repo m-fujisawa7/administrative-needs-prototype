@@ -185,6 +185,14 @@ organizations:
     enabled: true
     notes: 全庁の公募型プロポーザル、民間提案制度、デジタル戦略の行政ニーズを収集する対象都道府県。石川県や宮城県と同じ#tmp_接頭辞のCMSで、本文は#tmp_contentsに入る。#tmp_mainはパンくずと関連リンクを含む外側の入れ物なので使わない。掲載日はtime要素ではなくタイトル先頭の【令和8年8月12日公告】形式の和暦で、parseDateCandidateが解釈する。配信しているRSSは/emergency.xmlの緊急情報だけで、新潟県や福島県のような所属別RSSは無い。noteのtoyama-pref.note.jpに記事があるが共用ブログ基盤のためofficial_domainに含めない
 
+  - id: hiroshima-city
+    name: 広島市
+    organization_type: designated_city
+    prefecture: 広島県
+    official_domain: city.hiroshima.lg.jp
+    enabled: true
+    notes: 全庁のプロポーザル・コンペ案件、全庁新着、DX推進計画の行政ニーズを収集する対象自治体。一覧・個別ページとも本文はarticle#content配下のdiv#voiceに入るため、content_selectorは#contentで足りる。#pagebodyはローカルナビと関連リンクを含む外側の入れ物なので使わない。全庁新着はRSS 2.0で配信されるがcategory要素を持たない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1741,4 +1749,54 @@ sources:
       - デジタルデバイド対策
     notes: デジタル化推進室デジタル戦略課の組織案内ページ。content:checkで確認した本文は1134文字で、基本情報、課の取組み、条例・計画、問い合わせ先が並ぶ。内部リンク24件のうち案件性があるのはeスポーツ関係人口創出事業補助金の1件程度で、残りはTOYAMA Free Wi-Fiの整備、ケーブルテレビ、テレビ受信障害対策、スマホサポーター養成講座、小規模施設特定有線一般放送の届出、後援名義申請などの恒久的な案内である。掲載日を持つ要素が無いため候補は毎回24件すべてが期間内として扱われ、AI判定の消費に見合わないため無効状態で保持する。岩手のいわてDXポータルと同じ判断である。富山県デジタルによる変革推進条例と富山県DX・働き方改革推進計画は上流の政策シグナルとして価値があるため、必要なら無効のままnotion:registerで個別に登録する。有効化する場合は山形県のDX推進課と同じく、条例・計画の見出し配下だけへlink_selectorを絞る設計を先に決める必要がある。
     last_verified_at: "2026-08-13"
+    verification_status: verified
+
+  - id: hiroshima-proposal-list
+    organization_id: hiroshima-city
+    name: 令和8年度 プロポーザル・コンペ案件
+    url: https://www.city.hiroshima.lg.jp/business/nyusatsu/1006046/1006060/1046169/index.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#content ul.listlink > li > a[href]"
+    content_selector: "#content"
+    document_type_hints:
+      - 公募型プロポーザル
+      - コンペ
+      - 業務委託
+    notes: 全庁の公募型プロポーザルとコンペを年度単位で集約する一覧。入口のbusiness/nyusatsu/1006046/1006060/index.htmlは令和8年度から平成30年度までの年度リンク9件だけで個別案件を持たないため、年度ページを直接登録している。確認時点の82件はすべて【公募型プロポーザル】接頭辞付きの実案件で、結果公表や質問回答の続報が混じらないためtitle_excludesは設定していない。うち7件が広島市双方向サービス基盤構築、消防団活動支援システム導入、固定資産台帳整備におけるDXツール更新、消防局勤怠管理システム構築及び運用保守、5歳児健康診査システム導入・運用保守、公立保育園の保育業務支援システム運用に係る通信回線等の運用保守などデジタル関連だった。一覧に掲載日が無いため候補は毎回すべて期間内として扱われ、Notion登録済みURLはHTML取得とClaude解析の前に除外される。初回は82件が対象になるので--limitで消化する。URLに年度別のページ番号1046169を含むため、翌年度は入口ページから新しい年度ページのURLを人が確認して差し替える必要がある。個別ページには更新日があり本文は#contentに入る。
+    last_verified_at: "2026-08-15"
+    verification_status: verified
+
+  - id: hiroshima-news-rss
+    organization_id: hiroshima-city
+    name: 全庁新着情報 RSS
+    url: https://www.city.hiroshima.lg.jp/news.rss
+    collector_type: rss
+    source_category: other
+    priority: low
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 事業者募集
+    notes: 全庁の新着情報を配信するRSS 2.0。pubDateで公開日を全件取得でき既存のanalyzeRssで解析できるが、category要素が無いためcategory_includesで絞れない。確認時点の91件は2026-07-15から2026-08-14までの約1か月分で、内訳は職員・会計年度任用職員の募集11件、参加者募集やセミナーなどのイベント8件、入札関係資料の修正3件が中心である。【公募型プロポーザル】は5件だけで、しかも商談会、公園再整備、植栽管理、国際園芸博、広島城の調査と、デジタル関連かつ調達に当たる案件は0件だった。プロポーザルはhiroshima-proposal-listで82件すべて取得できるため、秋田県の全庁新着RSSと同じ判断で無効状態で保持する。人間向けの新着一覧はhttps://www.city.hiroshima.lg.jp/newslist.htmlにある。
+    last_verified_at: "2026-08-15"
+    verification_status: verified
+
+  - id: hiroshima-dx-plan
+    organization_id: hiroshima-city
+    name: 広島市DX推進計画
+    url: https://www.city.hiroshima.lg.jp/shisei/gyosei/1021856/1018982.html
+    collector_type: single_page
+    source_category: plan
+    priority: medium
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - DX推進計画
+      - 政策方針
+    notes: 広島市総合計画を具体化する部門計画としてデジタル化施策をまとめた計画ページ。本文1562文字に計画の趣旨、基本方針、施策の概要、具体的な取組、推進体制が入る。労働力や地域の担い手の確保が困難になる見込みへの対応としてDX推進の加速を掲げており、上流の政策シグナルとして価値がある。リンクは第2期広島市DX推進計画、令和6年度改定版、令和6年度取組状況のPDF3件と市民意見募集結果ページだけで、案件の一覧を持たない。現在のCollectorはsingle_page未対応のため無効状態で保持する。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。2026-06-30更新。
+    last_verified_at: "2026-08-15"
     verification_status: verified
