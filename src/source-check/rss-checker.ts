@@ -1,7 +1,10 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import type { Source } from '../source-registry/schema.ts';
 import { isHostnameAllowed } from './fetch.ts';
-import { createTitleExcludeMatcher } from './title-excludes.ts';
+import {
+  createTitleExcludeMatcher,
+  createTitleIncludeMatcher,
+} from './title-excludes.ts';
 import type {
   SourceCheckExclusion,
   SourceCheckSample,
@@ -115,6 +118,7 @@ export function analyzeRss(
 
   const categoryIncludes = (source.category_includes ?? []).map(normalizeForMatch);
   const isTitleExcluded = createTitleExcludeMatcher(source.title_excludes);
+  const isTitleIncluded = createTitleIncludeMatcher(source.title_includes);
   const usableCandidates: RssCandidate[] = [];
 
   for (const candidate of uniqueCandidates) {
@@ -127,8 +131,13 @@ export function analyzeRss(
       increment(exclusions, 'category_includesで除外');
       continue;
     }
+    // 除外を先に見るため、includesとexcludesの両方へ一致した候補は除外が勝つ。
     if (isTitleExcluded(candidate.title)) {
       increment(exclusions, 'title_excludesで除外');
+      continue;
+    }
+    if (!isTitleIncluded(candidate.title)) {
+      increment(exclusions, 'title_includesで除外');
       continue;
     }
     usableCandidates.push(candidate);
@@ -147,7 +156,9 @@ export function analyzeRss(
   if (duplicateCount > 0) warnings.push(`重複URLを ${duplicateCount} 件除外しました。`);
 
   if (usableCandidates.length === 0) {
-    throw new Error('台帳の category_includes / title_excludes 適用後に候補が0件です。');
+    throw new Error(
+      '台帳の category_includes / title_includes / title_excludes 適用後に候補が0件です。',
+    );
   }
 
   return {

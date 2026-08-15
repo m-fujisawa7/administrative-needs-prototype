@@ -859,6 +859,89 @@ describe('title_excludesで除外した候補の扱い', () => {
   });
 });
 
+describe('title_includesで絞り込んだ候補の扱い', () => {
+  const NOISY_HTML = [
+    '<main id="main">',
+    '<a href="/proposal/1">ＬＡＮシステム用サーバ機器等一式の借上げ</a>',
+    '<a href="/noise/1">トリプル四重極液体クロマトグラフ質量分析計の賃貸借</a>',
+    '<a href="/noise/2">比較器の購入</a>',
+    '<a href="/proposal/2">ソフトウェア保守業務委託</a>',
+    '</main>',
+  ].join('');
+
+  it('一致しなかった候補はlimitを消費せずRemainingにも含めない', async () => {
+    const stdout: string[] = [];
+    const registerOne = vi.fn(async (input: { officialUrl: string }) =>
+      previewed(input.officialUrl));
+
+    const exitCode = await runCollection([...args(), '--limit', '2'], {
+      ...dependencies({ stdout, registerOne }),
+      loadRegistry: async () => registryWithTitleIncludes(),
+      collectCandidates: async (source, organization) => collectSourceCandidates(
+        source,
+        organization,
+        { fetchSource: async ({ url }) => fetchedHtml(NOISY_HTML, url) },
+      ),
+    });
+
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    // 質量分析計と比較器は候補段階で落ちるため、Claude解析まで進まない。
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([
+      'https://www.city.osaka.lg.jp/proposal/1',
+      'https://www.city.osaka.lg.jp/proposal/2',
+    ]);
+    expect(output).toContain('Candidates collected:\n2');
+    expect(output).toContain('Remaining new candidates:\n0');
+  });
+
+  it('Notion登録済みの候補はlimitを消費しない既存挙動を保つ', async () => {
+    const stdout: string[] = [];
+    const registerOne = vi.fn(async (input: { officialUrl: string }) =>
+      previewed(input.officialUrl));
+
+    await runCollection([...args(), '--limit', '1'], {
+      ...dependencies({ stdout, registerOne }),
+      loadRegistry: async () => registryWithTitleIncludes(),
+      // includes通過後の1件目を登録済みにしても、limitは新規候補だけが消費する。
+      createClient: () => client(new Set(['https://www.city.osaka.lg.jp/proposal/1'])),
+      collectCandidates: async (source, organization) => collectSourceCandidates(
+        source,
+        organization,
+        { fetchSource: async ({ url }) => fetchedHtml(NOISY_HTML, url) },
+      ),
+    });
+
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl))
+      .toEqual(['https://www.city.osaka.lg.jp/proposal/2']);
+  });
+});
+
+function registryWithTitleIncludes() {
+  return validateSourceRegistry({
+    version: 1,
+    organizations: [{
+      id: 'osaka-city',
+      name: '大阪市',
+      organization_type: 'designated_city',
+      official_domain: 'city.osaka.lg.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'osaka-digital-rss',
+      organization_id: 'osaka-city',
+      name: '物品調達が混じる一覧',
+      url: 'https://www.city.osaka.lg.jp/list.html',
+      collector_type: 'list_page',
+      source_category: 'procurement',
+      priority: 'high',
+      enabled: true,
+      link_selector: '#main a',
+      title_includes: ['システム', 'ソフトウェア', '委託'],
+    }],
+  });
+}
+
 function registryWithTitleExcludes() {
   return validateSourceRegistry({
     version: 1,

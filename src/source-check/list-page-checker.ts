@@ -1,7 +1,10 @@
 import { load } from 'cheerio';
 import type { Source } from '../source-registry/schema.ts';
 import { isHostnameAllowed } from './fetch.ts';
-import { createTitleExcludeMatcher } from './title-excludes.ts';
+import {
+  createTitleExcludeMatcher,
+  createTitleIncludeMatcher,
+} from './title-excludes.ts';
 import type {
   SourceCheckExclusion,
   SourceCheckSample,
@@ -99,6 +102,7 @@ export function analyzeListPage(
   }
 
   const isTitleExcluded = createTitleExcludeMatcher(source.title_excludes);
+  const isTitleIncluded = createTitleIncludeMatcher(source.title_includes);
   const usableCandidates: ListCandidate[] = [];
   const seenUrls = new Set<string>();
   for (const candidate of validCandidates) {
@@ -109,8 +113,13 @@ export function analyzeListPage(
     seenUrls.add(candidate.canonicalUrl);
     // 一覧ページのタイトルはリンクテキストそのものなので、RSSと同じ判定で除外する。
     // ここで落とした候補はHTML・PDF取得、Claude解析、Notion重複確認へ進まない。
+    // 除外を先に見るため、includesとexcludesの両方へ一致した候補は除外が勝つ。
     if (isTitleExcluded(candidate.title)) {
       increment(exclusions, 'title_excludesで除外');
+      continue;
+    }
+    if (!isTitleIncluded(candidate.title)) {
+      increment(exclusions, 'title_includesで除外');
       continue;
     }
     usableCandidates.push(candidate);
@@ -129,9 +138,11 @@ export function analyzeListPage(
   if (duplicateCount > 0) warnings.push(`重複URLを ${duplicateCount} 件除外しました。`);
 
   if (usableCandidates.length === 0) {
+    const filtered = ['title_includes', 'title_excludes']
+      .filter((name) => (exclusions.get(`${name}で除外`) ?? 0) > 0);
     throw new Error(
-      (exclusions.get('title_excludesで除外') ?? 0) > 0
-        ? '台帳の title_excludes 適用後に候補が0件です。'
+      filtered.length > 0
+        ? `台帳の ${filtered.join(' / ')} 適用後に候補が0件です。`
         : '重複・外部ドメイン・自己リンクを除外した後の候補が0件です。',
     );
   }

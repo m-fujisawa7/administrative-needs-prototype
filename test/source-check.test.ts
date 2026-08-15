@@ -572,6 +572,138 @@ describe('一覧ページのtitle_excludes', () => {
   });
 });
 
+describe('title_includes', () => {
+  const HTML = [
+    '<main id="main">',
+    '<a href="/1">新潟県ＬＡＮシステム用サーバ機器等一式の借上げ</a>',
+    '<a href="/2">トリプル四重極液体クロマトグラフ質量分析計の賃貸借</a>',
+    '<a href="/3">比較器の購入</a>',
+    '<a href="/4">入札結果「ソフトウェア保守業務」</a>',
+    '<a href="/5">自治体DXの取組に資する情報提供のお願い（RFI実施について）</a>',
+    '</main>',
+  ].join('');
+  const INCLUDES = ['システム', 'ソフトウェア', 'RFI'];
+
+  const rss = (titles: readonly string[]): string =>
+    '<rss version="2.0"><channel>'
+    + titles.map((title, index) =>
+      `<item><title>${title}</title><link>https://www.city.osaka.lg.jp/page/${index}</link></item>`).join('')
+    + '</channel></rss>';
+
+  it('未設定なら従来どおり全件を残す', () => {
+    const result = analyzeListPage(HTML, makeSource(), OFFICIAL_DOMAIN, 10);
+    expect(result.usableItemCount).toBe(5);
+    expect(result.exclusions.some(({ reason }) => reason === 'title_includesで除外')).toBe(false);
+  });
+
+  it('空配列でも従来どおり全件を残す', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ title_includes: [] }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.usableItemCount).toBe(5);
+    expect(result.exclusions.some(({ reason }) => reason === 'title_includesで除外')).toBe(false);
+  });
+
+  it('1語でも一致すれば残し、どれにも一致しない候補を落とす', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ title_includes: INCLUDES }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    // 質量分析計の賃貸借と比較器の購入は、どのinclude語にも一致しない。
+    expect(result.samples.map(({ title }) => title)).toEqual([
+      '新潟県ＬＡＮシステム用サーバ機器等一式の借上げ',
+      '入札結果「ソフトウェア保守業務」',
+      '自治体DXの取組に資する情報提供のお願い（RFI実施について）',
+    ]);
+    expect(result.exclusions).toContainEqual({ reason: 'title_includesで除外', count: 2 });
+  });
+
+  it('title_excludesが優先され、両方に一致した候補は除外される', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ title_includes: INCLUDES, title_excludes: ['入札結果'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.samples.map(({ title }) => title)).toEqual([
+      '新潟県ＬＡＮシステム用サーバ機器等一式の借上げ',
+      '自治体DXの取組に資する情報提供のお願い（RFI実施について）',
+    ]);
+    expect(result.exclusions).toContainEqual({ reason: 'title_excludesで除外', count: 1 });
+    expect(result.exclusions).toContainEqual({ reason: 'title_includesで除外', count: 2 });
+  });
+
+  it('title_excludesと同じ正規化で全角・半角を吸収する', () => {
+    const result = analyzeListPage(
+      '<main id="main"><a href="/1">ＲＦＩの実施</a><a href="/2">比較器の購入</a></main>',
+      makeSource({ title_includes: ['RFI'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.samples.map(({ title }) => title)).toEqual(['ＲＦＩの実施']);
+  });
+
+  it('RSSでも同じように機能する', () => {
+    const result = analyzeRss(
+      rss(['ＬＡＮシステム用サーバの賃貸借', '比較器の購入', '生成AI活用支援業務']),
+      makeSource({ collector_type: 'rss', title_includes: ['システム', 'AI'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.samples.map(({ title }) => title))
+      .toEqual(['ＬＡＮシステム用サーバの賃貸借', '生成AI活用支援業務']);
+    expect(result.exclusions).toContainEqual({ reason: 'title_includesで除外', count: 1 });
+  });
+
+  it('RSSでもtitle_excludesが優先される', () => {
+    const result = analyzeRss(
+      rss(['システム構築業務', '入札結果「システム構築業務」']),
+      makeSource({
+        collector_type: 'rss',
+        title_includes: ['システム'],
+        title_excludes: ['入札結果'],
+      }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.samples.map(({ title }) => title)).toEqual(['システム構築業務']);
+  });
+
+  it('適用後に候補が0件ならErrorにする', () => {
+    expect(() => analyzeListPage(
+      '<main id="main"><a href="/1">比較器の購入</a></main>',
+      makeSource({ title_includes: ['システム'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('title_includes');
+    expect(() => analyzeRss(
+      rss(['比較器の購入']),
+      makeSource({ collector_type: 'rss', title_includes: ['システム'] }),
+      OFFICIAL_DOMAIN,
+      10,
+    )).toThrow('title_includes');
+  });
+
+  it('共通Collector経由でも通過した候補だけを返す', async () => {
+    const source = makeSource({ title_includes: INCLUDES });
+    const candidates = await collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+      { fetchSource: async ({ url }) => fetched(HTML, url, 'text/html') },
+    );
+    expect(candidates.map(({ title }) => title)).toEqual([
+      '新潟県ＬＡＮシステム用サーバ機器等一式の借上げ',
+      '入札結果「ソフトウェア保守業務」',
+      '自治体DXの取組に資する情報提供のお願い（RFI実施について）',
+    ]);
+  });
+});
+
 describe('RSS 1.0（RDF）チェック', () => {
   it('実取得fixtureをRSS 1.0として解析し、title・link・公開日を正規化する', async () => {
     const result = analyzeRss(
