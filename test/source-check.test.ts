@@ -23,6 +23,7 @@ import {
 } from '../src/source-check/index.ts';
 import { analyzeListPage } from '../src/source-check/list-page-checker.ts';
 import { analyzeRss } from '../src/source-check/rss-checker.ts';
+import { analyzeSinglePage } from '../src/source-check/single-page-checker.ts';
 import { parseDateCandidate } from '../src/source-check/utils.ts';
 import type {
   FetchedText,
@@ -796,6 +797,119 @@ describe('RSS 1.0（RDF）チェック', () => {
       3,
     )).toThrow('RSS 2.0');
   });
+});
+
+describe('single_pageチェック', () => {
+  const HTML = [
+    '<div id="tmp_contents">',
+    '<h1>広島市DX推進計画</h1>',
+    '<p>労働力の確保が困難になる見込みへの対応としてDX推進を加速する。</p>',
+    '<p><a href="/documents/plan.pdf">第2期DX推進計画（PDF）</a></p>',
+    '<p><a href="/shisei/other.html">別の施策ページ</a></p>',
+    '</div>',
+  ].join('');
+
+  const singlePageSource = (overrides: Partial<Source> = {}) => makeSource({
+    id: 'hiroshima-dx-plan',
+    name: '広島市DX推進計画',
+    url: 'https://www.city.osaka.lg.jp/shisei/dx.html',
+    collector_type: 'single_page',
+    link_selector: undefined,
+    content_selector: '#tmp_contents',
+    ...overrides,
+  });
+
+  it('ページ自体を1件の候補として返す', () => {
+    const result = analyzeSinglePage(singlePageSource());
+    expect(result.rawItemCount).toBe(1);
+    expect(result.structurallyValidItemCount).toBe(1);
+    expect(result.usableItemCount).toBe(1);
+    expect(result.samples).toEqual([{
+      title: '広島市DX推進計画',
+      url: 'https://www.city.osaka.lg.jp/shisei/dx.html',
+      publishedAt: null,
+    }]);
+  });
+
+  it('掲載日を取得せずnullにする', () => {
+    // ページ内の更新日を掲載日にすると、初回収集開始日より前に更新されたページが
+    // 期間フィルタで落ち、一度も解析されないまま取りこぼす。
+    const result = analyzeSinglePage(singlePageSource());
+    expect(result.samples[0]?.publishedAt).toBeNull();
+    expect(result.latestPublishedAt).toBeNull();
+  });
+
+  it('警告も除外も出さず、セレクター状態を正しく返す', () => {
+    const result = analyzeSinglePage(singlePageSource());
+    expect(result.warnings).toEqual([]);
+    expect(result.exclusions).toEqual([]);
+    expect(result.linkSelectorStatus).toBe('not_configured');
+    expect(result.contentSelectorStatus).toBe('not_checked');
+  });
+
+  it('ページ内のリンクを候補にしない', async () => {
+    const source = singlePageSource();
+    const candidates = await collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+      { fetchSource: async ({ url }) => fetched(HTML, url, 'text/html') },
+    );
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.url).toBe(source.url);
+  });
+
+  it('content_selector未設定でも候補を返す', () => {
+    const result = analyzeSinglePage(singlePageSource({ content_selector: undefined }));
+    expect(result.usableItemCount).toBe(1);
+  });
+
+  it('共通Collectorが未対応エラーを投げない', async () => {
+    const source = singlePageSource();
+    await expect(collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+      { fetchSource: async ({ url }) => fetched(HTML, url, 'text/html') },
+    )).resolves.toHaveLength(1);
+  });
+
+  it('sources:checkでUnsupportedではなくOKになる', async () => {
+    const source = singlePageSource();
+    const results = await checkSourceRegistry(
+      makeRegistry([source]),
+      { selection: { mode: 'source', sourceId: source.id }, limit: 10, intervalMs: 0 },
+      { fetchSource: async ({ url }) => fetched(HTML, url, 'text/html') },
+    );
+    expect(results[0]?.status).toBe('ok');
+    expect(results[0]?.usableItemCount).toBe(1);
+    expect(results[0]?.error).toBeUndefined();
+  });
+
+  it('HTML以外のContent-TypeはWarningにする', async () => {
+    const source = singlePageSource();
+    const results = await checkSourceRegistry(
+      makeRegistry([source]),
+      { selection: { mode: 'source', sourceId: source.id }, limit: 10, intervalMs: 0 },
+      { fetchSource: async ({ url }) => fetched(HTML, url, 'application/json') },
+    );
+    expect(results[0]?.status).toBe('warning');
+    expect(results[0]?.warnings.join('\n')).toContain('HTML系ではありません');
+  });
+
+  it('manualとcustomは従来どおりUnsupportedのままにする', async () => {
+    for (const collectorType of ['manual', 'custom'] as const) {
+      const results = await checkSourceRegistry(
+        makeRegistry([makeSource({ collector_type: collectorType })]),
+        { selection: { mode: 'all' }, limit: 3, intervalMs: 0 },
+      );
+      expect(results[0]?.status).toBe('unsupported');
+    }
+    const source = makeSource({ collector_type: 'manual' });
+    await expect(collectSourceCandidates(
+      source,
+      makeRegistry([source]).organizations[0]!,
+    )).rejects.toThrow('現在未対応です');
+  });
+
 });
 
 describe('allow_empty_candidates', () => {

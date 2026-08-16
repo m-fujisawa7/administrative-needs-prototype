@@ -508,6 +508,80 @@ describe('collect:runコマンド', () => {
   });
 });
 
+describe('single_pageの候補を流したときの挙動', () => {
+  // single_page は入口URLそのものが1件の候補で、掲載日を持たない。
+  const singlePageCandidate = (): SourceCheckSample => ({
+    title: '広島市DX推進計画',
+    url: URL_A,
+    publishedAt: null,
+  });
+
+  it('初回は掲載日不明として処理し、Noticeを出す', async () => {
+    const stderr: string[] = [];
+    const registerOne = vi.fn(async (input) => created(input.officialUrl));
+    const exitCode = await runCollection([...args(), '--write'], dependencies({
+      stderr,
+      collectCandidates: async () => [singlePageCandidate()],
+      registerOne,
+    }));
+    expect(exitCode).toBe(0);
+    expect(registerOne).toHaveBeenCalledTimes(1);
+    expect(stderr.join('\n')).toContain('Candidate publication date is unavailable.');
+  });
+
+  it('2回目は重複としてClaude解析とNotion登録の前にスキップする', async () => {
+    const registerOne = vi.fn();
+    const stdout: string[] = [];
+    const exitCode = await runCollection([...args(), '--write'], dependencies({
+      stdout,
+      collectCandidates: async () => [singlePageCandidate()],
+      createClient: () => client(new Set([URL_A])),
+      registerOne,
+    }));
+    expect(exitCode).toBe(0);
+    // duplicate は processor へ渡らないため、HTML取得・PDF抽出・Claude解析も走らない。
+    expect(registerOne).not.toHaveBeenCalled();
+    expect(stdout.join('\n')).toContain('New candidates found:\n0');
+    expect(stdout.join('\n')).toContain('Duplicates skipped:\n1');
+  });
+
+  it('重複だけでもWriteならstateを進める', async () => {
+    const writeState = vi.fn(async () => undefined);
+    const exitCode = await runCollection([...args(), '--write'], dependencies({
+      writeState,
+      collectCandidates: async () => [singlePageCandidate()],
+      createClient: () => client(new Set([URL_A])),
+      registerOne: vi.fn(),
+    }));
+    expect(exitCode).toBe(0);
+    expect(writeState).toHaveBeenCalledTimes(1);
+  });
+
+  it('Previewではstateを進めない', async () => {
+    const writeState = vi.fn();
+    const stdout: string[] = [];
+    const exitCode = await runCollection(args(), dependencies({
+      stdout,
+      writeState,
+      collectCandidates: async () => [singlePageCandidate()],
+      registerOne: async (input) => previewed(input.officialUrl),
+    }));
+    expect(exitCode).toBe(0);
+    expect(writeState).not.toHaveBeenCalled();
+    expect(stdout.join('\n')).toContain('Reason:\nPreview mode.');
+  });
+
+  it('掲載日がないため--sinceとinitial_sinceで絞られない', () => {
+    const selection = filterCandidatesByPeriod(
+      [singlePageCandidate()],
+      '2026-07-01',
+      '2026-08-16T12:00:00+09:00',
+    );
+    expect(selection.candidates).toHaveLength(1);
+    expect(selection.unknownDateCandidates).toHaveLength(1);
+  });
+});
+
 function candidate(url: string): SourceCheckSample {
   return {
     url,

@@ -6,6 +6,7 @@ import type {
 import { safeFetchText } from './fetch.ts';
 import { analyzeListPage } from './list-page-checker.ts';
 import { analyzeRss } from './rss-checker.ts';
+import { analyzeSinglePage } from './single-page-checker.ts';
 import type {
   FetchedText,
   SourceCheckSample,
@@ -47,7 +48,7 @@ export async function collectSourceCandidates(
   dependencies: SourceCheckDependencies = {},
   limit = Number.MAX_SAFE_INTEGER,
 ): Promise<SourceCheckSample[]> {
-  if (source.collector_type !== 'rss' && source.collector_type !== 'list_page') {
+  if (!isFetchableCollectorType(source.collector_type)) {
     throw new Error(`collector_type「${source.collector_type}」は現在未対応です。`);
   }
   const { analysis } = await fetchAndAnalyzeSource(
@@ -74,7 +75,8 @@ export async function checkSourceRegistry(
   const results: SourceCheckResult[] = [];
 
   for (const entry of selected) {
-    if (entry.source.collector_type === 'rss' || entry.source.collector_type === 'list_page') {
+    // 実際にHTTPアクセスする形式だけ、同一ホストへの連続アクセス間隔を空ける。
+    if (isFetchableCollectorType(entry.source.collector_type)) {
       const hostname = new URL(entry.source.url).hostname;
       const lastAccess = lastAccessByHost.get(hostname);
       if (lastAccess !== undefined) {
@@ -143,7 +145,7 @@ async function checkOneSource(
     checkedAt,
   };
 
-  if (source.collector_type !== 'rss' && source.collector_type !== 'list_page') {
+  if (!isFetchableCollectorType(source.collector_type)) {
     return {
       ...base,
       status: 'unsupported',
@@ -206,16 +208,38 @@ async function fetchAndAnalyzeSource(
       ? 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1'
       : 'text/html, application/xhtml+xml;q=0.9, */*;q=0.1',
   });
-  const analysis = source.collector_type === 'rss'
-    ? analyzeRss(fetched.text, source, organization.official_domain, limit)
-    : analyzeListPage(
-        fetched.text,
-        source,
-        organization.official_domain,
-        limit,
-        fetched.finalUrl,
-      );
+  const analysis = analyzeFetchedSource(source, organization, limit, fetched);
   return { fetched, analysis };
+}
+
+/** 入口URLを取得して候補を出せる形式。manual と custom は取得処理を持たない。 */
+function isFetchableCollectorType(
+  collectorType: Source['collector_type'],
+): collectorType is 'rss' | 'list_page' | 'single_page' {
+  return collectorType === 'rss'
+    || collectorType === 'list_page'
+    || collectorType === 'single_page';
+}
+
+function analyzeFetchedSource(
+  source: Source,
+  organization: Organization,
+  limit: number,
+  fetched: FetchedText,
+): SourceContentAnalysis {
+  if (source.collector_type === 'rss') {
+    return analyzeRss(fetched.text, source, organization.official_domain, limit);
+  }
+  // single_page はページ自体が候補なので、取得したHTMLからリンクを抽出しない。
+  // 取得は疎通確認とURLの生存確認のために行い、本文抽出はAI判定側が担う。
+  if (source.collector_type === 'single_page') return analyzeSinglePage(source);
+  return analyzeListPage(
+    fetched.text,
+    source,
+    organization.official_domain,
+    limit,
+    fetched.finalUrl,
+  );
 }
 
 async function defaultFetchSource(request: SourceFetchRequest): Promise<FetchedText> {
@@ -232,7 +256,7 @@ function contentTypeWarningsFor(source: Source, contentType: string | null): str
     return [`Content-TypeがXML系ではありません: ${contentType}`];
   }
   if (
-    source.collector_type === 'list_page'
+    (source.collector_type === 'list_page' || source.collector_type === 'single_page')
     && !normalized.includes('text/html')
     && !normalized.includes('application/xhtml+xml')
   ) {
