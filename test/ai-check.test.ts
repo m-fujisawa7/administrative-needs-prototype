@@ -651,6 +651,20 @@ describe('根拠照合', () => {
     })).toBe(false);
   });
 
+  it('空白入り原文に対し、日本語が1文字でも違えば一致させない', () => {
+    // 空白の吸収を広げすぎて、実際には存在しない引用を通していないことを固定する。
+    const pdfText = '福 岡 市 は 行 政 課 題 の 解 決 を 進 め る';
+    expect(matchOne('福岡市は行政課題の解決を進める', { pdfText })).toBe(true);
+    expect(matchOne('福岡市は行政課題の解消を進める', { pdfText })).toBe(false);
+    expect(matchOne('福岡県は行政課題の解決を進める', { pdfText })).toBe(false);
+  });
+
+  it('全角と半角の差をNFKCで吸収する', () => {
+    expect(matchOne('DX推進計画', { pdfText: 'ＤＸ推進計画を策定しました' })).toBe(true);
+    expect(matchOne('ＤＸ推進計画', { pdfText: 'DX推進計画を策定しました' })).toBe(true);
+    expect(matchOne('令和8年度', { pdfText: '令 和 ８ 年 度 の 取 組' })).toBe(true);
+  });
+
   it('言い換えた引用は一致させない', () => {
     expect(matchOne('行政課題1件につき最大150万円を補助します', {
       pdfText: '行 政 課 題 1 件 あ た り 150 万 円 ま で',
