@@ -48,6 +48,8 @@ const DOCUMENT_URL = 'https://www.city.osaka.lg.jp/page/document.html';
 const PDF_A = 'https://www.city.osaka.lg.jp/files/a.pdf';
 const PDF_B = 'https://www.city.osaka.lg.jp/files/b.pdf';
 const PDF_C = 'https://www.city.osaka.lg.jp/files/c.pdf';
+const PDF_D = 'https://www.city.osaka.lg.jp/files/d.pdf';
+const PDF_E = 'https://www.city.osaka.lg.jp/files/e.pdf';
 
 describe('AI出力スキーマ', () => {
   it('対象案件で固定カテゴリ1件と3件を受理する', () => {
@@ -1756,6 +1758,197 @@ describe('内容が重複するPDFの扱い', () => {
     expect(result.inputSummary.pdfIncluded).toBe(1);
     expect(result.warnings.some((warning) => warning.code === 'pdf_failed')).toBe(true);
     expect(result.warnings.some((warning) => warning.code === 'pdf_duplicate')).toBe(false);
+  });
+});
+
+describe('テキストレイヤーが無いPDFの扱い', () => {
+  const noTextError = (): PdfCheckError => new PdfCheckError(
+    'no_text',
+    'PDFからテキストを抽出できませんでした。画像PDF・スキャンPDFの可能性があります。',
+  );
+
+  const run = async (
+    pdfLinks: ReadonlyArray<{ url: string; text: string }>,
+    extractPdf: (input: { url: string }) => Promise<ExtractedPdf>,
+    maxPdfs = 2,
+  ): Promise<{ result: AiCheckResult; fetched: string[] }> => {
+    const fetched: string[] = [];
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs },
+    }, {
+      extractContent: async () => makeDocument({ pdfLinks: [...pdfLinks] }),
+      extractPdf: async (input) => {
+        fetched.push(input.url);
+        return extractPdf(input);
+      },
+    });
+    return { result, fetched };
+  };
+
+  it('no_textはAI入力枠を消費せず、次候補をrefillする', async () => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '概要（画像PDF）' },
+        { url: PDF_B, text: '別記仕様書' },
+        { url: PDF_C, text: '入札説明書' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw noTextError();
+        return makePdf(url);
+      },
+    );
+
+    // 取得順は優先度順（別記仕様書=high → 概要=medium → 入札説明書=other）。
+    // 上限2件でも、no_text が枠を消費しないので3件目まで進む。
+    expect(fetched).toEqual([PDF_B, PDF_A, PDF_C]);
+    expect(result.inputSummary.pdfIncluded).toBe(2);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['別記仕様書', '入札説明書']);
+  });
+
+  it('pdf_failedのまま、detail=no_textでWARNINGにする', async () => {
+    const { result } = await run(
+      [
+        { url: PDF_A, text: '概要（画像PDF）' },
+        { url: PDF_B, text: '別記仕様書' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw noTextError();
+        return makePdf(url);
+      },
+    );
+
+    const failure = result.warnings.find((warning) => warning.detail === 'no_text');
+    expect(failure).toBeDefined();
+    expect(failure!.code).toBe('pdf_failed');
+    expect(warningSeverity(failure!)).toBe('warning');
+    expect(failure!.message).toContain('テキストレイヤーが無い');
+    expect(failure!.message).toContain(PDF_A);
+  });
+
+  it('no_textのPDFはAI入力に含めずpdfSkippedへ入れる', async () => {
+    const { result } = await run(
+      [
+        { url: PDF_A, text: '概要（画像PDF）' },
+        { url: PDF_B, text: '別記仕様書' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw noTextError();
+        return makePdf(url);
+      },
+    );
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.url)).not.toContain(PDF_A);
+    expect(result.inputSummary.pdfSkipped?.map((pdf) => pdf.url)).toContain(PDF_A);
+  });
+
+  it.each([
+    ['parse_failed', new PdfCheckError('parse_failed', 'PDFの解析に失敗しました。')],
+    ['invalid_pdf', new PdfCheckError('invalid_pdf', 'PDFヘッダーを確認できません。')],
+    ['parse_timeout', new PdfCheckError('parse_timeout', 'PDFの解析がタイムアウトしました。')],
+    ['too_many_pages', new PdfCheckError('too_many_pages', 'ページ数が上限を超えています。')],
+    ['HTTP取得失敗', new Error('HTTPステータスが成功範囲ではありません: 404')],
+  ])('%s は従来どおり枠を消費する', async (_label, thrown) => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '別記仕様書' },
+        { url: PDF_B, text: '公告文' },
+        { url: PDF_C, text: '入札説明書' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw thrown;
+        return makePdf(url);
+      },
+    );
+
+    // PDF_A の失敗が1枠、PDF_B の採用で1枠。maxPdfs=2 に達し PDF_C は取得しない。
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+    expect(result.inputSummary.pdfIncluded).toBe(1);
+    expect(result.warnings.some((warning) => warning.detail === 'no_text')).toBe(false);
+  });
+
+  it('パスワード保護は従来どおり枠非消費でrefillする', async () => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '別記仕様書' },
+        { url: PDF_B, text: '公告文' },
+        { url: PDF_C, text: '入札説明書' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw passwordProtectedError();
+        return makePdf(url);
+      },
+    );
+
+    expect(fetched).toEqual([PDF_A, PDF_B, PDF_C]);
+    expect(result.inputSummary.pdfIncluded).toBe(2);
+    const failure = result.warnings.find((warning) => warning.detail === 'password_protected');
+    expect(failure?.code).toBe('pdf_failed');
+    expect(warningSeverity(failure!)).toBe('warning');
+  });
+
+  it('no_text・重複・パスワード保護が混在してもそれぞれ独立して扱う', async () => {
+    const SHARED = '同一内容のPDF本文です。';
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '概要（画像PDF）' },
+        { url: PDF_B, text: '別記仕様書（保護）' },
+        { url: PDF_C, text: '本編' },
+        { url: PDF_D, text: '印刷用' },
+        { url: PDF_E, text: '実施状況' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw noTextError();
+        if (url === PDF_B) throw passwordProtectedError();
+        if (url === PDF_C || url === PDF_D) return makePdf(url, SHARED);
+        return makePdf(url);
+      },
+      2,
+    );
+
+    // 取得順は優先度順（別記仕様書=high → 概要=medium → 残りは掲載順）。
+    // no_text・保護・重複はいずれも枠を消費しないので、5件すべて取得を試す。
+    expect(fetched).toEqual([PDF_B, PDF_A, PDF_C, PDF_D, PDF_E]);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['本編', '実施状況']);
+    const details = result.warnings.map((warning) => warning.detail);
+    expect(details).toContain('no_text');
+    expect(details).toContain('password_protected');
+    expect(result.warnings.some((warning) => warning.code === 'pdf_duplicate')).toBe(true);
+  });
+
+  it('福岡型の候補順で有効PDF3件がAI入力対象になる', async () => {
+    const MAIN = '福岡市ＤＸ戦略の本文です。趣旨・目的と基本方針を記載しています。';
+    // 実際の福岡と同じ並び。概要がmediumで先頭に来る。
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '福岡市DX戦略（本編）' },
+        { url: PDF_B, text: '印刷用はこちら' },
+        { url: PDF_C, text: '福岡市DX戦略 実行項目集' },
+        { url: PDF_D, text: '福岡市DX戦略の概要' },
+        { url: PDF_E, text: '福岡市ＤＸ戦略実行項目の実施状況（令和６年度）' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_D) throw noTextError();
+        if (url === PDF_A || url === PDF_B) return makePdf(url, MAIN);
+        return makePdf(url);
+      },
+      3,
+    );
+
+    // 概要(medium)が先頭。no_textで枠非消費、印刷用は重複で枠非消費。
+    expect(fetched).toEqual([PDF_D, PDF_A, PDF_B, PDF_C, PDF_E]);
+    expect(result.inputSummary.pdfIncluded).toBe(3);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual([
+      '福岡市DX戦略（本編）',
+      '福岡市DX戦略 実行項目集',
+      '福岡市ＤＸ戦略実行項目の実施状況（令和６年度）',
+    ]);
+    expect(result.warnings.some((warning) => warning.detail === 'no_text')).toBe(true);
+    expect(result.warnings.some((warning) => warning.code === 'pdf_duplicate')).toBe(true);
   });
 });
 

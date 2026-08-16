@@ -13,11 +13,14 @@ import {
 } from '../src/pdf-check/extract.ts';
 import {
   fetchAndExtractPdf,
+  isNoTextPdfError,
+  isPasswordProtectedPdfError,
   type PdfFetcher,
 } from '../src/pdf-check/index.ts';
-import type {
-  ExtractedPdf,
-  PdfExtractionResult,
+import {
+  PdfCheckError,
+  type ExtractedPdf,
+  type PdfExtractionResult,
 } from '../src/pdf-check/types.ts';
 import type { FetchedBytes } from '../src/source-check/types.ts';
 import type { Organization, Source } from '../src/source-registry/schema.ts';
@@ -130,6 +133,37 @@ describe('PDFテキスト抽出', () => {
     };
     await expect(extractPdfFromBytes(PDF_BYTES, { parser: broken }))
       .rejects.toMatchObject({ code: 'parse_failed' });
+  });
+});
+
+describe('PDFエラー種別の判定', () => {
+  it('isNoTextPdfError は code=no_text のときだけ true を返す', () => {
+    expect(isNoTextPdfError(new PdfCheckError('no_text', 'テキストがありません。'))).toBe(true);
+  });
+
+  it.each(['parse_failed', 'invalid_pdf', 'parse_timeout', 'too_many_pages', 'password_protected'] as const)(
+    'isNoTextPdfError は code=%s を false にする',
+    (code) => {
+      expect(isNoTextPdfError(new PdfCheckError(code, 'テスト'))).toBe(false);
+    },
+  );
+
+  it.each([
+    ['通常のError', new Error('no_text')],
+    ['文字列', 'no_text'],
+    ['null', null],
+    ['undefined', undefined],
+  ])('isNoTextPdfError は %s を false にする', (_label, value) => {
+    expect(isNoTextPdfError(value)).toBe(false);
+  });
+
+  it('パスワード保護の判定と混同しない', () => {
+    const noText = new PdfCheckError('no_text', 'テキストがありません。');
+    const protectedPdf = new PdfCheckError('password_protected', '保護されています。');
+    expect(isNoTextPdfError(noText)).toBe(true);
+    expect(isPasswordProtectedPdfError(noText)).toBe(false);
+    expect(isNoTextPdfError(protectedPdf)).toBe(false);
+    expect(isPasswordProtectedPdfError(protectedPdf)).toBe(true);
   });
 });
 

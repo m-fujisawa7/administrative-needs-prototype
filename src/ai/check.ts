@@ -7,7 +7,7 @@ import {
   fetchAndExtractPdf,
   type FetchAndExtractPdfInput,
 } from '../pdf-check/index.ts';
-import { isPasswordProtectedPdfError } from '../pdf-check/index.ts';
+import { isNoTextPdfError, isPasswordProtectedPdfError } from '../pdf-check/index.ts';
 import type { ExtractedPdf } from '../pdf-check/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
 import { pdfContentFingerprint } from './pdf-duplicates.ts';
@@ -140,11 +140,22 @@ export async function checkAdministrativeNeed(
         });
         continue;
       }
+      // 全ページにテキストレイヤーが無いPDFも本文を1文字も渡せないため枠を消費しない。
+      // 取得も解析も成功しており、この文書から得られる本文が0だと確定している点が
+      // 取得失敗・解析失敗と違う。OCRは行わず、読めなかった事実はWARNINGとして残す。
+      if (isNoTextPdfError(error)) {
+        warnings.push({
+          code: 'pdf_failed',
+          message: `PDFにテキストレイヤーが無いためAI入力に含めず次の候補を試します: ${url}`,
+          detail: 'no_text',
+        });
+        continue;
+      }
       warnings.push({
         code: 'pdf_failed',
         message: `PDF本文を取得できないためHTMLだけで続行します: ${url}: ${detail}`,
       });
-      // パスワード保護以外の取得失敗は従来どおり枠を消費する。
+      // 取得失敗、破損、解析失敗、タイムアウト、ページ数超過は従来どおり枠を消費する。
       slotsUsed += 1;
     }
   }

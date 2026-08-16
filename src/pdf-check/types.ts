@@ -89,3 +89,15 @@ export class PdfCheckError extends Error {
 export function isPasswordProtectedPdfError(error: unknown): boolean {
   return error instanceof PdfCheckError && error.code === 'password_protected';
 }
+
+/**
+ * 全ページにテキストレイヤーが無く本文を取得できなかったか。
+ *
+ * `no_text` は取得と解析が成功したうえでページ本文が1文字も無い場合にだけ投げる。
+ * 取得失敗・破損・解析失敗・タイムアウト・ページ数超過は別コードになるため、
+ * この判定が解析失敗まで巻き込むことはない。
+ * パスワード保護と同じく、AI入力枠を消費させず次候補へ回す判定に使う。
+ */
+export function isNoTextPdfError(error: unknown): boolean {
+  return error instanceof PdfCheckError && error.code === 'no_text';
+}
