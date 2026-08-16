@@ -910,6 +910,24 @@ describe('single_pageチェック', () => {
     )).rejects.toThrow('現在未対応です');
   });
 
+  it('実台帳で有効なsingle_pageが検証した3件だけになっている', async () => {
+    const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
+    const registry = await loadSourceRegistry();
+    const enabled = registry.sources
+      .filter((source) => source.collector_type === 'single_page' && source.enabled)
+      .map((source) => source.id)
+      .sort();
+    expect(enabled).toEqual([
+      'fukuoka-dx-promotion',
+      'hiroshima-dx-plan',
+      'miyagi-administrative-reform-plan',
+    ]);
+    // ページ本文をAI判定へ渡すため、有効なsingle_pageには content_selector が要る。
+    for (const id of enabled) {
+      const source = registry.sources.find((candidate) => candidate.id === id);
+      expect(source?.content_selector).toBeDefined();
+    }
+  });
 });
 
 describe('allow_empty_candidates', () => {

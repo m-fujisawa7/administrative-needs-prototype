@@ -566,14 +566,14 @@ sources:
     collector_type: single_page
     source_category: plan
     priority: medium
-    enabled: false
+    enabled: true
     content_selector: "#tmp_contents"
     document_type_hints:
       - 行政改革
       - 働き方改革
       - 計画
-    notes: 行政運営と働き方改革の推進プラン。計画本文PDFと過年度アーカイブへのリンクだけで新着一覧を持たない。現在のCollectorはsingle_page未対応のため、参考情報源として無効状態で保持する。
-    last_verified_at: "2026-08-10"
+    notes: 行政運営と働き方改革の推進プラン。計画本文PDFと過年度アーカイブへのリンクだけで新着一覧を持たない。ページ全体が令和8年度のプラン1件を指し、添付PDFもプラン本体1件だけなので、1ページを1つの行政ニーズとして登録しても粒度が崩れない。本文1148文字、掲載日候補2026-04-21。single_page Collectorの初期対象として有効化した。
+    last_verified_at: "2026-08-16"
     verification_status: verified
 
   - id: aomori-boshu-list
@@ -1560,14 +1560,14 @@ sources:
     collector_type: single_page
     source_category: plan
     priority: medium
-    enabled: false
+    enabled: true
     content_selector: .wb-contents
     document_type_hints:
       - DX戦略
       - 実行項目
       - 政策方針
-    notes: 総務企画局DX戦略課が福岡市DX戦略を掲載する単一ページ。本文1508文字で新着情報の見出しはあるが中身が無く、リンクは福岡市DX戦略の本編・概要・実行項目集・実施状況のPDF4件と印刷用1件、福岡市Supportの案内、外部のfukuoka-shinjoshiki.jpだけで案件の一覧を持たない。現在のCollectorはsingle_page未対応のため無効状態で保持する。DX戦略と実行項目の実施状況は上流の政策シグナルとして価値があるため、必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
-    last_verified_at: "2026-08-13"
+    notes: 総務企画局DX戦略課が福岡市DX戦略を掲載する単一ページ。本文1508文字で新着情報の見出しはあるが中身が無く、リンクは福岡市DX戦略の本編・概要・実行項目集・実施状況のPDF4件と印刷用1件、福岡市Supportの案内、外部のfukuoka-shinjoshiki.jpだけで案件の一覧を持たない。PDFはいずれも同一のDX戦略の構成要素で独立した別案件ではないため、1ページを1つの行政ニーズとして登録しても粒度が崩れない。掲載日候補2026-02-09。single_page Collectorの初期対象として有効化し、実AI Previewで対象・計画と判定された。**将来の検討事項として、AI入力に本編16,881文字と印刷用16,887文字というほぼ同一内容の2PDFが入り、実行項目集と実施状況がスキップされた。** 両者はPDF優先度がどちらもotherで、内容の近似を見る仕組みが無いため3枠のうち2枠を同じ内容が占める。single_page固有ではなく既存のPDF選択ロジックの課題なので、PDF近似重複除外の検討時にこの実測値を出発点にする。
+    last_verified_at: "2026-08-16"
     verification_status: verified
 
   - id: fukuoka-100lab
@@ -1822,11 +1822,11 @@ sources:
     collector_type: single_page
     source_category: plan
     priority: medium
-    enabled: false
+    enabled: true
     content_selector: "#content"
     document_type_hints:
       - DX推進計画
       - 政策方針
-    notes: 広島市総合計画を具体化する部門計画としてデジタル化施策をまとめた計画ページ。本文1562文字に計画の趣旨、基本方針、施策の概要、具体的な取組、推進体制が入る。労働力や地域の担い手の確保が困難になる見込みへの対応としてDX推進の加速を掲げており、上流の政策シグナルとして価値がある。リンクは第2期広島市DX推進計画、令和6年度改定版、令和6年度取組状況のPDF3件と市民意見募集結果ページだけで、案件の一覧を持たない。現在のCollectorはsingle_page未対応のため無効状態で保持する。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。2026-06-30更新。
-    last_verified_at: "2026-08-15"
+    notes: 広島市総合計画を具体化する部門計画としてデジタル化施策をまとめた計画ページ。本文1562文字に計画の趣旨、基本方針、施策の概要、具体的な取組、推進体制が入る。労働力や地域の担い手の確保が困難になる見込みへの対応としてDX推進の加速を掲げており、上流の政策シグナルとして価値がある。PDF3件は第2期広島市DX推進計画、令和6年度改定版、令和6年度取組状況で、いずれも同一計画の版と進捗であり独立した別案件ではないため、1ページを1つの行政ニーズとして登録しても粒度が崩れない。掲載日候補2026-06-30。single_page Collectorの初期対象として有効化した。
+    last_verified_at: "2026-08-16"
     verification_status: verified
