@@ -12,8 +12,11 @@ export type WarningSeverity = 'notice' | 'warning';
 // pdf_empty_text は「枠を消費せず次候補へ回した」という処理の説明。
 // 抽出できなかったこと自体は pdf_warning（empty_pages）がWARNINGで示すため、
 // ここで二重にWARNINGへ数えない。
+// pdf_duplicate も同じく処理の説明である。本文は正常に取得できており、
+// 既出と同一内容だったので枠を次の候補へ回しただけで、情報は失われていない。
 const NOTICE_CODES = new Set([
   'pdf_limit', 'pdf_truncated', 'ai_json_parse_retry', 'pdf_empty_text',
+  'pdf_duplicate',
 ]);
 
 /**

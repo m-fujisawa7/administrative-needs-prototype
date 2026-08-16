@@ -10,6 +10,7 @@ import {
 import { isPasswordProtectedPdfError } from '../pdf-check/index.ts';
 import type { ExtractedPdf } from '../pdf-check/types.ts';
 import type { Organization, Source } from '../source-registry/schema.ts';
+import { pdfContentFingerprint } from './pdf-duplicates.ts';
 import { describePdfLink, orderPdfCandidates } from './pdf-priority.ts';
 import {
   DEFAULT_AI_INPUT_LIMITS,
@@ -76,7 +77,9 @@ export async function checkAdministrativeNeed(
   // 長大PDFのRelevant Chunk選択でページ境界として使う。
   const pdfPageTexts: string[][] = [];
   const usedUrls = new Set<string>();
-  // AI入力枠の消費数。成功と取得失敗は枠を使い、本文0文字だけは使わない。
+  // 採用済みPDF本文のfingerprintと、そのPDFの表示ラベル。内容重複の判定に使う。
+  const acceptedFingerprints = new Map<string, string>();
+  // AI入力枠の消費数。成功と取得失敗は枠を使い、本文0文字と内容重複は使わない。
   let slotsUsed = 0;
   let attempted = 0;
 
@@ -108,6 +111,18 @@ export async function checkAdministrativeNeed(
         });
         continue;
       }
+      // 同じ本文を2枠に入れないよう、切り詰めやChunk選択より前の抽出原文で判定する。
+      // 取得は成功しているので失敗系とは意味が違い、枠を消費させず次候補へ回す。
+      const fingerprint = pdfContentFingerprint(pdf.text);
+      const duplicatedLabel = acceptedFingerprints.get(fingerprint);
+      if (duplicatedLabel !== undefined) {
+        warnings.push({
+          code: 'pdf_duplicate',
+          message: `PDF本文が「${duplicatedLabel}」と同一のためAI入力に含めず次の候補を試します: ${pdf.url}`,
+        });
+        continue;
+      }
+      acceptedFingerprints.set(fingerprint, describePdfLink(link));
       pdfDocuments.push({ url: pdf.url, text: pdf.text });
       pdfLabels.push(describePdfLink(link));
       pdfPageTexts.push([...pdf.pageTexts]);

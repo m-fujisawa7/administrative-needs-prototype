@@ -13,6 +13,7 @@ import {
   validateEvidenceQuotes,
 } from '../src/ai/input.ts';
 import { MockAnalyzer } from '../src/ai/mock.ts';
+import { pdfContentFingerprint } from '../src/ai/pdf-duplicates.ts';
 import {
   formatAnalysisInput,
   loadAiCheckPrompt,
@@ -1547,6 +1548,217 @@ describe('HTML・PDF・AI連携', () => {
   });
 });
 
+describe('PDF本文のfingerprint', () => {
+  const BODY = '福岡市ＤＸ戦略 第１章 趣旨・目的 デジタル技術で市民生活を向上させる。';
+
+  it('完全に同じ本文は同じfingerprintになる', () => {
+    expect(pdfContentFingerprint(BODY)).toBe(pdfContentFingerprint(BODY));
+  });
+
+  it('前後の空白差を吸収する', () => {
+    expect(pdfContentFingerprint(`  \n${BODY}\n\t `)).toBe(pdfContentFingerprint(BODY));
+  });
+
+  it('改行の差を吸収する', () => {
+    expect(pdfContentFingerprint('第１章\n趣旨')).toBe(pdfContentFingerprint('第１章\n\n\n趣旨'));
+    expect(pdfContentFingerprint('第１章\r\n趣旨')).toBe(pdfContentFingerprint('第１章 趣旨'));
+  });
+
+  it('連続空白の差を吸収する', () => {
+    expect(pdfContentFingerprint('第１章    趣旨')).toBe(pdfContentFingerprint('第１章 趣旨'));
+  });
+
+  it('福岡型の日本語文字間空白の差を吸収する', () => {
+    // 本編と印刷用の差は空白だけだった。全角スペースも \s に含まれる。
+    expect(pdfContentFingerprint('福 岡 市 Ｄ Ｘ 戦 略')).toBe(pdfContentFingerprint('福 岡 市 Ｄ Ｘ 戦 略'));
+    expect(pdfContentFingerprint('福岡市　ＤＸ戦略')).toBe(pdfContentFingerprint('福岡市 ＤＸ戦略'));
+  });
+
+  it('非空白文字が1文字でも違えば別のfingerprintになる', () => {
+    expect(pdfContentFingerprint('第１章 趣旨')).not.toBe(pdfContentFingerprint('第２章 趣旨'));
+    expect(pdfContentFingerprint(BODY)).not.toBe(pdfContentFingerprint(`${BODY}。`));
+  });
+
+  it('NFKC正規化はしないので全角と半角は別扱いにする', () => {
+    // 令和6年度版と令和６年度版のような版違いを同一視しないため、
+    // 実測で不要だったNFKCは適用しない。
+    expect(pdfContentFingerprint('ＤＸ推進計画')).not.toBe(pdfContentFingerprint('DX推進計画'));
+    expect(pdfContentFingerprint('令和6年度')).not.toBe(pdfContentFingerprint('令和６年度'));
+  });
+
+  it('広島の3計画のような別文書は別のfingerprintになる', () => {
+    const plan2 = '第２期広島市ＤＸ推進計画 広島市 令和８年３月 目次 Ⅰ 計画の趣旨';
+    const revised = '広島市デジタル・トランスフォーメーション（ＤＸ）推進計画 （令和６年度改定版）';
+    const status = '広島市デジタル・トランスフォーメーション（ＤＸ）推進計画の 令和６年度取組状況一覧';
+    const prints = [plan2, revised, status].map(pdfContentFingerprint);
+    expect(new Set(prints).size).toBe(3);
+  });
+});
+
+describe('内容が重複するPDFの扱い', () => {
+  const DUPLICATE_TEXT = '福岡市ＤＸ戦略の本文です。趣旨・目的と実行項目を記載しています。';
+
+  /** 指定URLだけ同じ本文を返す。それ以外はURLごとに異なる既定本文になる。 */
+  const sharedTextFor = (...urls: readonly string[]) =>
+    async ({ url }: { url: string }) =>
+      (urls.includes(url) ? makePdf(url, DUPLICATE_TEXT) : makePdf(url));
+
+  const run = async (
+    pdfLinks: ReadonlyArray<{ url: string; text: string }>,
+    extractPdf: (input: { url: string }) => Promise<ExtractedPdf>,
+    maxPdfs = 2,
+  ): Promise<{ result: AiCheckResult; fetched: string[] }> => {
+    const fetched: string[] = [];
+    const result = await checkAdministrativeNeed({
+      source: makeSource(),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+      noPdf: false,
+      analyzer: { provider: 'mock', model: null, analyze: async () => validAnalysis() },
+      companyFitCriteria: fitCriteria(),
+      limits: { htmlCharacters: 30_000, pdfCharacters: 50_000, maxPdfs },
+    }, {
+      extractContent: async () => makeDocument({ pdfLinks: [...pdfLinks] }),
+      extractPdf: async (input) => {
+        fetched.push(input.url);
+        return extractPdf(input);
+      },
+    });
+    return { result, fetched };
+  };
+
+  it('重複PDFはAI入力枠を消費せず、次候補をrefillする', async () => {
+    // 福岡と同じ並び。本編と印刷用が同一本文で、3件目に実行項目集がある。
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '福岡市DX戦略（本編）' },
+        { url: PDF_B, text: '印刷用はこちら' },
+        { url: PDF_C, text: '福岡市DX戦略 実行項目集' },
+      ],
+      sharedTextFor(PDF_A, PDF_B),
+    );
+
+    expect(fetched).toEqual([PDF_A, PDF_B, PDF_C]);
+    expect(result.inputSummary.pdfIncluded).toBe(2);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label))
+      .toEqual(['福岡市DX戦略（本編）', '福岡市DX戦略 実行項目集']);
+  });
+
+  it('先に現れたPDFを残す', async () => {
+    const { result } = await run(
+      [
+        { url: PDF_A, text: '福岡市DX戦略（本編）' },
+        { url: PDF_B, text: '印刷用はこちら' },
+      ],
+      sharedTextFor(PDF_A, PDF_B),
+    );
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['福岡市DX戦略（本編）']);
+  });
+
+  it('重複PDFはAI入力に含めず、pdfSkippedへ入れる', async () => {
+    const { result } = await run(
+      [
+        { url: PDF_A, text: '福岡市DX戦略（本編）' },
+        { url: PDF_B, text: '印刷用はこちら' },
+      ],
+      sharedTextFor(PDF_A, PDF_B),
+    );
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.url)).not.toContain(PDF_B);
+    expect(result.inputSummary.pdfSkipped?.map((pdf) => pdf.url)).toContain(PDF_B);
+  });
+
+  it('pdf_duplicateをNOTICEとして出し、採用済みPDFが分かる文言にする', async () => {
+    const { result } = await run(
+      [
+        { url: PDF_A, text: '福岡市DX戦略（本編）' },
+        { url: PDF_B, text: '印刷用はこちら' },
+      ],
+      sharedTextFor(PDF_A, PDF_B),
+    );
+    const duplicate = result.warnings.find((warning) => warning.code === 'pdf_duplicate');
+    expect(duplicate).toBeDefined();
+    expect(warningSeverity(duplicate!)).toBe('notice');
+    expect(duplicate!.message).toContain('福岡市DX戦略（本編）');
+    expect(duplicate!.message).toContain(PDF_B);
+  });
+
+  it('重複が無ければ従来どおり全件を採用する', async () => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '別記仕様書' },
+        { url: PDF_B, text: '公告文' },
+      ],
+      async ({ url }) => makePdf(url),
+    );
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+    expect(result.inputSummary.pdfIncluded).toBe(2);
+    expect(result.warnings.map((warning) => warning.code)).not.toContain('pdf_duplicate');
+  });
+
+  it('本文0文字PDFと混在しても、0文字の既存挙動を壊さない', async () => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '画像PDF' },
+        { url: PDF_B, text: '福岡市DX戦略（本編）' },
+        { url: PDF_C, text: '印刷用はこちら' },
+      ],
+      async ({ url }) => (url === PDF_A
+        ? { ...makePdf(url), text: '   \n ' }
+        : makePdf(url, DUPLICATE_TEXT)),
+    );
+
+    // 0文字も重複もどちらも枠を消費しないので、3件すべて取得を試す。
+    expect(fetched).toEqual([PDF_A, PDF_B, PDF_C]);
+    expect(result.inputSummary.pdfIncluded).toBe(1);
+    expect(result.inputSummary.pdfInputs.map((pdf) => pdf.label)).toEqual(['福岡市DX戦略（本編）']);
+    const codes = result.warnings.map((warning) => warning.code);
+    expect(codes).toContain('pdf_empty_text');
+    expect(codes).toContain('pdf_duplicate');
+  });
+
+  it('パスワード保護PDFと混在しても、既存のrefillを壊さない', async () => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '別記仕様書' },
+        { url: PDF_B, text: '福岡市DX戦略（本編）' },
+        { url: PDF_C, text: '印刷用はこちら' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) {
+          throw new PdfCheckError('password_protected', 'PDFがパスワード保護されています。');
+        }
+        return makePdf(url, DUPLICATE_TEXT);
+      },
+    );
+
+    expect(fetched).toEqual([PDF_A, PDF_B, PDF_C]);
+    expect(result.inputSummary.pdfIncluded).toBe(1);
+    const duplicate = result.warnings.find((warning) => warning.code === 'pdf_duplicate');
+    expect(duplicate?.message).toContain(PDF_C);
+    expect(result.warnings.some((warning) => warning.detail === 'password_protected')).toBe(true);
+  });
+
+  it('その他のPDF取得失敗と混在しても、失敗が枠を消費する既存仕様を変えない', async () => {
+    const { result, fetched } = await run(
+      [
+        { url: PDF_A, text: '別記仕様書' },
+        { url: PDF_B, text: '福岡市DX戦略（本編）' },
+        { url: PDF_C, text: '印刷用はこちら' },
+      ],
+      async ({ url }) => {
+        if (url === PDF_A) throw new Error('fixture fetch failure');
+        return makePdf(url, DUPLICATE_TEXT);
+      },
+    );
+
+    // PDF_A の失敗が1枠、PDF_B の採用で1枠。maxPdfs=2 に達するので PDF_C は取得しない。
+    expect(fetched).toEqual([PDF_A, PDF_B]);
+    expect(result.inputSummary.pdfIncluded).toBe(1);
+    expect(result.warnings.some((warning) => warning.code === 'pdf_failed')).toBe(true);
+    expect(result.warnings.some((warning) => warning.code === 'pdf_duplicate')).toBe(false);
+  });
+});
+
 describe('ai:checkコマンド', () => {
   it('--source、--url、--json、--no-pdfを解釈する', () => {
     expect(parseAiCheckArgs([
@@ -1809,8 +2021,11 @@ function passwordProtectedError(): PdfCheckError {
   );
 }
 
-function makePdf(url: string): ExtractedPdf {
-  const text = 'PDFから抽出した本文です。';
+/**
+ * 既定の本文はURLごとに変える。内容が同一だと重複除外が働き、優先度・refill・
+ * 件数上限のテストが本来の意図とずれるため。重複を試すテストだけ text を明示する。
+ */
+function makePdf(url: string, text = `PDFから抽出した本文です。（${url}）`): ExtractedPdf {
   return {
     parser: 'unpdf',
     pageCount: 1,
