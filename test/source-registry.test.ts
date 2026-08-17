@@ -184,6 +184,9 @@ describe('allow_empty_candidatesの検証', () => {
     expect(configured).toEqual([
       'fukui-dx-kobo',
       'fukuoka-ppp-pfi',
+      'gifu-digital-strategy',
+      'gifu-industry-innovation',
+      'gifu-proposal-list',
       'kawasaki-sounding',
       'kobe-rfi-rfc',
       'kobe-sounding',

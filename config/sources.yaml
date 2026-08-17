@@ -208,6 +208,13 @@ organizations:
     official_domain: pref.fukui.lg.jp
     enabled: true
     notes: DX推進課の情報システム調達、全庁の入札案件、官民共創の行政ニーズを収集する対象都道府県。本文はdiv.section配下の#contentに入る。#contentにはSNS共有のdocument.writeが含まれるが、content-checkがEXCLUDED_ELEMENTSでscriptを除去するため実本文だけが残る（調達案件ページでは1602文字が713文字になる）。掲載日はtime要素を持たず、一覧ではspan.dateの「(最終更新日 2026年8月17日)」形式かli内の「[2026年8月17日]」形式で、いずれもparseDateCandidateが行テキストから解釈する。RSSはnews.xmlがRSS 1.0（RDF）で配信されるがitem 6件・約1週間分しか保持せずcategory要素も無い。同じ内容のHTML新着一覧news.htmlは2430件を保持するので、全庁新着を使う場合はHTML側を採る
+  - id: gifu-prefecture
+    name: 岐阜県
+    organization_type: prefecture
+    prefecture: 岐阜県
+    official_domain: pref.gifu.lg.jp
+    enabled: true
+    notes: 公募型プロポーザル、デジタル戦略推進課と産業イノベーション推進課の新着の行政ニーズを収集する対象都道府県。新潟県・福島県と同じnetcrew系CMSで、個別ページの本文は#main_bodyに入る。#main、#main_a、#mymainbackは外側の入れ物なので本文には使わない。一覧の項目はli内のspan.article_dateに「2026年8月4日更新」、span.article_sectionに所属、span.article_titleにタイトルとリンクが入る。span.article_sectionにも所属別検索へのリンクがあるため、link_selectorはspan.article_titleまで絞らないと候補が倍になる。課のトップページでは新着情報が#main_body内ではなくdiv.section_information（#main_a配下）にあり、#main_body側は固定ページのハブリンクなので、新着を取るには.section_informationを使う。RSSはRSS 1.0（RDF）を2本配信し、いずれも100件・dc:date全件・dc:subjectに所属名を持つ
 
 sources:
   - id: osaka-digital-rss
@@ -2014,5 +2021,102 @@ sources:
     document_type_hints:
       - 新着情報
     notes: 全庁の新着情報を配信するRSS 1.0（RDF）。ルートがrdf:RDFで公開日はdc:dateにあり既存のanalyzeRssで解析できるが、**確認時点のitemは6件で2026-08-10から2026-08-17の約1週間分しか保持せず、category要素も無いためcategory_includesで絞れない。** 同じ内容の人間向け新着一覧https://www.pref.fukui.lg.jp/news.htmlは#content ul li a[href]で2430件を保持し全件にli内の[2026年8月17日]形式の日付があるので、全庁新着を使うならHTML側が適切である。ただしそのHTML側で密度を実測すると、2026-07-01以降597件のうちデジタル語を含むのは18件（3%）で、内訳も物品等電子入札、オープンデータライブラリ公開データ一覧、事業者向け講習の開催、DX推進本部会議の開催報告といった案内ページが大半で調達案件はほとんど無い。秋田県と広島市の全庁新着と同じ判断で無効状態で保持する。福井県の調達はfukui-dx-koboとfukui-bid-listで取得できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: gifu-proposal-list
+    organization_id: gifu-prefecture
+    name: 公募型プロポーザル一覧
+    url: https://www.pref.gifu.lg.jp/bid/search/search.php?ctg%5B%5D=5&search=1&sec01=0&sec02=0
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#main_body span.article_title a[href]"
+    content_selector: "#main_body"
+    allow_empty_candidates: true
+    title_excludes:
+      - 選定結果
+      - 質問回答
+      - 質問・回答
+    document_type_hints:
+      - 公募型プロポーザル
+      - 業務委託
+    notes: 入札公告検索をctg[]=5（プロポーザル）で絞った検索結果URL。1ページ50件でページャがあるがCollectorは追わないため対象は先頭50件で、確認時点の範囲は2026-04-21から2026-08-04の約3.5か月分だった。全件にspan.article_dateの更新日があり、li内の「2026年8月4日更新」をparseDateCandidateが解釈する。**link_selectorをspan.article_titleまで絞るのは、同じli内のspan.article_sectionにも所属別検索（search.php?sec01=...）へのリンクがあり、li a[href]で書くと100件になって検索ページ自体が候補に混ざるためである。** title_excludesは段階マーカーだけを落とす。実測すると50件の内訳は選定結果39件・質問回答5件・募集本体6件で、3語の除外で50件が6件になり募集本体を1件も落とさなかった。選定結果は事業者決定済みで接触機会が無く、質問回答は既出案件の続報なのでAI判定へ送る価値が無い。広島市の一覧で得た教訓のうち「タイトルだけで対象外を決めない」は分野マーカー（観光や記念事業）に対するもので、ここで除外しているのは分野ではなく手続の段階である。確認時点では募集本体6件がすべて2026-06-15以前で、除外後の2026-07-01以降は0件になるためallow_empty_candidatesで許容する。URLに検索条件を含むため、種別コードやパラメータ名が変わった場合は人が確認して差し替える必要がある。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: gifu-digital-strategy
+    organization_id: gifu-prefecture
+    name: デジタル戦略推進課 新着情報
+    url: https://www.pref.gifu.lg.jp/soshiki/11178/
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: ".section_information span.article_title a[href]"
+    content_selector: "#main_body"
+    allow_empty_candidates: true
+    title_excludes:
+      - 選定結果
+      - 質問回答
+      - 質問・回答
+    document_type_hints:
+      - DX推進
+      - 公募型プロポーザル
+      - 意見募集
+    notes: DX推進、行政手続のオンライン化、オープンデータ、データ連携基盤を所管する課のトップページ。**新着情報は#main_body内ではなくdiv.section_information（#main_a配下）にあるため、link_selectorは.section_informationを使う。** #main_body側のspan.article_titleは14件あるが、DX推進計画、リアルタイムデータ提供プラットフォーム、行政手続のオンライン化、オープンデータ、AI活用研究会、ぎふDX支援センターといった固定ページのハブリンクで新着ではない。確認時点の新着は2件で、次期岐阜県DX推進計画（仮称）の策定に向けた意見募集（2026-06-24）と令和8年度市町村DX支援業務プロポーザル募集【選定結果】（2026-06-18）だった。この課の新着に調達案件が載る実績が確認できたので有効化する。件数が少なく0件になる期間もあるためallow_empty_candidatesで許容し、選定結果と質問回答は段階マーカーとして除外する。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: gifu-industry-innovation
+    organization_id: gifu-prefecture
+    name: 産業イノベーション推進課 新着情報
+    url: https://www.pref.gifu.lg.jp/soshiki/11352/
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: ".section_information span.article_title a[href]"
+    content_selector: "#main_body"
+    allow_empty_candidates: true
+    title_excludes:
+      - 選定結果
+      - 質問回答
+      - 質問・回答
+    document_type_hints:
+      - スタートアップ
+      - 産学連携
+      - 補助金
+    notes: 技術支援と産学連携、成長産業の振興、スタートアップ推進を所管する課のトップページ。新着情報はデジタル戦略推進課と同じdiv.section_informationにあり、確認時点は5件だった。ただし内訳は伴走支援型イノベーション創出推進事業費補助金、知財ビジネスマッチングin岐阜の開催、技術活用型スタートアップ掘り起こし・加速化支援事業のキックオフ、自動車部品サプライヤー応援セミナー、ぎふビジネスプランコンテストの参加者募集で、**いずれも事業者向け支援施策の広報であり県が民間へ発注する調達案件は0件だった。** 対象性は高くないが件数が5件と少なくAI判定の消費が小さいこと、スタートアップ推進や実証の公募が将来この新着に出る可能性があることから、優先度を中にして有効化する。AI判定で対象外が続く場合は無効化を検討する。#main_body側のspan.article_titleは職員採用選考3件だけなので新着には使わない。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: gifu-bid-rss
+    organization_id: gifu-prefecture
+    name: 入札・公売 RSS
+    url: https://www.pref.gifu.lg.jp/rss/10/site-64.xml
+    collector_type: rss
+    source_category: procurement
+    priority: low
+    enabled: false
+    document_type_hints:
+      - 一般競争入札
+      - 入札公告
+    notes: 入札・公売を配信するRSS 1.0（RDF）。ルートがrdf:RDFで公開日はdc:date、カテゴリはdc:subjectにあり既存のanalyzeRssで解析できる。確認時点は100件で2026-08-03から2026-08-17の約2週間分、dc:dateは全件にある。**ただし内訳は接頭辞【建設工事】が56件、【建設関連業務】が5件で、残りも土木事務所と農林事務所の工事番号付き案件が中心であり、デジタル語を含むのは100件中1件（ぎふ清流文化プラザのプロジェクター及び映像システム等更新工事）だけだった。** dc:subjectも25種類すべてが土木事務所・農林事務所などの現場所属で、デジタル系はcategory_includesで絞れない。新潟県の調達RSSと同じ判断で、行政ニーズの早期把握という目的に対して情報価値が低いため無効状態で保持する。県の公募型プロポーザルはgifu-proposal-listで取得できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: gifu-news-rss
+    organization_id: gifu-prefecture
+    name: 全庁新着情報 RSS
+    url: https://www.pref.gifu.lg.jp/rss/10/list1.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    document_type_hints:
+      - 新着情報
+    notes: 全庁の新着情報を配信するRSS 1.0（RDF）。確認時点は100件で2026-08-05から2026-08-17の約2週間分、dc:dateは全件にありdc:subjectは53種類の所属名を持つ。**デジタル語を含むのは100件中2件（ぎふオンライン日本語教室、試験案内及び受験申込（電子申請））で、内訳は警察署の広報が20件超と最多、ほかに熱中症の救急搬送状況、博物館の記念式典、バレエ団の知事面談などノイズが大半である。** dc:subjectに情報システム課があるためcategory_includesで絞れそうに見えるが、実測では該当が1件（岐阜県職員用パソコン画面広告の募集）だけで調達案件ではなく、デジタル戦略推進課と産業イノベーション推進課は0件だった。nc:category01からcategory03は大半が空で分類軸として使えない。秋田県・広島市・福井県の全庁新着と同じ判断で無効状態で保持する。岐阜県の調達はgifu-proposal-listとgifu-digital-strategyで取得できる。
     last_verified_at: "2026-08-17"
     verification_status: verified
