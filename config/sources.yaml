@@ -201,6 +201,14 @@ organizations:
     enabled: true
     notes: 全庁の公募型プロポーザル公告、DX推進課の公募、官民連携の行政ニーズを収集する対象都道府県。石川県・宮城県・富山県と同じ#tmp_接頭辞のCMSで、本文は#tmp_contentsに入る。確認した4ページにlink[type=rss]も配信一覧も無く、取得手段はHTMLだけである。掲載日はtime要素を持たず、一覧では表の掲示日セル、個別ページでは本文の和暦をparseDateCandidateが解釈する。チャレンジナガノ2.0はchallenge-nagano.pref.nagano.lg.jpのサブドメインなのでofficial_domain配下として取得できるが、各募集テーマの詳細はchallengenagano.notion.siteにある。Notionの公開サイトを許可するとSSRFの許可ドメインを第三者SaaSへ広げることになるためofficial_domainには含めない
 
+  - id: fukui-prefecture
+    name: 福井県
+    organization_type: prefecture
+    prefecture: 福井県
+    official_domain: pref.fukui.lg.jp
+    enabled: true
+    notes: DX推進課の情報システム調達、全庁の入札案件、官民共創の行政ニーズを収集する対象都道府県。本文はdiv.section配下の#contentに入る。#contentにはSNS共有のdocument.writeが含まれるが、content-checkがEXCLUDED_ELEMENTSでscriptを除去するため実本文だけが残る（調達案件ページでは1602文字が713文字になる）。掲載日はtime要素を持たず、一覧ではspan.dateの「(最終更新日 2026年8月17日)」形式かli内の「[2026年8月17日]」形式で、いずれもparseDateCandidateが行テキストから解釈する。RSSはnews.xmlがRSS 1.0（RDF）で配信されるがitem 6件・約1週間分しか保持せずcategory要素も無い。同じ内容のHTML新着一覧news.htmlは2430件を保持するので、全庁新着を使う場合はHTML側を採る
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1923,5 +1931,88 @@ sources:
       - DX推進本部
       - 会議資料
     notes: 全庁のDX推進体制を統括する本部会議のページ。本文837文字に対しh2が令和8年度・令和7年度・令和6年度、h3が第1回会議・第2回会議・第1回会議で、内容は会議資料PDF14件へのリンクが中心である。石川県のDX推進本部と同型で、独立した行政ニーズではなく会議のアーカイブにあたるため、1ページを1件として登録しても粒度が崩れる。single_page MVPの有効化対象からは外して無効状態で保持する。上流の政策シグナルとして会議資料の本文が必要になった場合は、無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: fukui-dx-kobo
+    organization_id: fukui-prefecture
+    name: ＤＸ推進課 新着情報
+    url: https://www.pref.fukui.lg.jp/doc/dx-suishin/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#content h2:contains('新着情報') + ul > li > a[href]"
+    content_selector: "#content"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 公募型プロポーザル
+      - 情報システム調達
+      - 業務委託
+    notes: 情報システム調達を所管するＤＸ推進課のトップページ。業務内容にDX推進、マイナンバー、電子申請・施設予約サービス、オープンデータ、県ホームページ、情報セキュリティを掲げており、この課が出す調達は自社領域と重なりやすい。ページ本文860文字のうち収集対象は見出し「新着情報」直後のulだけで、確認時点は第3次福井県情報セキュリティクラウド構築および運用保守業務委託の公募型プロポーザル1件（2026-08-04）だった。掲載日はli内の[2026年8月4日]形式でparseDateCandidateが解釈する。h2:containsで新着情報のulに限定するのは、同じ#content内の「DX推進関係はこちら」に福井県のDXの推進について、情報スーパーハイウェイ（FISH）、マイナンバー制度、オープンデータ、電子申請、施設予約などの固定ハブページ9件が並び、#content ul li a[href]で書くとこれらまで候補になるためである。新着が無い期間は0件になるが異常ではなく正常状態なのでallow_empty_candidatesで許容する。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: fukui-bid-list
+    organization_id: fukui-prefecture
+    name: 入札案件
+    url: https://www.pref.fukui.lg.jp/gyosei/tetuduki/cat4502/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#content li a[href]"
+    content_selector: "#content"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 入札
+      - 業務委託
+    notes: 電子手続きカテゴリ配下の入札案件一覧。全庁の公募型プロポーザルが部局をまたいで集まり、確認時点は16件で全件にspan.dateの最終更新日があるためparseDateCandidateが行テキストから解釈できる。範囲は2008-04-02から2026-08-17で回転が非常に遅く、2026-07-01以降は4件だった。共通の初回収集開始日で4件に収まるためinitial_sinceは設定していない。内容は道路照明灯LED化、県庁食堂リニューアル、水素・アンモニアサプライチェーン、県内企業のデジタル投資支援事業関連補助金執行支援、ドクターヘリ運航など幅広く、デジタル案件も含む。「≪「電子手続き」に戻る」の戻りリンクはli外にあるため#content li a[href]では拾われない。福井県の公共工事入札情報は2021年と2008年の2行が同じURLを指すため重複URLとして1件に畳まれる。情報システム等に係る調達案件を公表しますもこの一覧に含まれる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: fukui-system-procurement
+    organization_id: fukui-prefecture
+    name: 情報システム等に係る調達案件
+    url: https://www.pref.fukui.lg.jp/doc/dx-suishin/saitekikatop.html
+    collector_type: single_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - 情報システム調達
+      - 調達計画
+    notes: ＤＸ推進課が年度単位の情報システム調達予定を公表するページ。対象性は高いが、script除去後の本文は713文字の制度説明だけで、調達案件の実体は関連ファイルの令和8年度情報システム調達情報公開（r08-info-bid.xlsx、28キロバイト）1件にある。添付の抽出はPDFだけを対象にしておりExcelは解析しないため、岩手のマッチングシステムや北海道の地域課題と同じ理由で有効化しても判定材料にならない。更新は2026-03-23で年度単位である。無効状態で保持し、Excel解析を追加する判断が出た時点で有効化を再検討する。なおこのページ自体はfukui-bid-listの一覧にも1件として載るため、Excelの存在はそちら経由でも把握できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: fukui-minkan-renkei
+    organization_id: fukui-prefecture
+    name: 福井県と民間企業等との連携
+    url: https://www.pref.fukui.lg.jp/doc/seiki/minkanrenkei/kanminkyousou.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - 官民連携
+      - 包括連携協定
+    notes: 未来戦略課が所管する官民連携の窓口ページ。script除去後の本文は制度の考え方と事前相談の受付方法が中心で、個別案件の一覧を持たない。リンクは行政改革アクションプラン2024、これまでの協定等締結の状況、事前相談入力フォーム（shinsei.e-fukui.lg.jpの別ドメイン）の3件だけである。ふくしま共創チームや新潟公民協働と同じく枠組みの説明が中心で登録できる案件が無いため無効状態で保持する。協定等締結の状況ページに案件が並ぶ運用へ変わった時点で、そのURLをlist_pageとして登録する形で再検討する。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: fukui-news-rss
+    organization_id: fukui-prefecture
+    name: 全庁新着情報 RSS
+    url: https://www.pref.fukui.lg.jp/news.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    document_type_hints:
+      - 新着情報
+    notes: 全庁の新着情報を配信するRSS 1.0（RDF）。ルートがrdf:RDFで公開日はdc:dateにあり既存のanalyzeRssで解析できるが、**確認時点のitemは6件で2026-08-10から2026-08-17の約1週間分しか保持せず、category要素も無いためcategory_includesで絞れない。** 同じ内容の人間向け新着一覧https://www.pref.fukui.lg.jp/news.htmlは#content ul li a[href]で2430件を保持し全件にli内の[2026年8月17日]形式の日付があるので、全庁新着を使うならHTML側が適切である。ただしそのHTML側で密度を実測すると、2026-07-01以降597件のうちデジタル語を含むのは18件（3%）で、内訳も物品等電子入札、オープンデータライブラリ公開データ一覧、事業者向け講習の開催、DX推進本部会議の開催報告といった案内ページが大半で調達案件はほとんど無い。秋田県と広島市の全庁新着と同じ判断で無効状態で保持する。福井県の調達はfukui-dx-koboとfukui-bid-listで取得できる。
     last_verified_at: "2026-08-17"
     verification_status: verified
