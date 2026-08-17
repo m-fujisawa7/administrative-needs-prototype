@@ -193,6 +193,14 @@ organizations:
     enabled: true
     notes: 全庁のプロポーザル・コンペ案件、全庁新着、DX推進計画の行政ニーズを収集する対象自治体。一覧・個別ページとも本文はarticle#content配下のdiv#voiceに入るため、content_selectorは#contentで足りる。#pagebodyはローカルナビと関連リンクを含む外側の入れ物なので使わない。全庁新着はRSS 2.0で配信されるがcategory要素を持たない
 
+  - id: nagano-prefecture
+    name: 長野県
+    organization_type: prefecture
+    prefecture: 長野県
+    official_domain: pref.nagano.lg.jp
+    enabled: true
+    notes: 全庁の公募型プロポーザル公告、DX推進課の公募、官民連携の行政ニーズを収集する対象都道府県。石川県・宮城県・富山県と同じ#tmp_接頭辞のCMSで、本文は#tmp_contentsに入る。確認した4ページにlink[type=rss]も配信一覧も無く、取得手段はHTMLだけである。掲載日はtime要素を持たず、一覧では表の掲示日セル、個別ページでは本文の和暦をparseDateCandidateが解釈する。チャレンジナガノ2.0はchallenge-nagano.pref.nagano.lg.jpのサブドメインなのでofficial_domain配下として取得できるが、各募集テーマの詳細はchallengenagano.notion.siteにある。Notionの公開サイトを許可するとSSRFの許可ドメインを第三者SaaSへ広げることになるためofficial_domainには含めない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -1848,4 +1856,72 @@ sources:
       - 政策方針
     notes: 広島市総合計画を具体化する部門計画としてデジタル化施策をまとめた計画ページ。本文1562文字に計画の趣旨、基本方針、施策の概要、具体的な取組、推進体制が入る。労働力や地域の担い手の確保が困難になる見込みへの対応としてDX推進の加速を掲げており、上流の政策シグナルとして価値がある。PDF3件は第2期広島市DX推進計画、令和6年度改定版、令和6年度取組状況で、いずれも同一計画の版と進捗であり独立した別案件ではないため、1ページを1つの行政ニーズとして登録しても粒度が崩れない。掲載日候補2026-06-30。single_page Collectorの初期対象として有効化した。
     last_verified_at: "2026-08-16"
+    verification_status: verified
+
+  - id: nagano-proposal-list
+    organization_id: nagano-prefecture
+    name: 公募型プロポーザル方式公募公告一覧
+    url: https://www.pref.nagano.lg.jp/kensa/puropo-kokoku.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents table td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 公募公告
+      - 業務委託
+    notes: 全庁の公募型プロポーザル公告を1つの表に集約する一覧。掲示日・業務名・発注機関名の3列で、リンクは業務名セルにあるためtable td a[href]で取得できる。生397件から外部ドメイン8件と重複URL35件を除いて利用可能354件になる。掲示日が同じtr内にあるためparseDateCandidateが行テキストから解釈でき、利用可能354件すべてに掲載日がある。範囲は2024-11-01から2026-08-17で、2026-07-01以降は18件、2026-08-01以降は2件だった。共通の初回収集開始日で18件に収まるためinitial_sinceは設定していない。デジタル関連は394件中37件で、長野県公式ホームページUX改善、対話型AIチャットボット導入・運用、公有財産システム再構築、信州観光MaaSシステム構築、次期税務システム導入コンサルティング、ICTを活用した地域クラブ活動実証などが含まれる。DX推進課の公募もこの一覧に載るため、市町村DX推進支援事業や生成AIによる業務効率化推進事業もここで取得できる。高校のホームページ再構築業務はnagano-c.ed.jpの別ドメインへリンクするため外部ドメインとして自動除外される。title_excludesは設定していない。広島市の一覧で得た教訓どおり、数十件を実登録してAI判定と突き合わせてから除外語を決める。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: nagano-dx-kobo
+    organization_id: nagano-prefecture
+    name: DX推進課の公募情報
+    url: https://www.pref.nagano.lg.jp/dx-promo/2010kobo.html
+    collector_type: single_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募
+      - 補助金
+      - 業務委託
+    notes: DX推進課が所管する公募と補助金を1ページへ並べる一覧。#tmp_contents直下がフラットで、h3が案件見出し、続くh4・p・ulが本文と応募様式になる。確認時点は8案件で各本文335文字から1029文字、PDF46件とWord80件が付く。ただし5案件が（※募集は終了しました）（受付終了しました）と明示され、残りも令和6年度・令和7年度で、実質開いているのは令和8年度次世代空モビリティ活用信州モデル創出補助金（第2次募集）の1件だけである。案件ごとの詳細ページが無く、HTMLリンクは0件で応募様式のPDF・Wordへ直接リンクする。single_page A型（1ページに独立した複数案件）にあたり、ページ全体を1件として登録すると空モビリティ補助金と市町村DX推進支援と生成AI業務効率化が1レコードに混ざって粒度が崩れるため無効状態で保持する。加えてDX推進課の公募はnagano-proposal-listにも掲示されるため、この情報源を有効化しても収集可能性は上がらない。本文が必要な場合は無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: nagano-challenge
+    organization_id: nagano-prefecture
+    name: チャレンジナガノ2.0
+    url: https://challenge-nagano.pref.nagano.lg.jp/
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: main
+    document_type_hints:
+      - 官民連携
+      - 地域課題
+      - 実証・事業化
+    notes: 県内市町村の地域課題へ企業が事業提案する官民連携プログラムの入口。県ドメインのサブドメインなのでofficial_domain配下として取得でき、mainの本文3544文字に募集テーマ6件と公共施設DX・担い手不足解消・遊休施設活用・二次交通問題・プロスポーツ共創・空き家マッチングのタグが載る。伊那市における高校生向け学習室の空き状況をリアルタイムで確認するシステム導入検討整理のようにデジタル案件も含み対象性は高い。**ただし各募集テーマの詳細はchallengenagano.notion.siteの外部ドメインにあり、h3を包むaがすべてこのNotion公開サイトを指すため、list_pageで登録すると候補が全件外部ドメインとして除外され0件になる。** 募集テーマ6件が独立した課題であるためsingle_page A型にもあたり、ページ全体を1件にすると粒度が崩れる。この2つの理由で無効状態で保持する。Notionドメインを許可すればlist_pageとして成立するが、SSRFの許可ドメインを第三者SaaSへ広げる判断が必要なため保留する。採択実績はデマンド型乗合タクシーやWebとSNSによる発信力強化などで、過去案件の傾向を見る参考になる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: nagano-dx-headquarters
+    organization_id: nagano-prefecture
+    name: 長野県DX推進本部
+    url: https://www.pref.nagano.lg.jp/dx-promo/dx/2503dxsuisinhonbu.html
+    collector_type: single_page
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - DX推進本部
+      - 会議資料
+    notes: 全庁のDX推進体制を統括する本部会議のページ。本文837文字に対しh2が令和8年度・令和7年度・令和6年度、h3が第1回会議・第2回会議・第1回会議で、内容は会議資料PDF14件へのリンクが中心である。石川県のDX推進本部と同型で、独立した行政ニーズではなく会議のアーカイブにあたるため、1ページを1件として登録しても粒度が崩れる。single_page MVPの有効化対象からは外して無効状態で保持する。上流の政策シグナルとして会議資料の本文が必要になった場合は、無効のままnotion:registerでこのURLを単発登録できる。
+    last_verified_at: "2026-08-17"
     verification_status: verified
