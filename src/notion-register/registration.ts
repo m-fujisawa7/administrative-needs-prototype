@@ -60,6 +60,35 @@ export async function prepareNotionRegistration(
   };
 }
 
+const HTTP_PREFIX = 'http://';
+
+/**
+ * 事前の重複確認。完全一致で見つからず、URLが `http://` の場合だけ
+ * scheme を `https://` へ替えてもう1度だけ照合する。
+ *
+ * 一覧ページが `http://` のリンクを張り、サーバが `https://` へリダイレクトする
+ * 情報源がある。この場合、候補URL（http）ではNotionの登録済みページに一致せず、
+ * AI判定後の最終URL（https）を使う登録直前の確認で初めて重複と分かるため、
+ * HTML取得・PDF抽出・Claude解析と `--limit` の枠を無駄に消費していた。
+ * 実測では長野県の公募公告一覧が該当し、候補354件のうち11件が `http://` だった。
+ *
+ * **置き換えるのは scheme だけで、host・port・path・query・fragment は変更しない。**
+ * `https://` から `http://` への逆方向も行わない。実測できた差だけを吸収する。
+ * 候補URLは `new URL().href` 経由で作られ scheme が小文字に正規化されるため、
+ * 前方一致で判定して差し支えない。
+ */
+export async function findExistingNotionPageWithHttpsFallback(
+  client: NotionRegistrationClient,
+  dataSourceId: string,
+  officialUrl: string,
+): Promise<ExistingNotionPage | null> {
+  const exact = await findExistingNotionPage(client, dataSourceId, officialUrl);
+  if (exact !== null) return exact;
+  if (!officialUrl.startsWith(HTTP_PREFIX)) return null;
+  const httpsUrl = `https://${officialUrl.slice(HTTP_PREFIX.length)}`;
+  return findExistingNotionPage(client, dataSourceId, httpsUrl);
+}
+
 export async function findExistingNotionPage(
   client: NotionRegistrationClient,
   dataSourceId: string,

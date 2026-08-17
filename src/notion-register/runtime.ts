@@ -29,7 +29,7 @@ import {
   registerOneAdministrativeNeed,
   type RegisterOneInput,
 } from './register-one.ts';
-import { findExistingNotionPage } from './registration.ts';
+import { findExistingNotionPageWithHttpsFallback } from './registration.ts';
 import { selectRegistrationDataSource } from './schema.ts';
 import type {
   ExistingNotionPage,
@@ -153,7 +153,9 @@ export async function prepareNotionRegistrationRuntime(
 
   return {
     ...sourceContext,
-    checkDuplicate: (officialUrl) => findExistingNotionPage(
+    // 候補URLがhttpで登録済みURLがhttpsの場合を取りこぼさないよう、
+    // 完全一致で見つからなければscheme違いだけを1度追加照合する。
+    checkDuplicate: (officialUrl) => findExistingNotionPageWithHttpsFallback(
       client,
       dataSource.id,
       officialUrl,

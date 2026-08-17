@@ -384,6 +384,47 @@ describe('collect:runコマンド', () => {
     expect(writeState).toHaveBeenCalledTimes(1);
   });
 
+  it('http候補がhttpsで登録済みなら、Claude前に重複としてlimitを消費しない', async () => {
+    // 長野県の公募公告一覧で実際に起きたケースの回帰テスト。
+    // 一覧がhttpのリンクを張り、サーバがhttpsへリダイレクトしてNotionにはhttpsが入る。
+    const HTTP_A = 'http://www.city.osaka.lg.jp/example/a.html';
+    const registerOne = vi.fn(async (input) => created(input.officialUrl));
+    const exitCode = await runCollection(
+      [...args(), '--limit', '1', '--write'],
+      dependencies({
+        // Notion側はhttpsで登録済み。
+        createClient: () => client(new Set([URL_A])),
+        collectCandidates: async () => [
+          { ...candidate(URL_A), url: HTTP_A },
+          candidate(URL_B),
+        ],
+        registerOne,
+      }),
+    );
+    expect(exitCode).toBe(0);
+    // http候補は枠を消費せずスキップし、次の未登録候補が処理される。
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([URL_B]);
+  });
+
+  it('httpとhttpsのどちらも未登録なら通常どおりlimitを消費して処理する', async () => {
+    const HTTP_C = 'http://www.city.osaka.lg.jp/example/c.html';
+    const registerOne = vi.fn(async (input) => created(input.officialUrl));
+    const exitCode = await runCollection(
+      [...args(), '--limit', '1', '--write'],
+      dependencies({
+        createClient: () => client(new Set()),
+        collectCandidates: async () => [
+          { ...candidate(URL_C), url: HTTP_C },
+          candidate(URL_B),
+        ],
+        registerOne,
+      }),
+    );
+    expect(exitCode).toBe(0);
+    // 追加照合しても見つからないので新規として処理し、limit 1を消費して打ち切る。
+    expect(registerOne.mock.calls.map(([input]) => input.officialUrl)).toEqual([HTTP_C]);
+  });
+
   it('全件重複のWriteはHTML・PDF・Claude側の1件処理を呼ばずstateを進める', async () => {
     const registerOne = vi.fn();
     const writeState = vi.fn(async () => undefined);

@@ -20,7 +20,7 @@ import {
 } from './error-format.ts';
 import {
   createNotionRegistrationPage,
-  findExistingNotionPage,
+  findExistingNotionPageWithHttpsFallback,
   prepareNotionRegistration,
 } from './registration.ts';
 import { selectRegistrationDataSource } from './schema.ts';
@@ -59,7 +59,9 @@ export async function registerOneAdministrativeNeed(
   }
 
   try {
-    const duplicate = await findExistingNotionPage(
+    // 収集経路の checkDuplicate と同じ semantics を使う。単発の notion:register でも
+    // httpの候補URLがhttpsで登録済みなら、Claude解析より前にここで重複と分かる。
+    const duplicate = await findExistingNotionPageWithHttpsFallback(
       input.client,
       dataSourceId,
       input.officialUrl,

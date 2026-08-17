@@ -9,9 +9,11 @@ import {
   buildNotionPageProperties,
   mapAnalysisToNotionValues,
 } from '../src/notion-register/mapping.ts';
+import { registerOneAdministrativeNeed } from '../src/notion-register/register-one.ts';
 import {
   createNotionRegistrationPage,
   findExistingNotionPage,
+  findExistingNotionPageWithHttpsFallback,
   prepareNotionRegistration,
 } from '../src/notion-register/registration.ts';
 import {
@@ -164,6 +166,133 @@ describe('重複確認と作成', () => {
       'same official URL',
     );
     expect(createCalls).toBe(0);
+  });
+});
+
+describe('事前重複確認のscheme fallback', () => {
+  const HTTP_URL = 'http://www.city.osaka.lg.jp/example.html';
+  const HTTPS_URL = 'https://www.city.osaka.lg.jp/example.html';
+
+  /** 指定したURLだけに一致する検索クライアント。照合したURLを記録する。 */
+  function urlClient(registered: readonly string[]): {
+    client: NotionRegistrationClient;
+    queried: string[];
+  } {
+    const queried: string[] = [];
+    return {
+      queried,
+      client: {
+        retrieveDatabase: async () => ({}),
+        retrieveDataSource: async () => ({}),
+        queryDataSourceByUrl: async (_dataSourceId, _propertyName, url) => {
+          queried.push(url);
+          return {
+            object: 'list',
+            results: registered.includes(url)
+              ? [{ object: 'page', id: PAGE_ID, url: NOTION_PAGE_URL }]
+              : [],
+          };
+        },
+        createPage: async () => ({ object: 'page', id: PAGE_ID, url: NOTION_PAGE_URL }),
+      },
+    };
+  }
+
+  it('完全一致で見つかれば追加の照合をしない', async () => {
+    const { client: notionClient, queried } = urlClient([HTTPS_URL]);
+    const found = await findExistingNotionPageWithHttpsFallback(
+      notionClient,
+      DATA_SOURCE_ID,
+      HTTPS_URL,
+    );
+    expect(found).toEqual({ id: PAGE_ID, url: NOTION_PAGE_URL });
+    expect(queried).toEqual([HTTPS_URL]);
+  });
+
+  it('http候補がhttpsで登録済みなら、scheme違いの追加照合で見つける', async () => {
+    // 長野県の公募公告一覧で実際に起きたケースの回帰テスト。
+    const { client: notionClient, queried } = urlClient([HTTPS_URL]);
+    const found = await findExistingNotionPageWithHttpsFallback(
+      notionClient,
+      DATA_SOURCE_ID,
+      HTTP_URL,
+    );
+    expect(found).toEqual({ id: PAGE_ID, url: NOTION_PAGE_URL });
+    expect(queried).toEqual([HTTP_URL, HTTPS_URL]);
+  });
+
+  it('httpとhttpsのどちらも無ければnullを返す', async () => {
+    const { client: notionClient, queried } = urlClient([]);
+    expect(await findExistingNotionPageWithHttpsFallback(
+      notionClient,
+      DATA_SOURCE_ID,
+      HTTP_URL,
+    )).toBeNull();
+    expect(queried).toEqual([HTTP_URL, HTTPS_URL]);
+  });
+
+  it('https候補はhttpへ逆fallbackしない', async () => {
+    // 実測できたのはhttp→httpsのリダイレクトだけなので、逆方向は照合しない。
+    const { client: notionClient, queried } = urlClient([HTTP_URL]);
+    expect(await findExistingNotionPageWithHttpsFallback(
+      notionClient,
+      DATA_SOURCE_ID,
+      HTTPS_URL,
+    )).toBeNull();
+    expect(queried).toEqual([HTTPS_URL]);
+  });
+
+  it('schemeだけを置き換え、host・port・path・query・fragmentは変えない', async () => {
+    const { client: notionClient, queried } = urlClient([]);
+    await findExistingNotionPageWithHttpsFallback(
+      notionClient,
+      DATA_SOURCE_ID,
+      'http://example.jp:8080/path/to/a.html?b=1&a=2#x',
+    );
+    expect(queried).toEqual([
+      'http://example.jp:8080/path/to/a.html?b=1&a=2#x',
+      'https://example.jp:8080/path/to/a.html?b=1&a=2#x',
+    ]);
+  });
+
+  it('http以外のURLでは追加照合をしない', async () => {
+    const { client: notionClient, queried } = urlClient([]);
+    await findExistingNotionPageWithHttpsFallback(notionClient, DATA_SOURCE_ID, 'not a url');
+    expect(queried).toEqual(['not a url']);
+  });
+
+  it('事前確認を通過しても、登録直前に重複が見つかればページを作成しない', async () => {
+    // 事前確認は要求URL、登録直前の確認はAI判定が返した最終URLで照合する。
+    // 事前確認の後に別処理が登録した場合などのrace対策として、この最後の砦は残す。
+    const FINAL_URL = 'https://www.city.osaka.lg.jp/example/final.html';
+    const { client: notionClient, queried } = urlClient([FINAL_URL]);
+    const created = vi.fn();
+    const analysisWithFinalUrl: AiCheckResult = { ...result(), officialUrl: FINAL_URL };
+    const registerResult = await registerOneAdministrativeNeed({
+      source: singleSourceRegistry().sources[0]!,
+      organization: singleSourceRegistry().organizations[0]!,
+      officialUrl: OFFICIAL_URL,
+      write: true,
+      client: { ...notionClient, createPage: async () => {
+        created();
+        return { object: 'page', id: PAGE_ID, url: NOTION_PAGE_URL };
+      } },
+      report: report(),
+      limits: { htmlCharacters: 1_000, pdfCharacters: 1_000, maxPdfs: 3 },
+    }, {
+      loadAnalysisContext: async () => ({
+        analyzer: { provider: 'claude_cli', model: null, analyze: async () => ({}) },
+        companyFitCriteria: 'criteria',
+      }) as never,
+      checkNeed: (async () => analysisWithFinalUrl) as never,
+    });
+
+    expect(registerResult.status).toBe('duplicate');
+    expect(registerResult.status === 'duplicate' ? registerResult.phase : null)
+      .toBe('before_create');
+    expect(created).not.toHaveBeenCalled();
+    // 要求URLでは見つからず、最終URLで見つかっている。
+    expect(queried).toEqual([OFFICIAL_URL, FINAL_URL]);
   });
 });
 
@@ -455,6 +584,30 @@ function client(options: {
       return { object: 'page', id: PAGE_ID, url: NOTION_PAGE_URL };
     },
   };
+}
+
+/** 共通1件処理へ渡す最小の台帳。 */
+function singleSourceRegistry() {
+  return validateSourceRegistry({
+    version: 1,
+    organizations: [{
+      id: 'osaka-city',
+      name: '大阪市',
+      organization_type: 'designated_city',
+      official_domain: 'city.osaka.lg.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'osaka-digital-rss',
+      organization_id: 'osaka-city',
+      name: 'デジタル統括室 RSS',
+      url: 'https://www.city.osaka.lg.jp/rss.xml',
+      collector_type: 'rss',
+      source_category: 'digital_news',
+      priority: 'high',
+      enabled: true,
+    }],
+  });
 }
 
 function args(): string[] {
