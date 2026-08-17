@@ -173,14 +173,16 @@ describe('allow_empty_candidatesの検証', () => {
     expect(() => validateSourceRegistry(registryWithAllowEmpty(value))).toThrow();
   });
 
-  it('実台帳で設定した情報源が検証を通り、対象4件と札幌に付いている', async () => {
+  it('実台帳で設定した情報源が検証を通り、募集中だけを載せる一覧に付いている', async () => {
     const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
     const registry = await loadSourceRegistry();
     const configured = registry.sources
       .filter((source) => source.allow_empty_candidates === true)
       .map((source) => source.id)
       .sort();
+    // いずれも募集中・実施中・新着のものだけを載せる一覧で、0件になる期間が正常状態。
     expect(configured).toEqual([
+      'fukui-dx-kobo',
       'fukuoka-ppp-pfi',
       'kawasaki-sounding',
       'kobe-rfi-rfc',
