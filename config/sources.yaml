@@ -216,6 +216,14 @@ organizations:
     enabled: true
     notes: 公募型プロポーザル、デジタル戦略推進課と産業イノベーション推進課の新着の行政ニーズを収集する対象都道府県。新潟県・福島県と同じnetcrew系CMSで、個別ページの本文は#main_bodyに入る。#main、#main_a、#mymainbackは外側の入れ物なので本文には使わない。一覧の項目はli内のspan.article_dateに「2026年8月4日更新」、span.article_sectionに所属、span.article_titleにタイトルとリンクが入る。span.article_sectionにも所属別検索へのリンクがあるため、link_selectorはspan.article_titleまで絞らないと候補が倍になる。課のトップページでは新着情報が#main_body内ではなくdiv.section_information（#main_a配下）にあり、#main_body側は固定ページのハブリンクなので、新着を取るには.section_informationを使う。RSSはRSS 1.0（RDF）を2本配信し、いずれも100件・dc:date全件・dc:subjectに所属名を持つ
 
+  - id: yamanashi-prefecture
+    name: 山梨県
+    organization_type: prefecture
+    prefecture: 山梨県
+    official_domain: pref.yamanashi.jp
+    enabled: true
+    notes: 全庁の入札・公売公告、DX課の情報システム調達、官民連携の行政ニーズを収集する対象都道府県。長野県・石川県・宮城県・富山県と同じ#tmp_接頭辞のCMSで、一覧ページと個別ページのどちらも本文は#tmp_contentsに入る。確認した4ページにlink[type=rss]もxmlフィードへのリンクも無く、取得手段はHTMLだけである。**掲載日の扱いが一覧と個別ページで異なる。**公告一覧のliには日付のマークアップが無く、DX課の新着は「7月14日」のように年を含まないためparseDateCandidateがnullを返す。一方で個別ページには「公示日 2026年08月17日」の欄があり、こちらはparseDateCandidateが解釈できる。候補の期間フィルタは一覧側の掲載日で判定するため、山梨県の候補は掲載日不明として全件が対象になりinitial_sinceは効かない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2118,5 +2126,74 @@ sources:
     document_type_hints:
       - 新着情報
     notes: 全庁の新着情報を配信するRSS 1.0（RDF）。確認時点は100件で2026-08-05から2026-08-17の約2週間分、dc:dateは全件にありdc:subjectは53種類の所属名を持つ。**デジタル語を含むのは100件中2件（ぎふオンライン日本語教室、試験案内及び受験申込（電子申請））で、内訳は警察署の広報が20件超と最多、ほかに熱中症の救急搬送状況、博物館の記念式典、バレエ団の知事面談などノイズが大半である。** dc:subjectに情報システム課があるためcategory_includesで絞れそうに見えるが、実測では該当が1件（岐阜県職員用パソコン画面広告の募集）だけで調達案件ではなく、デジタル戦略推進課と産業イノベーション推進課は0件だった。nc:category01からcategory03は大半が空で分類軸として使えない。秋田県・広島市・福井県の全庁新着と同じ判断で無効状態で保持する。岐阜県の調達はgifu-proposal-listとgifu-digital-strategyで取得できる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: yamanashi-kokoku-list
+    organization_id: yamanashi-prefecture
+    name: 公告（入札・公売等）
+    url: https://www.pref.yamanashi.jp/shinchaku/kokoku/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents h1 ~ ul:not(h2 ~ ul) > li > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 一般競争入札
+      - 業務委託
+    notes: 全庁の入札・公売・公募型プロポーザルの公告を1ページへ集約する一覧で、確認時点は20件だった。**link_selectorは見出し「過去の公告（入札・公売等）」以降のulを差し引く必要がある。**#tmp_contents ul li a[href]と書くと41件になり、令和8年度から平成20年度までの年度別アーカイブ19件と、過去の公告側に残る案件2件（令和8年度山梨県観光客動態調査業務、令和8年度山梨県医療安全相談業務）まで候補へ混ざる。h1 + ulも現時点では20件になるが、h1と一覧の間に説明文のpが入ると0件になって壊れる。ul:first-of-typeはp挿入には耐えるが、先頭に別のulが入ると案件20件すべてを落として1件だけ拾う。採用したh1 ~ ul:not(h2 ~ ul)は、実HTMLへpを挿入しても20件を保ち、別のulを挿入しても20件を保ったうえでその1件を足すだけで、どちらの変形でも年度アーカイブを含めなかった。**一覧に掲載日のマークアップが無いため20件すべてが掲載日不明として毎回対象になる。**対象外判定でもNotionページは作られて次回から重複でスキップされるので、初回に--limitで分割して消化すれば以降は新規追加分だけになる。掲載日が無い一覧ではinitial_sinceが1件も絞れないため設定しない。title_excludesも未設定とし、広島市と長野県と同じく数十件を実登録してAI判定と突き合わせてから決める。20件の内訳は物品購入と工事が多く、ガスクロマトグラフ質量分析計、旋盤、携帯電話端末解析装置、溶存イオン分析装置のように機器名だけのタイトルもあるが、デジタルマイクロスコープの購入のようにデジタル語を含む物品購入があるため除外語は実測が必要である。個別ページは公示種別・カテゴリー・公示日・参加申請期限・入札期限を持つ定型で、添付PDFは01_公告から06_委託契約書のように連番の日本語リンクテキストが付く。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: yamanashi-dx-news
+    organization_id: yamanashi-prefecture
+    name: DX課 新着情報
+    url: https://www.pref.yamanashi.jp/jouho/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents h2:contains('新着情報') + ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 情報提供依頼
+      - 公募型プロポーザル
+      - 情報システム調達
+    notes: 情報システム調達を所管するDX課のトップページ。**収集対象は見出し「新着情報」直後のulに限る。**#tmp_contents ul li a[href]と書くと44件になり、マイナンバー制度、5G、オープンデータ、情報ハイウェイ、無料公衆無線LAN、電子自治体構築といった固定ハブページまで候補へ混ざる。確認時点の新着は5件で、うち2件（令和8年度山梨県職員 行政（デジタル）選考採用試験の結果と実施）はhref="#saiyo"の同一ページ内アンカーであり、フラグメントを除いたURLが情報源URL自身と一致するため自動的に除外された。**採用試験の告知はページ内セクションとして書かれる構造なので、これに対するtitle_excludesは不要である。**残る3件は第5期統合サーバの構築に係る情報提供依頼（RFI）、中小企業等DX導入促進・推進人材育成事業企画運営業務に係る公募型プロポーザル、生成AIリテラシー啓発動画で、RFIとプロポーザルが実際にこの新着へ載ることを確認できた。統合サーバのRFIは約200台の仮想サーバと約40業務システムを載せる仮想化統合基盤の更新で、個別ページに公示日2026年07月14日とRFI実施要項PDFがある。**新着の日付は「7月14日」のように年を含まずparseDateCandidateがnullを返すため、3件すべてが掲載日不明として扱われる。**更新は月1件程度で新着が空になる期間があるためallow_empty_candidatesで許容する。ただしこの設定が効くのはulのリンクが0件のときだけで、リンクはあるが全件が自己アンカーで除外されて0件になった場合は従来どおりエラーになる。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: yamanashi-challenge
+    organization_id: yamanashi-prefecture
+    name: 新事業チャレンジ推進課
+    url: https://www.pref.yamanashi.jp/challenge-s/index.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 実証実験
+      - 官民連携
+    notes: 新事業共創プラットフォームTRY!YAMANASHI!を所管する課のトップページ。**課のハブページで個別案件の一覧が無いため無効で登録する。**構成は見出し「お知らせ」4件、「担当ページリスト」8件、「ソーシャルメディア運用方針」1件、「入札公告状況」、「更新履歴」3件である。お知らせの4件は新事業共創プラットフォームオンライン相談窓口、TRY!YAMANASHI! Challenge Pitch、山梨県全域の3次元点群データの公開、やまなしソーシャルイノベーションセンターの紹介で、いずれも固定案内かイベント告知であり県が発注する案件は0件だった。**見出し「入札公告状況」の下は随意契約結果と入札結果へのリンクだけで、公告そのものは載っていない。**また見出し「お知らせ」とulの間にpが挟まるため、h2:contains('お知らせ') + ulは0件になり実測でもエラーになった。取得する場合は一般兄弟結合子で辿る必要がある。**公募の実体は担当ページリストからリンクするTRY!YAMANASHI!実証実験サポート事業と社会実装サポート事業である。**どちらも定常的な公募URLになり得るが、このページ内のリンクから機械的に見つけたURLなので、福岡市100ラボと同じく人が実URLを確認してから別Sourceとして登録する方針とする。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: yamanashi-ppp-pfi
+    organization_id: yamanashi-prefecture
+    name: やまなしPPP/PFI地域プラットフォーム
+    url: https://www.pref.yamanashi.jp/gyousei-kk/pfichiikiplatform.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - サウンディング型市場調査
+      - 官民連携
+    notes: 山梨県総務部と株式会社山梨中央銀行地方創生推進部が事務局を務め、県内自治体の公共施設の整備・維持管理・運営に関する官民連携を進めるプラットフォーム。**ページ全体が1つの官民連携ニーズを指すのでsingle_pageだが、福島県と新潟県のPPP/PFIと同じ理由で無効のまま保持する。**single_pageの重複判定は公式URL単位なので、初回に1回解析された後は同じURLが重複としてClaude到達前にスキップされ、回次が変わるサウンディングの募集を継続的に拾えない。確認時点では令和8年度の第2回サウンディング型市場調査の参加事業者募集が掲載され、8月24日実施で開催案内PDFが付いていた。第1回は令和8年6月30日に実施済みで、サウンディング対象事業は甲府市の本庁舎他PBX更新（クラウド化）事業と本庁舎駐車場管制設備更新等（設計・施工・運営）事業だった。**PBX更新のクラウド化のように自社領域と重なる対象事業が出るため対象性は高い。**民間企業パートナー制度は随時受付で、パートナーリストと募集チラシのPDFがあるが、登録ページはやまなしくらしねっとの外部ページである。活動実績は令和7年度から令和3年度まで年度別の別URLへ分かれる。掲載中の第2回サウンディングを取得したい場合は、この情報源を有効化するのではなくnotion:registerで1件だけ単発登録する運用が適する。
     last_verified_at: "2026-08-17"
     verification_status: verified
