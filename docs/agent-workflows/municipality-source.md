@@ -229,4 +229,6 @@ Source追加では、source registryの固定期待配列など関連テスト�
 - 要修正
 - 将来再確認
 
+完了報告では、各SourceについてSource ID、Source名称、`enabled` / `disabled`、priority、初回期間対象数を必ずセットで記載します。
+
 最後に「このままcommitして初回Writeへ進んでよいか」を判断します。完了報告では、正常な既知項目を大量に列挙するのではなく、状態、初回処理量、判断根拠、異常・不確実性、検証結果、commit状況を中心に伝えます。

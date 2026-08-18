@@ -8,7 +8,7 @@
 
 報告を短くするために調査を省略してはいけません。調査は共通workflowどおり実施し、ユーザーへの通常報告だけを原則として次に絞ります。
 
-1. 追加・変更したSourceと`enabled` / `disabled`
+1. 追加・変更した各SourceのSource ID・名称・`enabled` / `disabled`・priority
 2. 初回の期間対象数と、既定limitでClaudeへ進む最大件数
 3. 判断に影響した根拠
 4. Warning、不確実性、将来再確認事項
