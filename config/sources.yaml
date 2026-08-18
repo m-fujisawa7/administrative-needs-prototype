@@ -264,6 +264,14 @@ organizations:
     enabled: true
     notes: 全庁の公告一覧、アウトソーシングの民間提案、事業者向け周知の行政ニーズを収集する対象都道府県。**これまでの自治体と異なるclassベースのCMSで、本文は.area3に入る。**.cms-public、.page、.layout、.area-group-2-3-4は外側の入れ物で、.area1はサイドバーと全庁ナビである。**フォールバック候補の#main、#contents、#content、.contentに該当する要素が無いため、content_selectorを省略するとbody全体が本文になりWARNINGが出る。したがって有効・無効を問わず.area3を明示する。**記事一覧はli.display_dateにtime[datetime]とspan.title配下のリンクが入る形式で、span.titleを使わずli a[href]で書くと警察本部関係や森林整備等の別一覧へのハブリンクまで候補に混ざる。掲載日はtime要素から取得できる。公告一覧のページには専用RSS（/file/rss/zigyousya_nyusatsubaikyaku_itaku_index.rss）もあるが保持件数がHTMLより少ない
 
+  - id: kyoto-prefecture
+    name: 京都府
+    organization_type: prefecture
+    prefecture: 京都府
+    official_domain: pref.kyoto.jp
+    enabled: true
+    notes: デジタル政策、全庁の入札・プロポーザル、事業者向け新着、公民連携の行政ニーズを収集する対象都道府県。京都市はcity.kyoto.lg.jpの別組織として登録済みで、親子関係は結んでいない。府公式CMSは一覧・個別ページとも本文が#tmp_contentsに入り、一覧の日付は年を省いた月日表記、RSSはRSS 1.0（RDF）でdc:dateとdc:subjectを持つ
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2597,5 +2605,108 @@ sources:
       - サウンディング
       - 県有資産活用
     notes: 県の未利用土地や既存資産の処分・有効活用について、民間事業者から意見や助言を求める対話型の市場調査プラットフォーム。ヒアリングパートナーを募集しており、.area3で本文1,624文字と掲載日2026-07-09を取得できる。**無効にする理由は、ページ内に独立した複数の県有資産案件が並ぶためsingle_pageの粒度と合わないことである。**確認時点の添付PDFは17件で、未利用借地の転貸借としての有効活用、武蔵野職員住宅跡地の処分等、日の出公舎の売却等、東近江市鈴・大森地先県有地の利活用のように個別の資産案件が列挙されている。config/README.mdのsingle_pageの説明どおり、ページ内に独立した複数の案件が並ぶ固定ページには使えない。**山梨県のPPP/PFI地域プラットフォームと静岡県の官民連携実践塾と同じ扱いである。**案件ごとに個別URLが発行される形に変わった場合はlist_page化を検討する。掲載中のヒアリングパートナー募集を取得したい場合は、有効化ではなくnotion:registerで1件だけ単発登録する運用が適する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: kyoto-pref-digital-policy
+    organization_id: kyoto-prefecture
+    name: 京都府のデジタル政策・DX推進
+    url: https://www.pref.kyoto.jp/digital/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > .box_info table.list_table a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - DX推進
+      - 一般競争入札
+      - 出展者募集
+    notes: デジタル政策推進課の施策と新着を掲載する入口ページ。確認時点の新着は5件で、DX見本市の出展者募集、Web3.0イベント、データポータル、行政手続オンライン化支援の一般競争入札、生成AI活用が並ぶ。**link_selectorは新着情報のlist_tableだけへ限定し、下段にあるスマート社会推進計画、オープンデータ等の固定ハブ9件と新着情報一覧リンクを候補へ含めない。**候補URLは個別ページに分かれており継続巡回できるが、行の日付は「7月23日」のように年を含まないため、現行parseDateCandidateでは5件すべてpublishedAtが不明になる。初回は5件すべてが期間filterを通り、既定limit 5なら未登録時に最大5件が後続処理へ進む。終了済みイベント1件を含むが、少数の実データだけを根拠にtitle_excludesは設定しない
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: kyoto-pref-venture-challenge
+    organization_id: kyoto-prefecture
+    name: ベンチャーチャレンジ職員育成事業
+    url: https://www.pref.kyoto.jp/tyonai-venture/
+    collector_type: manual
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 府政課題研究
+      - 政策提案
+    notes: 職員が府政課題を研究して政策提案を行う事業。確認時点の固定ページには令和7年度の研究テーマ4件が同一ページ内の表に並び、各テーマのリンクは個別HTMLではなくタイトルがすべて「発表資料」のPDF直リンクである。過去年度は年度別HTMLへ分かれるが、現年度の4テーマは案件固有のOfficial URLを持たず、固定親ページは年度更新で再利用される。**1ページ内の複数テーマをsingle_pageで1件にまとめることも、direct PDFを汎用Collectorで安全に処理することもできないためmanualかつ無効状態で保持する。**テーマ別URLが発行される構造へ変わった場合に再有効化を検討する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: kyoto-pref-procurement
+    organization_id: kyoto-prefecture
+    name: 入札・プロポーザル情報
+    url: https://www.pref.kyoto.jp/shinchaku/nyusatsu/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    link_selector: "#tmp_contents > table.list_table a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 業務委託
+    notes: 全庁の入札情報とプロポーザル情報を2つのlist_tableへ集約する一覧。確認時点は入札31件、プロポーザル8件の計39件で、バックナンバー、事務マニュアルPDF、教育委員会・警察・議会の別一覧は候補へ含めない。入札中止、入札結果、募集結果も計3件含むが、募集本体の更新表現を誤除外しないようtitle_excludesは設定しない。**一覧の日付は「8月7日公告」のように年を含まないため39件すべてpublishedAtが不明で、初回期間対象も39件になる。**無効にする理由は、現行39候補の少なくとも3件で、同じURLの本文が年度・契約期間の異なる新規調達へ差し替えられているためである。/shoshi/news/r7_miyakoi_propo.htmlは令和7年度から令和8年度の京の都恋事業へ、/kankyofes/news/2027itaku.htmlは京都環境フェスティバル2026から2027へ更新され、どちらも府公式の令和7年度と令和8年度のプロポーザルバックナンバーで同一URL・異なる年度タイトルを確認した。/plant/news/202004setubiboira.htmlも、2020年時点の委託期間が令和2年6月から令和5年5月だったのに対し、現在は令和8年9月から令和11年8月の別契約へ本文が差し替わっている。これらは同じ案件の質問回答や結果追記でも共通案内ページでもなく、年度をまたぐ別の調達案件である。**URL単位のduplicate-firstでは、過年度URLを登録済みの場合に新年度案件が本文取得前にスキップされるため将来の取りこぼしが実際に起こり得る。**再利用URLはr7、2027、202004のように形式が不統一で、同じ表には案件固有URLも混在するため、selectorで再利用型だけを偽陰性なく除外できない。URL以外で新年度を識別できる収集方式が用意されるか、府側が案件ごとに固有URLを発行する構造へ変わったことを確認できるまで無効状態で保持する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: kyoto-pref-ppp-platform
+    organization_id: kyoto-prefecture
+    name: 京都府公民連携プラットフォーム
+    url: https://www.pref.kyoto.jp/sisan/news/platform.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    link_selector: "#tmp_contents > h3:contains('開催について') ~ p a[href^='/sisan/news/platform']:not([href='/sisan/news/platform.html#'])"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - PPP/PFI
+      - サウンディング型市場調査
+      - 官民対話
+    notes: 府内自治体と民間事業者等が公共施設活用やPPP/PFIを共有するプラットフォーム。最新回と過去年度の各回は案件固有のHTMLへ分かれ、現在回だけに限定したselectorでは1件を取得できるためURL再利用の問題は無い。**無効にする理由は、確認時点の最新ページが2026年5月15日の開催を5月26日に報告する開催済み記事で、参加募集や個別のサウンディング案件ではないためである。**本文には府内5市町村が今後のサウンディング・公募予定を共有した記録があるため政策シグナルとしての価値はあるが、publishedAtは掲載日ではなく開催日の2026-05-15となり、共通開始日以降の初回対象は0件になる。次回、参加者募集または個別案件を掲載した時点で内容と日付構造を再確認して有効化を検討する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: kyoto-pref-business-rss
+    organization_id: kyoto-prefecture
+    name: 事業者向け新着情報 RSS
+    url: https://www.pref.kyoto.jp/jigyosha/shinchaku/shinchaku.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: low
+    enabled: true
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 入札情報
+      - 事業者公募
+      - 技術開発支援
+    notes: 事業者向け新着を10件配信するRSS 1.0（RDF）。確認時点は2026-08-06から2026-08-17までの10件で、dc:dateは全件にあり初回期間対象も10件、既定limit 5なら未登録時に最大5件が後続処理へ進む。一般競争入札1件は入札・プロポーザル一覧と重複するが、同一覧に無いアグリ・フードイノベーションの技術開発公募2件を含むため低優先度で有効化する。dc:subjectは入札情報だけでなく農林水産業、起業・産業立地、就職支援など広いためcategory_includesは設定せず、AI判定の実績を確認して対象密度が低ければ無効化を再検討する。**保持件数が10件だけなので、更新間隔が長いと取りこぼす可能性がある**
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: kyoto-pref-policy-rss
+    organization_id: kyoto-prefecture
+    name: 府政情報新着 RSS
+    url: https://www.pref.kyoto.jp/info/shinchaku/shinchaku.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 府政情報
+      - 一般競争入札
+    notes: 府政情報の新着を10件配信するRSS 1.0（RDF）。確認時点は2026-08-14から2026-08-18までの10件でdc:dateは全件にあるが、一般競争入札2件はいずれも入札・プロポーザル一覧と重複し、残りは職員採用、仕事体験、融資制度、防災週間等の一般案内が中心だった。**独自の行政ニーズを確認できず、categoryも府政運営・行財政改革と採用情報の粗い区分だけで安全に絞れないため無効状態で保持する。**RSSの対象構成が変わるか、入札一覧に無いRFI・民間提案を掲載する実績が確認できた場合に再有効化を検討する
     last_verified_at: "2026-08-18"
     verification_status: verified
