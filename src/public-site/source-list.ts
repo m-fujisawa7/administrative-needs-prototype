@@ -22,10 +22,18 @@ export type PublicOrganization = {
   sources: PublicSource[];
 };
 
+export type PublicAdministrativeLayerId = 'prefecture' | 'municipality';
+
+export type PublicAdministrativeLayer = {
+  id: PublicAdministrativeLayerId;
+  name: string;
+  organizations: PublicOrganization[];
+};
+
 export type PublicRegion = {
   id: PublicRegionId;
   name: string;
-  organizations: PublicOrganization[];
+  layers: PublicAdministrativeLayer[];
 };
 
 export type PublicSourceList = {
@@ -44,6 +52,11 @@ const MUNICIPALITY_TYPES = new Set<Organization['organization_type']>([
   'municipality',
   'special_ward',
 ]);
+
+const ADMINISTRATIVE_LAYERS = [
+  { id: 'prefecture', name: '都道府県' },
+  { id: 'municipality', name: '市区町村' },
+] as const satisfies readonly Omit<PublicAdministrativeLayer, 'organizations'>[];
 
 /**
  * 検証済み台帳から、公開可能な最小項目だけを取り出す。
@@ -92,16 +105,23 @@ export function createPublicSourceList(registry: SourceRegistry): PublicSourceLi
   const regions = PUBLIC_REGIONS.map((region): PublicRegion => ({
     id: region.id,
     name: region.name,
-    organizations: [...grouped.values()]
-      .filter((organization) => organization.regionId === region.id)
-      .toSorted(compareOrganizations)
-      .map(({ id, name, sources }) => ({
-        id,
-        name,
-        sources: sources.toSorted(comparePublicSources),
-      })),
+    layers: ADMINISTRATIVE_LAYERS.map((layer) => ({
+      ...layer,
+      organizations: [...grouped.values()]
+        .filter((organization) => (
+          organization.regionId === region.id && organization.kind === layer.id
+        ))
+        .toSorted(compareOrganizations)
+        .map(({ id, name, sources }) => ({
+          id,
+          name,
+          sources: sources.toSorted(comparePublicSources),
+        })),
+    })),
   }));
-  const allOrganizations = regions.flatMap((region) => region.organizations);
+  const allOrganizations = regions.flatMap((region) => (
+    region.layers.flatMap((layer) => layer.organizations)
+  ));
 
   return {
     regions,
@@ -133,7 +153,7 @@ function findRootOrganization(
   return current;
 }
 
-type PublicOrganizationKind = 'prefecture' | 'municipality';
+type PublicOrganizationKind = PublicAdministrativeLayerId;
 
 type GroupedOrganization = PublicOrganization & {
   kind: PublicOrganizationKind;
@@ -165,16 +185,7 @@ function requirePrefecture(organization: Organization): string {
 
 function compareOrganizations(left: GroupedOrganization, right: GroupedOrganization): number {
   return left.prefectureOrder - right.prefectureOrder
-    || compareOrganizationKind(left.kind, right.kind)
     || left.registrationOrder - right.registrationOrder;
-}
-
-function compareOrganizationKind(
-  left: PublicOrganizationKind,
-  right: PublicOrganizationKind,
-): number {
-  if (left === right) return 0;
-  return left === 'prefecture' ? -1 : 1;
 }
 
 function comparePublicSources(left: PublicSource, right: PublicSource): number {

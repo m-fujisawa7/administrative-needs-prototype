@@ -59,6 +59,7 @@ input:focus-visible {
 h1,
 h2,
 h3,
+h4,
 p {
   overflow-wrap: anywhere;
 }
@@ -198,6 +199,28 @@ main {
   font-size: 0.86rem;
 }
 
+.region-index-layers {
+  min-width: 0;
+}
+
+.region-index-layer {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.region-index-layer + .region-index-layer {
+  margin-top: 3px;
+}
+
+.region-index-layer h4 {
+  margin: 0;
+  color: #647681;
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+
 .region-index-organizations {
   min-width: 0;
 }
@@ -251,13 +274,42 @@ main {
   font-size: 0.78rem;
 }
 
+.source-layer {
+  padding-top: 8px;
+}
+
+.source-layer + .source-layer {
+  margin-top: 4px;
+  border-top: 1px solid #d9e0e4;
+}
+
+.layer-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0 2px;
+}
+
+.layer-heading h3 {
+  margin: 0;
+  color: #52636f;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.layer-heading span {
+  color: #7b8991;
+  font-size: 0.7rem;
+}
+
 .organization-list {
   margin: 0;
 }
 
 .organization-group {
   scroll-margin-top: 16px;
-  padding: 18px 0 20px;
+  padding: 14px 0 16px;
   border-bottom: 1px solid #cfd8dd;
 }
 
@@ -275,7 +327,7 @@ main {
   margin-bottom: 6px;
 }
 
-.organization-heading h3 {
+.organization-heading h4 {
   margin: 0;
   color: #12303e;
   font-size: 1.08rem;
@@ -294,9 +346,9 @@ main {
   list-style: none;
 }
 
-.empty-region {
+.empty-layer {
   margin: 0;
-  padding: 18px 0;
+  padding: 10px 0 12px;
   border-bottom: 1px solid #cfd8dd;
   color: #7b8991;
   font-size: 0.82rem;
@@ -426,6 +478,11 @@ main {
   .region-index-item {
     grid-template-columns: 82px minmax(0, 1fr);
     gap: 8px;
+  }
+
+  .region-index-layer {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 6px;
   }
 
   .organization-heading {

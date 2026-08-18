@@ -14,7 +14,8 @@ describe('公開Source一覧', () => {
     expect(sourceList.regions.map((region) => region.name)).toEqual([
       '北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄',
     ]);
-    expect(chubu?.organizations).toEqual([{
+    expect(chubu?.layers.map((layer) => layer.name)).toEqual(['都道府県', '市区町村']);
+    expect(chubu?.layers.find((layer) => layer.id === 'municipality')?.organizations).toEqual([{
       id: 'nagoya-city',
       name: '名古屋市',
       sources: [
@@ -22,7 +23,7 @@ describe('公開Source一覧', () => {
         { name: '提案募集中の課題', url: 'https://example.com/frontier', status: 'active' },
       ],
     }]);
-    expect(kinki?.organizations).toEqual([{
+    expect(kinki?.layers.find((layer) => layer.id === 'prefecture')?.organizations).toEqual([{
       id: 'kyoto-prefecture',
         name: '京都府',
         sources: [
@@ -45,17 +46,24 @@ describe('公開Source一覧', () => {
     });
   });
 
-  it('地域、都道府県、その都道府県の組織の順に並べる', () => {
+  it('地域内を都道府県と市区町村に分け、それぞれ都道府県の地理順に並べる', () => {
     const sourceList = createPublicSourceList(createGeographicalOrderRegistry());
-    const organizationsByRegion = Object.fromEntries(sourceList.regions.map((region) => [
+    const organizationsByRegionAndLayer = Object.fromEntries(sourceList.regions.map((region) => [
       region.name,
-      region.organizations.map((organization) => organization.name),
+      Object.fromEntries(region.layers.map((layer) => [
+        layer.name,
+        layer.organizations.map((organization) => organization.name),
+      ])),
     ]));
 
-    expect(organizationsByRegion['東北']).toEqual(['青森県', '宮城県', '仙台市']);
-    expect(organizationsByRegion['近畿']).toEqual([
-      '滋賀県', '京都府', '京都市', '大阪府', '大阪市', '兵庫県', '神戸市',
-    ]);
+    expect(organizationsByRegionAndLayer['東北']).toEqual({
+      都道府県: ['青森県', '宮城県'],
+      市区町村: ['仙台市'],
+    });
+    expect(organizationsByRegionAndLayer['近畿']).toEqual({
+      都道府県: ['滋賀県', '京都府', '大阪府', '兵庫県'],
+      市区町村: ['京都市', '大阪市', '神戸市'],
+    });
   });
 
   it('固定8地域に47都道府県を重複なく定義する', () => {
@@ -74,7 +82,11 @@ describe('公開Source一覧', () => {
     expect(html).toContain('<h2 id="region-hokkaido">北海道</h2>');
     expect(html).toContain('<h2 id="region-kyushu-okinawa">九州・沖縄</h2>');
     expect(html).toContain('data-index-region="shikoku"');
-    expect(html).toContain('登録自治体なし');
+    expect(html).toContain('data-index-layer="prefecture"');
+    expect(html).toContain('data-index-layer="municipality"');
+    expect(html).toContain('data-source-layer="prefecture"');
+    expect(html).toContain('data-source-layer="municipality"');
+    expect(html).toContain('登録なし');
     expect(html).toContain('href="#organization-nagoya-city"');
     expect(html).toContain('id="organization-nagoya-city"');
     expect(html).toContain('data-source-search');
@@ -100,11 +112,18 @@ describe('公開Source一覧', () => {
       regions: PUBLIC_REGIONS.map((region) => ({
         id: region.id,
         name: region.id === 'kinki' ? '<近畿>' : region.name,
-        organizations: region.id === 'kinki' ? [{
-          id: 'kyoto-prefecture',
-          name: '<京都府>',
-          sources: [{ name: 'A & B', url: 'https://example.com/?a=1&b=2', status: 'active' }],
-        }] : [],
+        layers: [
+          {
+            id: 'prefecture',
+            name: '都道府県',
+            organizations: region.id === 'kinki' ? [{
+              id: 'kyoto-prefecture',
+              name: '<京都府>',
+              sources: [{ name: 'A & B', url: 'https://example.com/?a=1&b=2', status: 'active' }],
+            }] : [],
+          },
+          { id: 'municipality', name: '市区町村', organizations: [] },
+        ],
       })),
       organizationCount: 1,
       sourceCount: 1,
@@ -181,7 +200,8 @@ describe('公開Source一覧', () => {
     const registry = await loadSourceRegistry();
     const sourceList = createPublicSourceList(registry);
     const actualSources = sourceList.regions
-      .flatMap((region) => region.organizations)
+      .flatMap((region) => region.layers)
+      .flatMap((layer) => layer.organizations)
       .flatMap((organization) => organization.sources)
       .toSorted((left, right) => left.url.localeCompare(right.url));
     const expectedSources = registry.sources
