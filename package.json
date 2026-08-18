@@ -19,6 +19,7 @@
     "notion:batch": "node src/commands/notion-batch.ts",
     "collect:run": "node src/commands/collection-run.ts",
     "collect:batch": "node src/commands/collection-batch.ts",
+    "site:build": "node src/commands/build-public-site.ts",
     "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

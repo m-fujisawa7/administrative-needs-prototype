@@ -26,6 +26,7 @@ src/commands/       手動実行するCLIエントリーポイント
 src/source-registry 台帳の読み込み・検証
 src/source-check/   情報源の疎通・候補抽出
 src/source-verify/  新規Sourceの取得・AI判定をまとめた読み取り確認
+src/public-site/    公開用Source一覧のデータ生成とHTML描画
 src/content-check/  個別HTMLページの本文抽出
 src/pdf-check/      PDF本文抽出
 src/ai/             Claude CLI／Mockによる判定・構造化
@@ -34,6 +35,7 @@ src/notion-register Notionへの1件登録プレビュー・重複防止
 src/notion-batch    選定URLファイルの直列プレビュー・登録
 src/collection-run  期間・情報源別状態を使う候補の直列プレビュー・登録と複数情報源の一括実行
 test/               外部アクセスを行わない単体テストとfixture
+site/               公開ページの静的アセット
 ```
 
 AI経由で情報源を追加する場合は、最初に`AGENTS.md`と`config/README.md`を読ませてください。Pull Requestでは`.github/pull_request_template.md`の確認項目を使用します。
@@ -182,6 +184,16 @@ npm run lint
 npm run typecheck
 npm test
 ```
+
+## 行政情報ソース一覧の公開
+
+`config/sources.yaml`に登録された全Sourceを、状態（継続確認中／現在は未巡回）とともに公開用の静的ページへ生成します。自治体名・Source名称・公式URL・公開用状態以外の運用設定は生成物へ含めません。
+
+```bash
+npm run site:build
+```
+
+生成先は`dist/public-site/`です。mainへのpush時は`.github/workflows/deploy-pages.yml`が同じbuildを実行してGitHub Pagesへdeployします。初回のみ、リポジトリのSettings → Pages → Build and deploymentでSourceを「GitHub Actions」に設定してください。
 
 ## 台帳の構造
 
