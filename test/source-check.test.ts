@@ -910,7 +910,7 @@ describe('single_pageチェック', () => {
     )).rejects.toThrow('現在未対応です');
   });
 
-  it('実台帳で有効なsingle_pageが検証した3件だけになっている', async () => {
+  it('実台帳で有効なsingle_pageが実ページで検証したものだけになっている', async () => {
     const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
     const registry = await loadSourceRegistry();
     const enabled = registry.sources
@@ -921,6 +921,7 @@ describe('single_pageチェック', () => {
       'fukuoka-dx-promotion',
       'hiroshima-dx-plan',
       'miyagi-administrative-reform-plan',
+      'shiga-outsourcing-proposal',
     ]);
     // ページ本文をAI判定へ渡すため、有効なsingle_pageには content_selector が要る。
     for (const id of enabled) {

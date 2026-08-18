@@ -256,6 +256,14 @@ organizations:
     enabled: true
     notes: 官民連携による課題解決、全庁の公募型プロポーザル、DX施策、スマートシティ実証の行政ニーズを収集する対象自治体。宮城県は別組織として登録済みで、親子関係は結んでいない。市公式ページは#tmp_接頭辞のCMSを使用し、一覧・個別ページの本文は#tmp_contentsに入る
 
+  - id: shiga-prefecture
+    name: 滋賀県
+    organization_type: prefecture
+    prefecture: 滋賀県
+    official_domain: pref.shiga.lg.jp
+    enabled: true
+    notes: 全庁の公告一覧、アウトソーシングの民間提案、事業者向け周知の行政ニーズを収集する対象都道府県。**これまでの自治体と異なるclassベースのCMSで、本文は.area3に入る。**.cms-public、.page、.layout、.area-group-2-3-4は外側の入れ物で、.area1はサイドバーと全庁ナビである。**フォールバック候補の#main、#contents、#content、.contentに該当する要素が無いため、content_selectorを省略するとbody全体が本文になりWARNINGが出る。したがって有効・無効を問わず.area3を明示する。**記事一覧はli.display_dateにtime[datetime]とspan.title配下のリンクが入る形式で、span.titleを使わずli a[href]で書くと警察本部関係や森林整備等の別一覧へのハブリンクまで候補に混ざる。掲載日はtime要素から取得できる。公告一覧のページには専用RSS（/file/rss/zigyousya_nyusatsubaikyaku_itaku_index.rss）もあるが保持件数がHTMLより少ない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2507,5 +2515,87 @@ sources:
       - 規制改革
       - 協議会内公募
     notes: 仙台市と東北大学によるスマートシティ実証の協議会内公募ページ。現設定では2026年8月17日更新の「先端的サービス創出及び規制改革推進事業」再公募ページ1件を単発取得できるが、継続巡回には適さないため無効状態で保持する。親URLの20240830.htmlは年度をまたいで本文が更新・再利用され、当初公募は親ページ本文へ直接掲載されるため現在のlist_page selectorでは候補化できない。また再公募の掲載日は2026年8月17日だが、既存の日付抽出は親ページ内の質問受付期限2026年6月8日をpublishedAtとして誤取得する。initial_sinceは初回収集開始日かつ自動収集の下限日だが、誤ったpublishedAt自体は解決できないため、このSourceの回避策には使用しない。次回募集時に親ページ、個別URL、掲載日の構造を再確認し、安全な取得方法が確認できた場合だけ再有効化を検討する。現在の再公募を取得する必要がある場合はnotion:register等で公式個別URLを単発登録する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: shiga-koukoku-list
+    organization_id: shiga-prefecture
+    name: 公告一覧（物品・委託・役務）
+    url: https://www.pref.shiga.lg.jp/zigyousya/nyusatsubaikyaku/itaku/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: ".area3 span.title a[href]"
+    content_selector: ".area3"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 一般競争入札
+      - 業務委託
+    notes: 物品・委託・役務の公告を1ページへ集約する一覧で、電子調達システムを使わない紙入札・総合評価方式・公募型プロポーザルが対象。**滋賀県の調達はこの1件で拾える。**確認時点は56件（記事一覧のtotal-countと一致）で全件にtime要素の掲載日があり、範囲は2026-04-22から2026-08-18、2026-07-01以降は26件だった。内訳は公募型プロポーザル18件・一般競争入札9件・随意契約の事後公表3件で、滋賀県議会ファイル管理システムの提供および運用保守業務、滋賀県電子請求システム導入・運用保守業務、令和8年度AX/DXのためのデジタル人材育成研修業務、受動喫煙のない社会を目指したデジタル広報事業業務のように自社領域の案件が含まれる。**link_selectorはspan.titleまで絞る。**.area3 li a[href]と書くと生63件になり、警察本部関係の入札案件と森林整備等入札公告一覧という別一覧へのハブリンクが混ざる。**このページには専用RSS（/file/rss/zigyousya_nyusatsubaikyaku_itaku_index.rss）もあるがHTML側を採る。**RSSはRSS 2.0で30件しか保持せず、category要素を持つのは30件中1件だけでcategory_includesが使えない。2026-07-01以降の件数はHTMLとRSSで同じ26件だが、HTMLは56件を保持するため取りこぼしに強い。title_excludesは未設定とし、広島市・長野県・山梨県・静岡県・愛知県と同じく実登録してAI判定と突き合わせてから決める。随意契約の事後（契約締結後）公表は段階マーカーだが、確認時点の3件はいずれも2026-07-01より前で期間フィルタで落ちるため、除外語を足しても初回の削減効果は0件である。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: shiga-outsourcing-proposal
+    organization_id: shiga-prefecture
+    name: アウトソーシングにかかる民間提案の募集
+    url: https://www.pref.shiga.lg.jp/kensei/kenseiunei/kaikaku/18758.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    content_selector: ".area3"
+    document_type_hints:
+      - 民間提案
+      - アウトソーシング
+    notes: 県（知事部局）が所管するすべての事務事業を対象に、民間事業者からアウトソーシングの提案を受け付ける制度の募集要領。**ページ全体が1つの官民連携ニーズを指すのでsingle_pageに適する。**構成は1.提案の対象業務から10.提案検討結果までの節で、独立した複数の案件が並ぶ構造ではない。**4.募集期間は「随時受け付けています」で通年受付のためページ内容が安定しており、宮城県の行政運営プラン・広島市のDX計画・福岡市のDX推進と同じB型として有効化する。**添付PDFは4件で、アウトソーシングの導入が可能と考えられる業務一覧が参考資料、残る3件は10.提案検討結果の令和4年度・令和6年度・令和7年度の結果である。.area3で本文2,104文字を取得できる。**single_pageは掲載日を取得しないため常に掲載日不明として扱われ、initial_sinceは効かない。**重複判定が公式URL単位なので初回に1回だけ解析され、以降は同じURLが重複としてスキップされる。通年受付で内容が安定しているためこの挙動で問題ない。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: shiga-business-notice
+    organization_id: shiga-prefecture
+    name: 事業者向け お知らせ・注意
+    url: https://www.pref.shiga.lg.jp/zigyousya/oshirase/
+    collector_type: list_page
+    source_category: policy_signal
+    priority: low
+    enabled: true
+    link_selector: ".area3 span.title a[href]"
+    content_selector: ".area3"
+    document_type_hints:
+      - 情報提供依頼
+      - 事業者向け周知
+    notes: 事業者向けの周知事項を集約する一覧。確認時点は109件で全件にtime要素の掲載日があり、2026-07-01以降は7件だった。**優先度を低くしているのは自社領域の密度が低いためである。**109件のうち調達・募集語を含むのは28件だがデジタル語を含むのは5件（4.6%）だけで、初回対象7件の内訳は東北部工業技術センター整備事業の事業契約締結、関西広域連合のものづくり地域産業魅力発信事業プロポーザル、老人福祉医療費助成制度の案内、しがモック一周年記念イベント、木造建築セミナーの参加者募集、関係人口創出イベント業務委託プロポーザルの質問と回答、農業農村整備事業の積算基準で、**自社領域は0件である。**それでも有効化するのは、**滋賀県環境情報システム再構築に係る情報提供依頼（RFI）が2025-06-11にこの一覧へ載っており、RFIは公告ではないためshiga-koukoku-listでは拾えない**からで、年に1件程度でも接触機会として価値が高い。件数が少なく期間フィルタも効くためtitle_includesとtitle_excludesは設定しない。岐阜県の産業イノベーション推進課と同じく、AI判定で対象外が続く場合は無効化を検討する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: shiga-dx-division
+    organization_id: shiga-prefecture
+    name: DX推進課
+    url: https://www.pref.shiga.lg.jp/kensei/gaiyou/soshiki/sougoukikakubu/jyouhouseisakuka/
+    collector_type: single_page
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    content_selector: ".area3"
+    document_type_hints:
+      - 組織情報
+    notes: 滋賀県DX推進戦略、びわ湖情報ハイウェイ、自治体情報セキュリティクラウド、業務システム最適化、情報システム調達の適正化、しがネット受付サービスを所管する課のページ。**記事一覧が存在しないため無効で登録する。**.area3の本文は480文字で、管理係・情報基盤係・県庁DX推進係・地域DX連携推進室の係別業務分掌と電話番号だけであり、`.area3 span.title a[href]`は0件、`.area3 a[href]`もメールアドレス1件しか取れなかった。所管業務の記述は自社領域と重なるが、行政ニーズでも政策シグナルでもない静的な組織紹介なのでsingle_pageで登録しても初回に業務分掌を1回解析するだけになる。**ページには「注目情報」の枠があるが確認時点は「注目情報はありません」で空だった。**枠が埋まればここに新着が載る可能性があるが、空の状態ではリンク構造を確認できずセレクタを設定できないため、実際に項目が載った時点で人が構造を確認してlist_page化を判断する。滋賀県の調達はshiga-koukoku-listで、RFIはshiga-business-noticeで拾える。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: shiga-shisan-hiroba
+    organization_id: shiga-prefecture
+    name: 滋賀県庁県有資産活用のひろば
+    url: https://www.pref.shiga.lg.jp/zigyousya/event/307077.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: ".area3"
+    document_type_hints:
+      - サウンディング
+      - 県有資産活用
+    notes: 県の未利用土地や既存資産の処分・有効活用について、民間事業者から意見や助言を求める対話型の市場調査プラットフォーム。ヒアリングパートナーを募集しており、.area3で本文1,624文字と掲載日2026-07-09を取得できる。**無効にする理由は、ページ内に独立した複数の県有資産案件が並ぶためsingle_pageの粒度と合わないことである。**確認時点の添付PDFは17件で、未利用借地の転貸借としての有効活用、武蔵野職員住宅跡地の処分等、日の出公舎の売却等、東近江市鈴・大森地先県有地の利活用のように個別の資産案件が列挙されている。config/README.mdのsingle_pageの説明どおり、ページ内に独立した複数の案件が並ぶ固定ページには使えない。**山梨県のPPP/PFI地域プラットフォームと静岡県の官民連携実践塾と同じ扱いである。**案件ごとに個別URLが発行される形に変わった場合はlist_page化を検討する。掲載中のヒアリングパートナー募集を取得したい場合は、有効化ではなくnotion:registerで1件だけ単発登録する運用が適する。
     last_verified_at: "2026-08-18"
     verification_status: verified
