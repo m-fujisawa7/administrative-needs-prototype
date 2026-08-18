@@ -28,6 +28,18 @@ export function renderPublicSourcePage(sourceList: PublicSourceList): string {
       </div>
     </header>
     <main class="container">
+      <div class="source-search" role="search">
+        <label for="source-search">自治体・Sourceを検索</label>
+        <input
+          id="source-search"
+          type="search"
+          placeholder="自治体名、Source名称、URL"
+          autocomplete="off"
+          data-source-search
+        >
+        <p class="search-result" aria-live="polite" data-search-result>${sourceList.organizationCount}自治体・${sourceList.sourceCount} Sourceを表示</p>
+      </div>
+      <p class="no-results" data-no-results hidden>該当するSourceはありません。</p>
       ${renderSection('都道府県', sourceList.prefectures)}
       ${renderSection('市区町村', sourceList.municipalities)}
     </main>
@@ -36,43 +48,51 @@ export function renderPublicSourcePage(sourceList: PublicSourceList): string {
         <p>掲載先は各自治体等が運営する公式ページです。</p>
       </div>
     </footer>
+    <script type="module" src="./search.js"></script>
   </body>
 </html>
 `;
 }
 
 function renderSection(title: string, organizations: PublicOrganization[]): string {
-  const cards = organizations.map(renderOrganization).join('\n');
-  return `<section class="source-section" aria-labelledby="${escapeAttribute(title)}">
+  const organizationGroups = organizations.map(renderOrganization).join('\n');
+  return `<section class="source-section" aria-labelledby="${escapeAttribute(title)}" data-source-section>
         <div class="section-heading">
           <h2 id="${escapeAttribute(title)}">${escapeHtml(title)}</h2>
-          <span>${organizations.length}自治体</span>
+          <span data-section-count>${organizations.length}自治体</span>
         </div>
-        <div class="organization-grid">
-          ${cards}
+        <div class="organization-list">
+          ${organizationGroups}
         </div>
       </section>`;
 }
 
 function renderOrganization(organization: PublicOrganization): string {
   const sources = organization.sources.map(renderSource).join('\n');
+  const activeSourceCount = organization.sources
+    .filter((source) => source.status === 'active').length;
 
-  return `<article class="organization-card">
-            <h3>${escapeHtml(organization.name)}</h3>
+  return `<section class="organization-group" data-organization>
+            <div class="organization-heading">
+              <h3>${escapeHtml(organization.name)}</h3>
+              <p class="organization-count"><span>継続確認中 ${activeSourceCount}</span><span aria-hidden="true"> / </span><span>登録 ${organization.sources.length}</span></p>
+            </div>
             <ul class="source-list">
               ${sources}
             </ul>
-          </article>`;
+          </section>`;
 }
 
 function renderSource(source: PublicSource): string {
-    const name = escapeHtml(source.name);
-    const url = escapeAttribute(source.url);
-    const statusLabel = source.status === 'active' ? '継続確認中' : '現在は未巡回';
-    return `<li class="source-item">
+  const name = escapeHtml(source.name);
+  const url = escapeAttribute(source.url);
+  const statusLabel = source.status === 'active' ? '継続確認中' : '現在は未巡回';
+  return `<li class="source-item" data-source-item>
               <span class="status-badge status-${source.status}">${statusLabel}</span>
-              <a class="source-name" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>
-              <a class="source-url" href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a>
+              <div class="source-details">
+                <a class="source-name" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>
+                <a class="source-url" href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.url)}</a>
+              </div>
             </li>`;
 }
 

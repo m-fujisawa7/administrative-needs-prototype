@@ -13,6 +13,10 @@ const DEFAULT_STYLESHEET_PATH = fileURLToPath(
   new URL('../../site/styles.css', import.meta.url),
 );
 
+const DEFAULT_SEARCH_SCRIPT_PATH = fileURLToPath(
+  new URL('./search.js', import.meta.url),
+);
+
 export async function buildPublicSite(
   outputDirectory = DEFAULT_PUBLIC_SITE_OUTPUT_DIRECTORY,
 ): Promise<{ activeSourceCount: number; organizationCount: number; sourceCount: number }> {
@@ -24,6 +28,7 @@ export async function buildPublicSite(
   await Promise.all([
     writeFile(join(outputDirectory, 'index.html'), renderPublicSourcePage(sourceList), 'utf8'),
     copyFile(DEFAULT_STYLESHEET_PATH, join(outputDirectory, 'styles.css')),
+    copyFile(DEFAULT_SEARCH_SCRIPT_PATH, join(outputDirectory, 'search.js')),
   ]);
 
   return {

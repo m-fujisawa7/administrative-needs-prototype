@@ -43,6 +43,13 @@ describe('公開Source一覧', () => {
     expect(html).toContain('<h1>行政情報ソース一覧</h1>');
     expect(html).toContain('<h2 id="都道府県">都道府県</h2>');
     expect(html).toContain('<h2 id="市区町村">市区町村</h2>');
+    expect(html).toContain('data-source-search');
+    expect(html).toContain('src="./search.js"');
+    expect(html).toContain('継続確認中 1');
+    expect(html).toContain('登録 2');
+    expect(html).toContain('class="organization-group"');
+    expect(html).not.toContain('organization-card');
+    expect(html).not.toContain('organization-grid');
     expect(html).toContain('href="https://example.com/hatch" target="_blank" rel="noopener noreferrer"');
     expect(html).toContain('継続確認中');
     expect(html).toContain('現在は未巡回');
