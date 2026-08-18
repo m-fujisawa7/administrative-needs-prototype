@@ -182,6 +182,8 @@ describe('allow_empty_candidatesの検証', () => {
       .sort();
     // いずれも募集中・実施中・新着のものだけを載せる一覧で、0件になる期間が正常状態。
     expect(configured).toEqual([
+      'aichi-digital-strategy',
+      'aichi-toshi-somu',
       'fukui-dx-kobo',
       'fukuoka-ppp-pfi',
       'gifu-digital-strategy',

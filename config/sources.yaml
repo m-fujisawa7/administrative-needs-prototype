@@ -240,6 +240,14 @@ organizations:
     enabled: true
     notes: 静岡県実証実験サポート事業CO-LAB Shizuokaが第三者SaaSのeiicon（AUBA）上のテナントサブドメインで公開されているため、config/README.mdの方針に従い静岡県を親組織とする別組織として登録する。**official_domainにはeiicon.netではなくテナントのshizuoka.eiicon.netを指定している。**isHostnameAllowedは完全一致とドット付きサフィックス一致だけを許すため、この指定では他テナント（別組織のeiicon.net配下）へはアクセスできない。名古屋市Hatch、川崎市Co-Lab、福岡市100ラボ、北九州市Q-PORTと同じ方式である
 
+  - id: aichi-prefecture
+    name: 愛知県
+    organization_type: prefecture
+    prefecture: 愛知県
+    official_domain: pref.aichi.jp
+    enabled: true
+    notes: 全庁プロポーザル、デジタル戦略課、スタートアップ活用まちづくり支援の行政ニーズを収集する対象都道府県。**岐阜県・新潟県・福島県と同じnetcrew系CMSで、個別ページの本文は#main_bodyに入る。**#main、#main_a、#mymainbackは外側の入れ物なので本文には使わない。一覧の項目はli内のspan.article_dateに「2026年8月13日更新」、span.article_titleにタイトルとリンク、span.article_sectionに所属名とリンクが入るため、link_selectorをspan.article_titleまで絞らないと所属名リンクの分だけ候補が増える（全庁プロポーザルの実測で生70件が38件になる）。課のトップページでは新着がdiv.section_informationにあり、#main_body側は掲載日を持たない固定ページのハブリンクである。**AICHI X TECHはaichixtech.pref.aichi.jpというpref.aichi.jp配下のサブドメインなので、official_domainだけで到達でき外郭組織を作る必要がない。**名古屋市は政令指定都市として独立した組織で登録済みのため親子関係は結んでいない。RSSはRSS 1.0（RDF）を全庁と所属別に配信する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2301,4 +2309,92 @@ sources:
       - 募集テーマ
     notes: 静岡県実証実験サポート事業CO-LAB Shizuokaの令和8年度ページ。**Nuxtで構築されたSPAで、サーバが返すHTMLからscriptとstyleを除くと可視テキストが29文字（ページタイトルだけ）しかなく、本文と募集テーマがJavaScript実行後にしか現れない。**現行の取得経路はcheerioで静的HTMLを解析するため収集できず、札幌市の共創プラットフォームと同じ理由で無効にする。HTML内で取得できるリンクも相対2件とGoogle Cloud Storage・Google Fontsだけだった。実証実験の公募という性質から対象性は高いので、将来ヘッドレスブラウザ相当の取得手段を検討する場合の候補として残す。**実構造を確認できていないためlink_selectorとcontent_selectorは設定せず、collector_typeは暫定でlist_pageとする。**URLにco-lab-shizuoka2026と年度が含まれるため翌年度に変わる可能性があり、その場合は人が新URLを確認して差し替える必要がある。
     last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: aichi-proposal-list
+    organization_id: aichi-prefecture
+    name: プロポーザル
+    url: https://www.pref.aichi.jp/life/sub/3/19/66/
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#main_body span.article_title a[href]"
+    content_selector: "#main_body"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+      - 業務委託
+    notes: 全庁のプロポーザル・企画提案・公募を1ページへ集約する一覧。**災害対策課・福祉総務課・林務課・経営課・自然環境課のように部局を横断して集まるため、愛知県ではこの1件で全庁の調達を拾える。**確認時点は38件で全件にspan.article_dateの更新日があり、最新は2026-08-13、2026-07-01以降は10件だった。**link_selectorはspan.article_titleまで絞る。**#main_body li a[href]と書くとspan.article_section内の所属別リンクまで拾って生70件になり、重複URL18件を除いた52件のうち14件が所属名だけの候補になる。span.article_titleへ絞ると38件で所属名リンクは混ざらない。あいち・とこなめスーパーシティ構想に係る技術・サービス等の地域展開に向けた調査検討業務のようにデジタル案件も含む。**title_excludesは設定しない。岐阜県の段階マーカーの考え方をそのまま持ち込むと募集本体を落とすためである。**愛知県では質問及び回答が別ページではなく募集ページ自体へ追記され、タイトルが「（質問及び回答を追加しました）愛知県立病院未収金回収業務委託の委託先を募集します」や「【質問及び回答を追加しました（8月3日更新）】あいち・とこなめスーパーシティ構想…」のように更新告知の接頭辞へ変わる。したがって質問及び回答を除外語にすると募集中の案件が落ちる。広島市・長野県・山梨県・静岡県と同じく、実登録してAI判定と突き合わせてから決める。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: aichi-digital-strategy
+    organization_id: aichi-prefecture
+    name: デジタル戦略課 新着情報
+    url: https://www.pref.aichi.jp/soshiki/digital/
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: ".section_information span.article_title a[href]"
+    content_selector: "#main_body"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 企画提案
+      - DX推進
+      - データ連携基盤
+    notes: DX推進、データ連携基盤、マイナンバー、行政情報通信ネットワークを所管する課のトップページ。**新着はdiv.section_informationにあり確認時点は4件で、あいちＤＸ推進プラン2025年次レポート（2026-07-28）、2026年度AICHI X TECHの実証事業者決定（2026-07-15）、あいちAI・ロボティクス連携共同研究会におけるAIチャットボットサービスの整備及び運営管理業務に係る企画提案の募集（2026-06-15）、愛知県におけるデータ連携基盤共同利用に関するビジョン（2026-04-01）だった。**AIチャットボットの企画提案のように調達案件がこの新着へ載る実績が確認できたので有効化する。初回対象は2026-07-01以降の2件。#main_body span.article_titleで書くと15件になるが、あいちＤＸ推進プラン、マイナンバー制度、Aichi_Free_Wi-Fi、デジタルアーカイブリンク集のような固定ページのハブリンクで掲載日も持たない。**この課には所属別RSS（/rss/10/soshiki-31-291.xml）もあるが、内容も件数も新着4件と同一だったのでHTML側を採る。**件数が4件と少なく新着が空になる期間があるためallow_empty_candidatesで許容する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: aichi-toshi-somu
+    organization_id: aichi-prefecture
+    name: 都市総務課 新着情報
+    url: https://www.pref.aichi.jp/soshiki/toshi-somu/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: ".section_information span.article_title a[href]"
+    content_selector: "#main_body"
+    allow_empty_candidates: true
+    document_type_hints:
+      - スタートアップ
+      - まちづくり
+      - 官民連携
+    notes: スタートアップ活用まちづくり支援事業と建設業・不動産業の許認可を所管する課のトップページ。**目的の情報はスタートアップ活用まちづくり支援事業で、県内自治体のまちづくり課題をスタートアップの技術で解決する枠組みである。**#kanren_infoには刈谷市のユニバーサルデザイン、常滑市の観光データ共創、東浦町のAIを用いた画像・LiDAR解析による道路維持、岡崎市のデータドリブン商店街など実施報告37件が並ぶが、掲載日を持たないため一覧としては使えない。**新着はdiv.section_informationの5件で、確認時点の内訳は建設業・不動産業の事務連絡3件とスタートアップ関連2件（県内自治体とまちづくりに関する課題解決を目指すスタートアップ等の募集が2026-06-02、ガバメントピッチイベントの参加者募集が2026-05-18）だった。**初回対象の2件はどちらも建設業側のノイズになるが、候補が5件と少なく掲載日で期間フィルタも効くためtitle_includesとtitle_excludesは設定しない。スタートアップの募集は例年6月頃なので、次年度の募集を拾う目的で優先度を中にして有効化する。**新着にはPDFへの直リンクが混ざる。**確認時点の最新（アジア・アジアパラ競技大会による建設業許可等の事務処理期間）は/uploaded/attachment/625455.pdfを直接指しており、Content-Typeがapplication/pdfのため本文取得がrequireHtmlContentTypeで「HTMLではないContent-Type」として失敗する。Claude解析より前に落ちるので利用枠は消費しないが、Failedが1件計上され--limitの枠は消費する見込みである。**この課にも所属別RSS（/rss/10/soshiki-44-169.xml）があり100件を2021-10-01まで保持するが、2026-07-01以降は3件で建設業の事務連絡が大半を占めるためHTML側を採る。**
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: aichi-news-rss
+    organization_id: aichi-prefecture
+    name: 全庁新着情報 RSS
+    url: https://www.pref.aichi.jp/rss/10/list1.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    document_type_hints:
+      - 新着情報
+    notes: 全庁の新着情報を配信するRSS 1.0（RDF）。確認時点は100件で2026-08-06から2026-08-18の約12日分、dc:dateは全件にある。**無効にする理由は3つある。**第一に、**dc:subjectは63種類すべてが障害福祉課・災害対策課・医務課のような所属名だけで、福島県と同じくcategory_includesで分野を絞れない。**nc:category01とnc:category02は100件に値が入っているが、RSS解析はdc:subjectだけをcategoryへ写すため読み取られない。第二に、**100件のうち企画提案を含むのは2件だけで、そのジブリパークをイメージした駅等における装飾事業委託業務と森林クレジット制度活用促進事業普及啓発業務委託はどちらもaichi-proposal-listの一覧にも載っており独自価値が無い。**プロポーザルと公募は0件だった。第三に、12日で100件という更新ペースなので有効化すると初回に100件がAI判定へ回る。静岡県の全庁RSSは他部局の案件を拾える唯一の経路だったため有効にしたが、**愛知県は全庁プロポーザル一覧が部局を横断しているので同じ理由が成り立たない。**秋田県・広島市・福井県・岐阜県と同じ判断で無効状態で保持する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: aichi-x-tech
+    organization_id: aichi-prefecture
+    name: AICHI X TECH 募集テーマ
+    url: https://aichixtech.pref.aichi.jp/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    link_selector: 'a[href^="projects/"]'
+    content_selector: "main"
+    document_type_hints:
+      - 実証実験
+      - 募集テーマ
+      - 行政課題
+    notes: 愛知県と企業等が連携し、県庁内の各所属が抱える行政課題をデジタル技術で解決する実証事業の専用サイト。pref.aichi.jp配下のサブドメインなので外郭組織を作らずaichi-prefectureへ紐付けている。静的HTMLで本文が取得でき、トップページの可視テキストは1,972文字で、静岡県のCO-LAB Shizuokaのように本文がJavaScript実行後にしか現れない問題は無い。**各テーマに個別URL（projects/new_project01.htmlからnew_project06.html）があり、神戸UIKや富山Digi-PoCのようなjavascript:void(0)ではないのでlist_pageとして成立する。**a[href^="projects/"]で6件を取得できることを確認した。個別ページは可視テキスト5,029文字でPDFは無く、解決したい課題・想定する実証実験・実現したい未来・提案企業が得られるもの・ストーリーが節ごとに書かれた行政ニーズの資料として理想的な内容である（防災ビジネス情報提供システムの構築では、事業者から受けた技術情報を活用できていない課題と、WEB上のマッチングプラットフォーム構築および職員のエクセル入力業務の効率化検証が示されている）。**それでも無効にする理由は2つある。**第一に、**確認時点で6テーマすべてが受付終了で、募集期間は2026年5月11日から2026年6月8日までだった。**第二に、**URLに年度が入らずnew_project01.htmlの形式で、projects/project01.htmlもprojects/r6_project01.htmlも404、new_project07.htmlも404だった。前年度分が見つからないため翌年度に同じURLが上書きされる可能性が高く、その場合は公式URL単位の重複判定で新しいテーマが恒久的にスキップされる。**次回募集（例年5月頃）の開始時に、新テーマへ別URLが発行されるか既存URLが上書きされるかを人が確認してから有効化を判断する。福島県と新潟県のPPP/PFIと同じC型の扱いである。掲載中の6テーマを取得したい場合は、有効化ではなくnotion:batchで6URLを一度だけ登録する運用が適する。
+    last_verified_at: "2026-08-18"
     verification_status: verified
