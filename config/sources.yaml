@@ -224,6 +224,22 @@ organizations:
     enabled: true
     notes: 全庁の入札・公売公告、DX課の情報システム調達、官民連携の行政ニーズを収集する対象都道府県。長野県・石川県・宮城県・富山県と同じ#tmp_接頭辞のCMSで、一覧ページと個別ページのどちらも本文は#tmp_contentsに入る。確認した4ページにlink[type=rss]もxmlフィードへのリンクも無く、取得手段はHTMLだけである。**掲載日の扱いが一覧と個別ページで異なる。**公告一覧のliには日付のマークアップが無く、DX課の新着は「7月14日」のように年を含まないためparseDateCandidateがnullを返す。一方で個別ページには「公示日 2026年08月17日」の欄があり、こちらはparseDateCandidateが解釈できる。候補の期間フィルタは一覧側の掲載日で判定するため、山梨県の候補は掲載日不明として全件が対象になりinitial_sinceは効かない
 
+  - id: shizuoka-prefecture
+    name: 静岡県
+    organization_type: prefecture
+    prefecture: 静岡県
+    official_domain: pref.shizuoka.jp
+    enabled: true
+    notes: 企画部の入札・業務委託・プロポーザル、デジタル戦略課の政策シグナル、官民連携の行政ニーズを収集する対象都道府県。CMSは他県と別系統で、**本文は#content（内側にdiv#voice）に入るが、新着更新情報のページだけは#content2と.newslistを使う**ため、newslist.htmlへ#content系のセレクタを当てると0件になる。個別の案件ページでは#contentとmainが同じ範囲を指すので、content_selectorを省略してもmainへフォールバックして同じ本文が取れる。**掲載日は個別ページの「更新日 2026年5月27日」から取れるが、入札一覧のliには日付が無い。**RSSはRSS 2.0を1本配信し、確認時点で114件・pubDate全件・**category要素なし**だった。添付資料にWordを使う案件があり（統合宛名システムの実施要領はWord 23.8KB）、PDF以外は取得対象外である
+
+  - id: shizuoka-prefecture-colab
+    name: 静岡県
+    organization_type: external_organization
+    parent_organization_id: shizuoka-prefecture
+    official_domain: shizuoka.eiicon.net
+    enabled: true
+    notes: 静岡県実証実験サポート事業CO-LAB Shizuokaが第三者SaaSのeiicon（AUBA）上のテナントサブドメインで公開されているため、config/README.mdの方針に従い静岡県を親組織とする別組織として登録する。**official_domainにはeiicon.netではなくテナントのshizuoka.eiicon.netを指定している。**isHostnameAllowedは完全一致とドット付きサフィックス一致だけを許すため、この指定では他テナント（別組織のeiicon.net配下）へはアクセスできない。名古屋市Hatch、川崎市Co-Lab、福岡市100ラボ、北九州市Q-PORTと同じ方式である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2195,5 +2211,94 @@ sources:
       - サウンディング型市場調査
       - 官民連携
     notes: 山梨県総務部と株式会社山梨中央銀行地方創生推進部が事務局を務め、県内自治体の公共施設の整備・維持管理・運営に関する官民連携を進めるプラットフォーム。**ページ全体が1つの官民連携ニーズを指すのでsingle_pageだが、福島県と新潟県のPPP/PFIと同じ理由で無効のまま保持する。**single_pageの重複判定は公式URL単位なので、初回に1回解析された後は同じURLが重複としてClaude到達前にスキップされ、回次が変わるサウンディングの募集を継続的に拾えない。確認時点では令和8年度の第2回サウンディング型市場調査の参加事業者募集が掲載され、8月24日実施で開催案内PDFが付いていた。第1回は令和8年6月30日に実施済みで、サウンディング対象事業は甲府市の本庁舎他PBX更新（クラウド化）事業と本庁舎駐車場管制設備更新等（設計・施工・運営）事業だった。**PBX更新のクラウド化のように自社領域と重なる対象事業が出るため対象性は高い。**民間企業パートナー制度は随時受付で、パートナーリストと募集チラシのPDFがあるが、登録ページはやまなしくらしねっとの外部ページである。活動実績は令和7年度から令和3年度まで年度別の別URLへ分かれる。掲載中の第2回サウンディングを取得したい場合は、この情報源を有効化するのではなくnotion:registerで1件だけ単発登録する運用が適する。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: shizuoka-kikaku-procurement
+    organization_id: shizuoka-prefecture
+    name: 入札・業務委託・プロポーザル等（企画部）
+    url: https://www.pref.shizuoka.jp/kensei/nyusatsukobai/nyusatsuchiji/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#content h2:first-of-type ~ ul.listlink:not(h2:nth-of-type(2) ~ ul.listlink) > li > a[href]"
+    content_selector: "#content"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 公募型企画提案
+      - 公募型プロポーザル
+      - 業務委託
+    notes: 企画部が所管する入札・業務委託・プロポーザルを年度別に集約する一覧。デジタル戦略課と電子県庁課の調達がここへ載るため、静岡県で最も自社領域と重なる情報源である。確認時点の令和8年度は9件で、静岡県統合宛名システム再構築及び運用保守、静岡県情報処理基盤構築運用保守、令和8年度行政手続のDX計画策定支援、令和8年度AI活用推進支援、県職員課題解決型DX実践研修、DX推進リーダー育成、外部デジタル人材確保に向けた市町伴走支援、企業版ふるさと納税マッチング支援、次世代エアモビリティ導入促進事業費補助金が並ぶ。**link_selectorは年度セクションの先頭だけを取る。**#content ul.listlink > li > a[href]と書くと20件になり、令和7年度10件と令和6年度1件の終了済み案件まで候補へ混ざる。年度は毎年変わるため見出し語に年度を書けないので、位置指定の差し引きで先頭のh2セクションだけを取り出している。実HTMLの先頭へ令和9年度のh2とulを挿入して確認すると、この指定は新しい年度セクションへ自動的に追従して1件だけを返し、旧年度は0件になった。年度切り替え直後に新しいh2ができてulがまだ無い期間は候補0件になるためallow_empty_candidatesで許容する。**一覧に掲載日が無いため9件すべてが掲載日不明として毎回候補になる**が、対象外判定でもNotionページが作られ次回から重複としてスキップされるので、初回に--limitで分割すれば以降は新規追加分だけになる。個別ページには「更新日」があり解釈できる。令和8年度の一覧には募集期限を過ぎた案件も残る（統合宛名システムの参加表明書提出期限は6月9日）。title_excludesは未設定とし、広島市・長野県・山梨県と同じく実登録してAI判定と突き合わせてから決める。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: shizuoka-digital-strategy
+    organization_id: shizuoka-prefecture
+    name: デジタル戦略課 新着情報
+    url: https://www.pref.shizuoka.jp/kensei/introduction/soshiki/1001836/1040980/1042018.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#content h2:contains('新着情報') + ul.objectlink > li > a[href]"
+    content_selector: "#content"
+    document_type_hints:
+      - 計画
+      - 方針
+      - ビジョン
+    notes: 情報通信技術の利活用の総合的な企画・調整を所管する課のトップページ。**新着情報は計画・方針・ビジョンの策定公表が中心で調達案件は載らない**（調達はshizuoka-kikaku-procurementへ載る）ため、source_categoryをpolicy_signalにしている。確認時点の新着9件は次世代エアモビリティ補助金の採択、静岡県ICTエキスパート派遣事業、施設予約システム「とれるネット」の新システム移行、静岡県サイバーセキュリティ戦略本部、静岡県デジタル人材育成・確保方針、静岡県データ連携基盤共同利用ビジョン、ふじのくにDX推進計画の進捗状況評価、電子契約、5Gアンテナ基地局設置ワンストップ窓口だった。**利用可能9件すべてにli内の（令和8年6月17日）形式の日付があり解釈できる。**ローカルに保存したHTMLでは生11件・最新2026-06-17で初回対象は0件だったが、その約30分後の実アクセス確認では生12件・利用可能9件（重複URL3件を除外）に増え、最新はサイバーセキュリティ戦略本部の2026-08-18になっていた。**この新着は随時書き換わるので、初回対象の件数は実行時に確定する。**2022年の項目も残るため回転自体は非常に遅い。**#content ul.objectlinkで書くと59件になり、DX推進本部の会議資料PDFなど新着以外まで混ざる**ので、見出し「新着情報」直後のulに限定している。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: shizuoka-news-rss
+    organization_id: shizuoka-prefecture
+    name: 全庁新着更新情報 RSS
+    url: https://www.pref.shizuoka.jp/news.rss
+    collector_type: rss
+    source_category: procurement
+    priority: medium
+    enabled: true
+    title_includes:
+      - 企画提案
+      - 公募型
+      - プロポーザル
+    title_excludes:
+      - 募集終了
+    document_type_hints:
+      - 公募型企画提案
+      - 業務委託
+    notes: 全庁の新着更新情報を配信するRSS 2.0。確認時点は114件で2026-07-20から2026-08-17の約4週間分、pubDateは全件にあるが**category要素が1つも無いためcategory_includesは使えない**。114件のうち調達・公募語を含むのは6件だけで、残りは学校関係13件、企業支援13件、防災9件などノイズが大半である。**そこでtitle_includesで絞る。**実測すると企画提案5件、公募型はその部分集合、プロポーザルは0件で、委託を含む5件は全部が企画提案案件だったため新潟県の調達RSSのような除雪・清掃のノイズは発生しない。プロポーザルは現時点で0件だが将来の表記に備えて残す。さらに（募集終了）が付く案件をtitle_excludesで落とす。実アクセス確認では生114件からtitle_includesで108件、title_excludesで3件を除外し**利用可能3件**になった（森の力広報業務委託の公募型企画提案、救急安心電話相談窓口（＃7119）運営業務委託の企画提案、県職員課題解決型DX実践研修の企画提案）。**秋田県・広島市・福井県・岐阜県の全庁新着RSSは無効にしたが静岡県は有効にする。**3件のうち2件がshizuoka-kikaku-procurementに載らない他部局の案件で（森の力広報は経済産業部、救急安心電話は危機管理部）、**部局をまたいで企画提案募集を拾える唯一の経路**だからである。県職員課題解決型DX実践研修は企画部の一覧と重複するが、重複判定でClaude到達前にスキップされる。HTML版のnewslist.htmlは静的HTMLだが55リンクでRSSの114件より少なく、#content2と.newslistを使う別構造なのでRSSを採る。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: shizuoka-kanmin-jissenjuku
+    organization_id: shizuoka-prefecture
+    name: 静岡県官民連携実践塾
+    url: https://www.pref.shizuoka.jp/kensei/gyoseikaikaku/kanminrenkei/1011975.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - サウンディング
+      - 官民連携
+    notes: 公共施設の整備や運営に民間視点のアイデアとノウハウを取り入れる意見交換の場で、静岡県官民連携地域プラットフォームの実践塾。東部・中部・西部の3地域に設置し、中部と西部は既にプラットフォームを運営する静岡市・浜松市と連携する。**ページの構成は実践塾の説明と開催案内で案件一覧が無いためsingle_pageに当たる。**確認時点は見出しが「（終了しました）令和8年度静岡県官民連携実践塾開催」で、令和8年度第1回は2026-07-29に終了しており、#content内の候補リンクは詳細ページへの1件だけだった。**山梨県・福島県・新潟県のPPP/PFIと同じ理由で無効のまま保持する。**single_pageの重複判定は公式URL単位なので初回1回だけ解析され、回次が変わる開催案内を継続的に拾えない。対話（サウンディング）では自治体が持ち込む個別の事業案件を議論するため対象性はあり、次回開催の案内が出た時点で詳細ページを人が確認して別Sourceにするかを判断する。
+    last_verified_at: "2026-08-17"
+    verification_status: verified
+
+  - id: shizuoka-colab
+    organization_id: shizuoka-prefecture-colab
+    name: CO-LAB Shizuoka（静岡県実証実験サポート事業）
+    url: https://shizuoka.eiicon.net/co-lab-shizuoka2026/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 実証実験
+      - 募集テーマ
+    notes: 静岡県実証実験サポート事業CO-LAB Shizuokaの令和8年度ページ。**Nuxtで構築されたSPAで、サーバが返すHTMLからscriptとstyleを除くと可視テキストが29文字（ページタイトルだけ）しかなく、本文と募集テーマがJavaScript実行後にしか現れない。**現行の取得経路はcheerioで静的HTMLを解析するため収集できず、札幌市の共創プラットフォームと同じ理由で無効にする。HTML内で取得できるリンクも相対2件とGoogle Cloud Storage・Google Fontsだけだった。実証実験の公募という性質から対象性は高いので、将来ヘッドレスブラウザ相当の取得手段を検討する場合の候補として残す。**実構造を確認できていないためlink_selectorとcontent_selectorは設定せず、collector_typeは暫定でlist_pageとする。**URLにco-lab-shizuoka2026と年度が含まれるため翌年度に変わる可能性があり、その場合は人が新URLを確認して差し替える必要がある。
     last_verified_at: "2026-08-17"
     verification_status: verified

@@ -191,6 +191,7 @@ describe('allow_empty_candidatesの検証', () => {
       'kobe-rfi-rfc',
       'kobe-sounding',
       'sapporo-smartcity-procurement',
+      'shizuoka-kikaku-procurement',
       'yamanashi-dx-news',
     ]);
     // 一覧ページ解析だけが読み取る設定なので、他のcollector_typeへは付けない。
