@@ -248,6 +248,14 @@ organizations:
     enabled: true
     notes: 全庁プロポーザル、デジタル戦略課、スタートアップ活用まちづくり支援の行政ニーズを収集する対象都道府県。**岐阜県・新潟県・福島県と同じnetcrew系CMSで、個別ページの本文は#main_bodyに入る。**#main、#main_a、#mymainbackは外側の入れ物なので本文には使わない。一覧の項目はli内のspan.article_dateに「2026年8月13日更新」、span.article_titleにタイトルとリンク、span.article_sectionに所属名とリンクが入るため、link_selectorをspan.article_titleまで絞らないと所属名リンクの分だけ候補が増える（全庁プロポーザルの実測で生70件が38件になる）。課のトップページでは新着がdiv.section_informationにあり、#main_body側は掲載日を持たない固定ページのハブリンクである。**AICHI X TECHはaichixtech.pref.aichi.jpというpref.aichi.jp配下のサブドメインなので、official_domainだけで到達でき外郭組織を作る必要がない。**名古屋市は政令指定都市として独立した組織で登録済みのため親子関係は結んでいない。RSSはRSS 1.0（RDF）を全庁と所属別に配信する
 
+  - id: sendai-city
+    name: 仙台市
+    organization_type: designated_city
+    prefecture: 宮城県
+    official_domain: city.sendai.jp
+    enabled: true
+    notes: 官民連携による課題解決、全庁の公募型プロポーザル、DX施策、スマートシティ実証の行政ニーズを収集する対象自治体。宮城県は別組織として登録済みで、親子関係は結んでいない。市公式ページは#tmp_接頭辞のCMSを使用し、一覧・個別ページの本文は#tmp_contentsに入る
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2396,5 +2404,108 @@ sources:
       - 募集テーマ
       - 行政課題
     notes: 愛知県と企業等が連携し、県庁内の各所属が抱える行政課題をデジタル技術で解決する実証事業の専用サイト。pref.aichi.jp配下のサブドメインなので外郭組織を作らずaichi-prefectureへ紐付けている。静的HTMLで本文が取得でき、トップページの可視テキストは1,972文字で、静岡県のCO-LAB Shizuokaのように本文がJavaScript実行後にしか現れない問題は無い。**各テーマに個別URL（projects/new_project01.htmlからnew_project06.html）があり、神戸UIKや富山Digi-PoCのようなjavascript:void(0)ではないのでlist_pageとして成立する。**a[href^="projects/"]で6件を取得できることを確認した。個別ページは可視テキスト5,029文字でPDFは無く、解決したい課題・想定する実証実験・実現したい未来・提案企業が得られるもの・ストーリーが節ごとに書かれた行政ニーズの資料として理想的な内容である（防災ビジネス情報提供システムの構築では、事業者から受けた技術情報を活用できていない課題と、WEB上のマッチングプラットフォーム構築および職員のエクセル入力業務の効率化検証が示されている）。**それでも無効にする理由は2つある。**第一に、**確認時点で6テーマすべてが受付終了で、募集期間は2026年5月11日から2026年6月8日までだった。**第二に、**URLに年度が入らずnew_project01.htmlの形式で、projects/project01.htmlもprojects/r6_project01.htmlも404、new_project07.htmlも404だった。前年度分が見つからないため翌年度に同じURLが上書きされる可能性が高く、その場合は公式URL単位の重複判定で新しいテーマが恒久的にスキップされる。**次回募集（例年5月頃）の開始時に、新テーマへ別URLが発行されるか既存URLが上書きされるかを人が確認してから有効化を判断する。福島県と新潟県のPPP/PFIと同じC型の扱いである。掲載中の6テーマを取得したい場合は、有効化ではなくnotion:batchで6URLを一度だけ登録する運用が適する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: sendai-cross-lab-partnership
+    organization_id: sendai-city
+    name: クロス・センダイ・ラボ パートナーシップ推進事業
+    url: https://www.city.sendai.jp/project/cslab/partnership01.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents2 h3:contains('課題設定型') + ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 課題設定型提案募集
+      - 官民連携
+      - 実証事業
+    notes: 民間企業等のノウハウやアイデアを行政課題・地域課題の解決へつなぐ官民連携窓口。確認時点では「課題設定型の提案募集について」の直後に、児童館等の空間設計および環境学習に係る提案募集1件が掲載されている。ページ後半の実施案件45件は実施済み事例なので、見出し直後のulだけに限定して候補へ含めない。募集中の課題が無い期間は0件が正常なためallow_empty_candidatesで許容する。候補には掲載日が無く「当面の間」とだけ記載されるため、期間フィルタでは絞れない
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: sendai-suggest-sendxi-responses
+    organization_id: sendai-city
+    name: Suggest SenDXi 対応方針一覧
+    url: https://www.city.sendai.jp/ict-kikaku/degitalmeyasu_taiouichiran.html
+    collector_type: manual
+    source_category: policy_signal
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 行政サービス改善提案
+      - 対応方針
+    notes: 仙台市デジタル改善目安箱へ寄せられた情報と担当課の対応方針を随時公開する市公式の案内ページ。市公式HTMLには説明と2本の4ec2aa87.viewer.kintoneapp.com配下の外部リンクだけがあり、外部KViewerの初期HTMLもNext.jsのshellで、JavaScript実行後に一覧を描画する。一方、認証不要の公開JSON endpoint（/public/api/records/{viewCode}/{page}）があり、records・totalCount・numを取得できる。確認時点の実測は、対応方針ありの一覧が1ページ30件・総数280件、情報共有の一覧が1ページ20件・総数26件だった。公開JSONは存在するが現行Collectorは外部SaaSの取得に未対応で、非保証APIの安定性も確認が必要なためmanualかつ無効状態で保持する。将来、収集の必要性とendpointの安定性を再確認したうえで専用取得を検討する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: sendai-proposal-list
+    organization_id: sendai-city
+    name: 公募型プロポーザル方式による事業者募集
+    url: https://www.city.sendai.jp/jigyosha/keyaku/jigyosha/proposal/index.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents2 > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    title_excludes:
+      - 決定しました
+      - 決定いたしました
+      - 特定しました
+      - 選定しました
+      - 契約を締結
+      - 受注者の決定
+      - 候補者決定
+      - 候補者の決定
+      - 審査結果
+      - 審査講評
+      - 募集終了
+      - 終了しました
+      - 結果について
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+      - 業務委託
+    notes: 全庁の公募型プロポーザルを部局横断で集約する一覧。確認時点は単一ulに445件が蓄積され、一覧には掲載日が無い。明確な選定・決定・終了済みの段階マーカーだけをtitle_excludesで除外し、404件を落として41件を候補として残す。質問回答や募集要項修正は募集期間中にも付くため除外しない。残る候補にも過年度案件が混ざり得るが、タイトルだけで終了と断定できないものは後続のAI判定へ渡す。掲載日不明のためinitial_sinceは効かず、初回は--limitで分割し、以降はNotionの公式URL重複確認で登録済み候補を取得・AI解析前にスキップする
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: sendai-dx-initiatives
+    organization_id: sendai-city
+    name: DX・デジタル化に関する取り組み
+    url: https://www.city.sendai.jp/system/shise/security/johoka/digital.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    link_selector: "#tmp_contents2 > p > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - DX推進計画
+      - 行政手続オンライン化
+      - デジタル施策
+    notes: DX推進計画、Suggest SenDXi、オンライン手続、SENDAIポータル、デジタル人材などをまとめた固定ハブ。確認時点は13リンクで、外部のSENDAIポータル1件を除く12件が市公式ドメイン内にあるが、更新日付きの新着一覧ではなく複数の既存施策への案内である。定期収集すると掲載日不明の固定ページを一度に候補化し、Suggest SenDXiなど他Sourceとも重複するため、政策確認用として無効状態で保持する。新しい調達や提案募集は全庁プロポーザルと他の有効Sourceから取得する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: sendai-smart-frontier
+    organization_id: sendai-city
+    name: 仙台市×東北大学スマートフロンティア協議会 協議会内公募事業
+    url: https://www.city.sendai.jp/project/supercity/20240830.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    link_selector: "#tmp_contents2 a[href*='/project/supercity/20'][href$='.html']"
+    content_selector: "#tmp_contents"
+    allow_empty_candidates: true
+    document_type_hints:
+      - スマートシティ実証
+      - 規制改革
+      - 協議会内公募
+    notes: 仙台市と東北大学によるスマートシティ実証の協議会内公募ページ。現設定では2026年8月17日更新の「先端的サービス創出及び規制改革推進事業」再公募ページ1件を単発取得できるが、継続巡回には適さないため無効状態で保持する。親URLの20240830.htmlは年度をまたいで本文が更新・再利用され、当初公募は親ページ本文へ直接掲載されるため現在のlist_page selectorでは候補化できない。また再公募の掲載日は2026年8月17日だが、既存の日付抽出は親ページ内の質問受付期限2026年6月8日をpublishedAtとして誤取得する。initial_sinceは初回収集開始日かつ自動収集の下限日だが、誤ったpublishedAt自体は解決できないため、このSourceの回避策には使用しない。次回募集時に親ページ、個別URL、掲載日の構造を再確認し、安全な取得方法が確認できた場合だけ再有効化を検討する。現在の再公募を取得する必要がある場合はnotion:register等で公式個別URLを単発登録する
     last_verified_at: "2026-08-18"
     verification_status: verified

@@ -193,6 +193,8 @@ describe('allow_empty_candidatesの検証', () => {
       'kobe-rfi-rfc',
       'kobe-sounding',
       'sapporo-smartcity-procurement',
+      'sendai-cross-lab-partnership',
+      'sendai-smart-frontier',
       'shizuoka-kikaku-procurement',
       'yamanashi-dx-news',
     ]);
