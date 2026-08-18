@@ -1,5 +1,6 @@
 import type {
   PublicOrganization,
+  PublicRegion,
   PublicSource,
   PublicSourceList,
 } from './source-list.ts';
@@ -39,9 +40,9 @@ export function renderPublicSourcePage(sourceList: PublicSourceList): string {
         >
         <p class="search-result" aria-live="polite" data-search-result>${sourceList.organizationCount}自治体・${sourceList.sourceCount} Sourceを表示</p>
       </div>
+      ${renderOrganizationIndex(sourceList.regions)}
       <p class="no-results" data-no-results hidden>該当するSourceはありません。</p>
-      ${renderSection('都道府県', sourceList.prefectures)}
-      ${renderSection('市区町村', sourceList.municipalities)}
+      ${sourceList.regions.map(renderRegionSection).join('\n')}
     </main>
     <footer class="page-footer">
       <div class="container">
@@ -54,16 +55,46 @@ export function renderPublicSourcePage(sourceList: PublicSourceList): string {
 `;
 }
 
-function renderSection(title: string, organizations: PublicOrganization[]): string {
-  const organizationGroups = organizations.map(renderOrganization).join('\n');
-  return `<section class="source-section" aria-labelledby="${escapeAttribute(title)}" data-source-section>
+function renderOrganizationIndex(regions: PublicRegion[]): string {
+  return `<nav class="organization-index" aria-labelledby="organization-index-title" data-organization-index>
+        <div class="index-heading">
+          <h2 id="organization-index-title">登録自治体</h2>
+          <p>地域・都道府県の北から南の順に掲載しています。</p>
+        </div>
+        <div class="region-index-list">
+          ${regions.map(renderRegionIndex).join('\n')}
+        </div>
+      </nav>`;
+}
+
+function renderRegionIndex(region: PublicRegion): string {
+  const links = region.organizations.map((organization) => {
+    const id = escapeAttribute(organization.id);
+    const anchorId = escapeAttribute(organizationAnchorId(organization.id));
+    return `<li data-index-entry><a href="#${anchorId}" data-index-organization="${id}">${escapeHtml(organization.name)}</a></li>`;
+  }).join('');
+  const emptyMessage = region.organizations.length === 0 ? '登録自治体なし' : '';
+
+  return `<section class="region-index-item" data-index-region="${escapeAttribute(region.id)}">
+            <h3>${escapeHtml(region.name)}</h3>
+            <div class="region-index-organizations">
+              <ul>${links}</ul>
+              <p class="region-index-empty" data-index-empty${emptyMessage === '' ? ' hidden' : ''}>${emptyMessage}</p>
+            </div>
+          </section>`;
+}
+
+function renderRegionSection(region: PublicRegion): string {
+  const organizationGroups = region.organizations.map(renderOrganization).join('\n');
+  return `<section class="source-section" aria-labelledby="region-${escapeAttribute(region.id)}" data-source-section data-region-id="${escapeAttribute(region.id)}">
         <div class="section-heading">
-          <h2 id="${escapeAttribute(title)}">${escapeHtml(title)}</h2>
-          <span data-section-count>${organizations.length}自治体</span>
+          <h2 id="region-${escapeAttribute(region.id)}">${escapeHtml(region.name)}</h2>
+          <span data-section-count>${region.organizations.length}自治体</span>
         </div>
         <div class="organization-list">
           ${organizationGroups}
         </div>
+        <p class="empty-region" data-empty-region${region.organizations.length === 0 ? '' : ' hidden'}>登録自治体なし</p>
       </section>`;
 }
 
@@ -72,7 +103,9 @@ function renderOrganization(organization: PublicOrganization): string {
   const activeSourceCount = organization.sources
     .filter((source) => source.status === 'active').length;
 
-  return `<section class="organization-group" data-organization>
+  const id = escapeAttribute(organization.id);
+  const anchorId = escapeAttribute(organizationAnchorId(organization.id));
+  return `<section id="${anchorId}" class="organization-group" data-organization data-organization-id="${id}">
             <div class="organization-heading">
               <h3>${escapeHtml(organization.name)}</h3>
               <p class="organization-count"><span>継続確認中 ${activeSourceCount}</span><span aria-hidden="true"> / </span><span>登録 ${organization.sources.length}</span></p>
@@ -81,6 +114,10 @@ function renderOrganization(organization: PublicOrganization): string {
               ${sources}
             </ul>
           </section>`;
+}
+
+function organizationAnchorId(organizationId: string): string {
+  return `organization-${organizationId}`;
 }
 
 function renderSource(source: PublicSource): string {

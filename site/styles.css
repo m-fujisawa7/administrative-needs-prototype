@@ -153,6 +153,80 @@ main {
   text-align: center;
 }
 
+.organization-index {
+  margin-top: 26px;
+}
+
+.index-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1d6f83;
+}
+
+.index-heading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.index-heading p {
+  margin: 0;
+  color: #647681;
+  font-size: 0.76rem;
+}
+
+.region-index-list {
+  border-bottom: 1px solid #cfd8dd;
+}
+
+.region-index-item {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 14px;
+  padding: 9px 0;
+}
+
+.region-index-item + .region-index-item {
+  border-top: 1px solid #e7ecef;
+}
+
+.region-index-item h3 {
+  margin: 0;
+  color: #12303e;
+  font-size: 0.86rem;
+}
+
+.region-index-organizations {
+  min-width: 0;
+}
+
+.region-index-organizations ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.region-index-organizations li {
+  min-width: 0;
+}
+
+.region-index-organizations a {
+  display: block;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.region-index-empty {
+  margin: 0;
+  color: #7b8991;
+  font-size: 0.78rem;
+}
+
 .source-section {
   margin-top: 34px;
 }
@@ -182,8 +256,15 @@ main {
 }
 
 .organization-group {
+  scroll-margin-top: 16px;
   padding: 18px 0 20px;
   border-bottom: 1px solid #cfd8dd;
+}
+
+.organization-group:target {
+  margin-inline: -8px;
+  padding-inline: 8px;
+  background: #eef8fb;
 }
 
 .organization-heading {
@@ -211,6 +292,14 @@ main {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.empty-region {
+  margin: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid #cfd8dd;
+  color: #7b8991;
+  font-size: 0.82rem;
 }
 
 .source-item {
@@ -324,6 +413,19 @@ main {
 
   .source-section {
     margin-top: 28px;
+  }
+
+  .index-heading {
+    display: block;
+  }
+
+  .index-heading p {
+    margin-top: 2px;
+  }
+
+  .region-index-item {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 8px;
   }
 
   .organization-heading {
