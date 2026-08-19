@@ -288,6 +288,14 @@ organizations:
     enabled: true
     notes: 情報システム調達、デジタル戦略課の担当ページ、行政・施策の入札を収集する対象都道府県。**山梨県・長野県・石川県・宮城県・富山県と同じ#tmp_接頭辞のCMSで、本文は#tmp_contentsに入る。**#tmp_wrapper、#tmp_main、.wrap_col_main、.col_main、#tmp_read_contentsは外側の入れ物である。**一覧の形式がページごとに3種類あり、掲載日の持ち方も異なる。**情報システム入札情報はli内に「令和8年3月5日掲載：」の和暦プレフィックスを置き、デジタル戦略課の担当ページ一覧はli内のp.dateに「2026年8月17日」の西暦を置き、行政・施策に関する入札等はdiv.idx3_list配下のli直下にaがあるだけで掲載日を持たない。和暦・西暦ともparseDateCandidateが行テキストから解釈できることを確認した。確認した5ページにRSSの配信は無く、取得手段はHTMLだけである。**個別案件URLは/n026/p155023.htmlや/n003/p149036.htmlのように所属コードと連番で発行され、年度や回次で固定URLを上書き再利用する形ではない。**ページャはどの一覧にも無く固定件数のウィンドウ表示である
 
+  - id: wakayama-prefecture
+    name: 和歌山県
+    organization_type: prefecture
+    prefecture: 和歌山県
+    official_domain: pref.wakayama.lg.jp
+    enabled: true
+    notes: デジタル実証、官民共創、行政DX、全庁の入札・プロポーザルを調査対象とする都道府県。県公式CMSは一覧・個別ページとも本文が#contentに入り、その直下にh1とdiv.articleまたは日付付き一覧が置かれる。行政企画課の新着はdiv.list.list-dateのliに掲載日と個別ページへのリンクを持つ。入札・物品・役務はHTMLとRSS 2.0を同数保持するが、一部の案件URLを年度別の別調達へ再利用するため、現行のURL単位duplicateとは相性が悪い
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2880,4 +2888,74 @@ sources:
       - 会議資料
     notes: 行財政改革推進会議の回次別アーカイブ。第7回（令和8年6月17日）から過去回まで、回ごとに会議資料のPDFリンクが並ぶ。**無効にする理由は、候補が会議資料PDFへの直リンクだけで個別のHTML案件ページが存在しないことである。**実測では#tmp_contents ul li a[href]で10件を取得できるが掲載日は0件で、いずれもPDFを直接指す。現行のCollectorはCandidate URLをHTMLとして取得する前提のため、requireHtmlContentTypeで「HTMLではないContent-Type」として失敗する。愛知県の都市総務課で同種のPDF直リンクを確認済みだが、あちらはHTML候補が主体でPDFが1件混ざるケースだったのに対し、こちらは全件がPDFなのでselectorでの回避ができない。**長野県のDX推進本部や石川県の会議アーカイブと同じ扱いで、無効のまま保持する。**行財政改革の方向性は政策シグナルとして価値があるため、会議資料をHTMLページとして掲載する形へ変わった場合は再評価する。
     last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: wakayama-digital-utilization-project
+    organization_id: wakayama-prefecture
+    name: 課題解決型デジタル活用プロジェクト推進事業
+    url: https://www.pref.wakayama.lg.jp/prefg/020400/02/Digital_Utilization_Project.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#content .article ul li a[href]"
+    content_selector: "#content"
+    document_type_hints:
+      - デジタル実証
+      - 公募型プロポーザル
+      - 課題解決
+    notes: 県庁各課から集めた課題テーマに対し、民間事業者からデジタル技術を使う実証プロジェクトを公募する事業。確認時点は各年度事業2件と公募・実証のお知らせ5件の計7件で、生件数・構造上有効・filter後はいずれも7件だった。**一覧のliには年を含む完全な掲載日が無いため7件すべてpublishedAt不明となり、共通開始日2026-07-01適用後も初回期間対象は7件、既定limit 5なら未登録時に最大5件が後続処理へ進む。**令和6年度と令和7年度の公募ページはr6_digital_proposal.htmlとr7_digital_proposal.html、令和8年度はd00222022.html、年度事業ページもd00220084.htmlとd00222046.htmlのように別URLであり、確認できた範囲では年度・案件ごとにOfficial URLが分離している。募集終了や実証結果も行政ニーズの内容を含むためtitle_excludesは設定しない
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: wakayama-unlock-kii-project
+    organization_id: wakayama-prefecture
+    name: 社会課題解決官民連携推進プログラム『UNLOCK きい PROJECT』
+    url: https://www.pref.wakayama.lg.jp/prefg/061000/d00222353.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - 官民共創
+      - 社会課題解決
+      - 事業者マッチング
+    notes: 自治体職員が課題を整理し、県内外事業者とのマッチングを通じて官民共創事業の実装を目指す高関連度のプログラム。**無効にする理由は、令和8年度のキックオフ、連続講座、出張講座、個別メンタリング、複数回のマッチング予定が同じ固定ページ本文へ順次追記され、各活動が案件固有のHTML URLを持たないためである。**公式ドメイン内のHTMLリンクは令和7年度の活動実績ページ1件だけで、現年度の情報をlist_pageとして候補化できない。single_pageなら初回対象は掲載日不明の1件になるが、登録後はOfficial URL単位duplicateで本文取得前にスキップされ、同年度の追加課題や次回活動を継続取得できない。個別の現行内容が必要な場合はnotion:register等の単発登録で扱い、今後、課題または年度ごとの固有URLが公開された場合に再有効化を検討する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: wakayama-administrative-planning-news
+    organization_id: wakayama-prefecture
+    name: 行政企画課 新着情報
+    url: https://www.pref.wakayama.lg.jp/prefg/0101001/documents/DX_top.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#content .list.list-date li a[href]"
+    content_selector: "#content"
+    document_type_hints:
+      - 行政DX
+      - 公募型プロポーザル
+      - 行政手続オンライン化
+    notes: 県庁DX、電子申請・電子契約、市町村DXを所管する行政企画課の新着一覧。確認時点は生件数・構造上有効・filter後がいずれも7件で、7件すべてにli内の掲載日があり、範囲は2025-05-14から2026-08-19、共通開始日2026-07-01以降の初回期間対象は1件だった。既定limit 5でも未登録時に後続処理へ進むのは最大1件である。直近1件は臨時的任用職員の募集だが、過去7件には生成AIサービス提供・利用支援、県と市町村の行政DX協働支援、行政手続オンライン化支援の公募型プロポーザルが含まれるため、将来の早期把握を優先して高優先度で有効化する。候補はd00222755.htmlやd00221753.htmlのような個別URLに分かれ、審査結果の追記は同じ案件の更新なのでURL単位duplicateとの不整合は確認していない。少数の人事記事だけを根拠にtitle_excludesは設定しない
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: wakayama-procurement-rss
+    organization_id: wakayama-prefecture
+    name: 入札・物品・役務 更新履歴 RSS
+    url: https://www.pref.wakayama.lg.jp/whatsnew/nyusatsu.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#content"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 一般競争入札
+      - 業務委託
+    notes: 入札・物品・役務HTMLページから公式にリンクされるRSS 2.0。確認時点はHTMLとRSSがともに生274件・構造上有効273件・filter後273件で、外部ドメイン1件だけを除外した。HTMLでは平成表記を解釈できない過去20件がpublishedAt不明になる一方、RSSは273件すべてにpubDateがあり、範囲は2018-02-26から2026-08-19、共通開始日2026-07-01以降の初回期間対象は27件、既定limit 5なら未登録時に最大5件が後続処理へ進む。**高価値だが無効にする理由は、年度の異なる新規調達へ同一URLを再利用する実例が現在候補に含まれるためである。**/prefg/032000/d00217849.htmlは令和6年度から令和8年度の県有施設太陽光発電設備導入事業へ、/prefg/070400/d00210583.htmlは令和4年度から令和8年度のわかやまジビエフェスタ広告宣伝業務へ、/prefg/010700/d00218908.htmlは令和6年度から令和8年度の第1回公有財産売却へ本文が差し替わっていた。いずれも同じ案件への質問・結果追記ではなく年度の異なる別調達である。d連番URL自体が再利用されるため安全なselectorやtitle filterで再利用型だけを除外できず、URL単位duplicate-firstでは過年度登録済みURLの新年度案件を本文取得前にスキップする。内容差分で再解析できる仕組みが用意されるか、案件ごとに固有URLが発行される構造へ変わったことを確認できるまで未巡回とする
+    last_verified_at: "2026-08-19"
     verification_status: verified
