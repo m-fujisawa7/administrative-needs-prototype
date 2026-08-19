@@ -360,6 +360,14 @@ organizations:
     enabled: true
     notes: 全庁の入札情報と、デジタル戦略室・教育連携推進課の入札公告を収集する対象都道府県。**本文は#page-contentに入り、#honbunはお問い合わせ先まで含む外側の入れ物である。**一覧の構造は2系統で、全庁の入札情報トップはul.genre-newsのli、部局別の入札公告ページは#page-content配下のul.page_listのliにリンクが入る。**掲載日はどの一覧でもリンク行の中にあるが「（ 8月19日）」のように年を含まないため、parseDateCandidateがnullを返し掲載日を1件も取得できない。**山梨県のDX課新着と同じ表記で、個別ページにも掲載日のマークアップが無い。**したがって全候補が掲載日不明として毎回対象になり、initial_sinceは効かない。**対象外判定でもNotionページが作られ次回から重複でスキップされるので、全件分析は一度きりのコストである。**RSSは採らない。**bid_info/index.rdfが配信されているが、拡張子がrdfでも中身はRSS 2.0で、確認時点はitem 10件・pubDateもdc:dateも0件で日付を1件も持たない。HTML側は18件を保持するため、件数でも日付でもHTMLが優位である。個別案件URLは/bid_info/bid_kyouikurenkei/R8kyoudoutyoutatu.htmlのように所属ディレクトリ配下の案件別ファイル名で、令和7年度版と令和8年度版が別ファイル（shimanegigakyodo/R8kyoudoutyoutatu）として並存するため固定URLの上書き再利用ではない
 
+  - id: shizuoka-city
+    name: 静岡市
+    organization_type: designated_city
+    prefecture: 静岡県
+    official_domain: city.shizuoka.lg.jp
+    enabled: true
+    notes: 全庁の事業者募集、事業者向け新着情報、スタートアップ共創の行政ニーズを収集する対象政令指定都市。静岡県（pref.shizuoka.jp）とは別ドメインなので別組織として登録する。**CMSは神戸市・山梨県と同じ#tmp_接頭辞系で、本文は#tmp_contentsに入る。#tmp_honbunは実測9文字で空**なので本文セレクタには使えない。個別ページのmainはナビゲーションまで含む5,500文字前後になり、**/startup/配下だけは旧テンプレートでmain要素そのものが無く0文字になる**ため、content_selectorは必ず#tmp_contentsを指定する。**掲載日の在り方が一覧ごとに違う。**事業者募集（p000358）は日付のマークアップが無く、新着情報一覧（p0000039）とお知らせ一覧（p0000038）はリンクと同じtrに日付があるが「8月7日」のように年を含まずparseDateCandidateがnullを返す。Startup Hubの新着だけが「2026年7月8日」形式で解釈できる。個別ページには「更新日 2026年8月7日」があるが、候補の期間フィルタは一覧側の掲載日で判定するため効かない。**個別案件URLは/s2547/s012632.htmlのような案件別ファイルで年度をまたぐ再利用ではないが、案件の進行に応じて同じURLの内容とタイトル接頭辞が募集→【質問に対する回答の公表】→【選定結果の公表】と書き換わる固定URL更新型である。**一覧側のタイトルは個別ページより遅れることがあり、確認時点では総務事務センター運営等業務が一覧で【質問に対する回答の公表】のまま、実ページは選定結果と契約予定者名まで掲載していた。様式がワード、別紙がエクセルの案件があり、PDF以外の添付は取得対象外である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3528,5 +3536,86 @@ sources:
       - 提案競技
       - ICT戦略
     notes: 地域振興部地域政策課デジタル戦略室が所管する入札公告の所属別一覧。**確認時点は2件だけだが両方とも自社領域である。**島根県ICT総合戦略推進支援業務に係る提案競技と、デジタル人材育成研修企画・運営業務（成果連動型）提案競技への質問に対する回答である。掲載日はリンク行にあるが年を含まないため取得できず、2件とも掲載日不明として毎回候補になる。保持範囲はリンク行の表記から2026-03-30から2026-05-15で、**確認時点ではどちらもshimane-bid-infoの約5週間ウィンドウ（2026-07-13以降）から流れ落ちており、shimane-bid-infoとの重複は0件だった。**件数は少ないがデジタル戦略室はICT総合戦略と情報システム調達を所管するため、新しい公告が出れば最初にここへ載る。件数が2件と少なくAI判定の消費が小さいこともあわせて優先度を高くしている。専用RSSは確認できず、上位のbid_info/index.rdfは日付を持たないためHTMLを採る。ページャは無い。
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: shizuoka-city-boshu
+    organization_id: shizuoka-city
+    name: 事業者募集
+    url: https://www.city.shizuoka.lg.jp/p000358.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents ul.idx_btns li a[href]"
+    content_selector: "#tmp_contents"
+    title_excludes:
+      - 結果の公表
+      - 審査結果
+      - 基本協定の締結
+      - 募集終了
+      - 終了しました
+      - 受付終了
+    document_type_hints:
+      - 公募型プロポーザル
+      - 情報提供依頼
+      - 企画提案
+      - 指定管理者
+    notes: 全庁の事業者募集を集約する一覧で、静岡市の主力情報源。**確認時点はfilter前106件・構造上有効106件で、掲載日は1件も無い。**title_excludesで64件を除いたfilter後は42件になり、除外の内訳は結果の公表55件、審査結果1件、募集終了3件、受付終了2件、基本協定の締結2件、終了しましたが1件である。【選定結果の公表】50件と【特定結果の公表】【募集結果の公表】【審査結果の公表】は「結果の公表」1語でまとめ、接頭辞が【審査結果】だけの1件を「審査結果」で拾っている。**質問回答系5件は除外しない。**静岡市は段階マーカーを接頭辞で置き換える運用で、質問への回答は提出期限前に公表される。実測ではお茶ツーリズム専門家派遣が更新日5月7日で提出期限5月8日、清水ナショナルトレーニングセンター基本構想が更新日1月20日で提出期限1月27日、総務事務センターが回答4月30日で提出期限5月15日と、いずれも回答公表中に応募期間が残っていたため、除外すると募集中の本体を落とす。秋田県は質問回答を除外しているが運用が違うので横展開しない。**指定管理者募集13件は内容トピックによる除外なので設定せず、実登録後のAI判定と人間分類を突き合わせてから判断する。**一覧は個別ページの更新日の降順で、確認時点の先頭は8月17日、6件目が8月7日の学習者用端末調達RFIだった。選定結果を公表した案件が更新日で先頭へ戻るため、除外語が無いと新しい順の先頭が結果公表で埋まる。**掲載日が無いのでfilter後42件すべてが毎回対象になり、initial_sinceは効かない。**初回は--limit 5で9回に分割する前提とし、対象外判定でもNotionページが作られ次回から重複でスキップされるので全件分析は一度きりのコストである。候補URLは106件すべて同一ドメインのHTMLでdirect PDF候補は無く、ページャも無い
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: shizuoka-city-jigyousha-news
+    organization_id: shizuoka-city
+    name: 新着情報一覧-事業者の方へ
+    url: https://www.city.shizuoka.lg.jp/p0000039.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table.list_table td a[href]"
+    content_selector: "#tmp_contents"
+    title_excludes:
+      - 結果の公表
+      - 審査結果
+      - 基本協定の締結
+      - 募集終了
+      - 終了しました
+      - 受付終了
+    document_type_hints:
+      - 情報提供依頼
+      - サウンディング型市場調査
+      - 公募型プロポーザル
+    notes: 事業者向けの新着情報を集約する一覧。table.list_tableのtd.dateにリンクと同じtrで日付があるが「8月7日」のように年を含まないためparseDateCandidateがnullを返し、掲載日を1件も取得できない。**年が無いまま前年度以前の項目が混在する。**確認時点は11月21日の次に5月10日が並び、その5月10日のインターナショナルスクール誘致サウンディングは個別ページの掲載日が2024年5月10日で調査結果まで公表済みだった。並び順から年を補うことはできない。filter前18件・構造上有効18件で、事業者募集と同じ除外語を当てると結果の公表4件、受付終了1件、募集終了1件を除いた12件が残る。12件のうち3件は事業者募集と、3件はStartup Hubの新着と重複し、独自は6件である。独自分は葵区広報キャラクターの募集、お茶ツーリズム体験プログラム高付加価値化補助金、インクルーシブ雇用推進企業認証制度、新製品開発・販路開拓に対する助成、機械設備設置に対する助成の2026年分5件と、2024年のインターナショナルスクール誘致サウンディング1件である。市内事業者向けの助成・認証が中心なのでpriorityはmediumとするが、**このサウンディングは事業者募集の一覧に無く、サウンディング型市場調査が必ず事業者募集へ載るわけではないことを示すのでこの情報源は残す。****このページ自身のRSSは無い。**oshirase_jigyousya.xmlはchannelがp000345.htmlで、内容はお知らせ一覧p0000038.htmlと一致する別系統である。掲載日が無いのでfilter後12件すべてが毎回対象になり、initial_sinceは効かない
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: shizuoka-city-startup-news
+    organization_id: shizuoka-city
+    name: Shizuoka SOCIAL Startup Hub 新着情報
+    url: https://www.city.shizuoka.lg.jp/startup/p000002.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents ul.box_thumbnail li a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 提案募集
+      - 官民連携
+      - 出資
+    notes: スタートアップとの共創施策を掲載する新着情報。**確認時点は9件すべてが構造上有効で、掲載日も9件すべて「2026年7月8日」形式で取得できる。**保持は2024年12月19日から2026年7月8日でページャは無く、2年半で9件と回転が非常に遅い。共通開始日2026-07-01を当てると初回対象は知・地域共創コンテストUNITE2026エントリー開始の1件だけになるためinitial_sinceは設定しない。**title_excludesも設定しない。**a要素がspan.item_date、span.item_ttl、span.item_cntをまとめて包む構造なので、候補タイトルが「2026年7月8日 知・地域共創コンテストUNITE2026 エントリー開始！ 「知・地域共創コンテストUNITE2026」提案募集を開始しました」のように日付と説明文まで含み、除外語が説明文に当たって募集中の案件を落とす危険がある。**content_selectorは省略できない。**/startup/配下は他ページと別テンプレートでmain要素が無く、確認した個別ページのmainは0文字、#tmp_contentsは788文字だった。事業者募集とのURL重複は0件だが、note開設やインタビュー対談のような広報寄りの項目も含むためpriorityはmediumとする
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: shizuoka-city-oshirase-rss
+    organization_id: shizuoka-city
+    name: 事業者の方へ お知らせRSS
+    url: https://www.city.shizuoka.lg.jp/oshirase_jigyousya.xml
+    collector_type: rss
+    source_category: other
+    priority: low
+    enabled: false
+    notes: 事業者向けお知らせのRSS。**RSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。**確認時点はitem 11件でdc:dateが11件すべてにあり、山形県のRSSと同じ形式なのでpublishedAtは取得できる。**それでも採らない。**channelはp000345.htmlで内容はお知らせ一覧p0000038.htmlと一致し、11件のうち8件が事業者募集、5件が新着情報一覧と重複する。独自は近年の水質汚濁防止法の改正と【募集終了】第38回日本ものづくりワールド機械要素技術展の2件だけで、どちらも募集本体ではない。11件の内訳も選定結果の公表5件、募集終了2件と対象密度が低く、学習者用端末調達RFI、サウンディング型市場調査、指定管理者募集は1件も含まれない。dc:subjectは全件「しごと・産業」の1種類だけなのでcategory_includesによる絞り込みにも使えない。再確認条件は、HTML一覧の構造が変わって使えなくなった場合、または掲載日ベースの期間フィルタが静岡市で必要になった場合である
     last_verified_at: "2026-08-19"
     verification_status: verified
