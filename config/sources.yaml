@@ -334,7 +334,7 @@ organizations:
     prefecture: 鳥取県
     official_domain: pref.tottori.lg.jp
     enabled: true
-    notes: 全庁の入札公告、デジタル改革課とデジタル基盤整備課の更新情報を収集する対象都道府県。公式サイトの名称は「とりネット」で、ASP.NET系のCMSのため本文は#ContentPane、一覧はdiv.BrowserPickUP_torinet_notitle_dateやdiv.BrowserItemList_torinet_contentに入る。**この自治体はHTMLではなくRSSを採る。**3ページがRSS 1.0（RDF）を配信しており、**HTML側は掲載日をほとんど取得できないのに対しRSSはdc:dateを全件に持つ。**入札情報のHTMLは日付のdiv.SubBoxとリンクのdiv.Titleが兄弟としてフラットに並ぶため行テキストから日付を関連付けられず、実測で50件中8件しか掲載日が取れず、しかもその一部は「鳥取県からのお知らせ（2026年8月13日）」のようなタイトル内の日付を拾った誤取得だった。デジタル改革課のHTMLは14件中1件、デジタル基盤整備課のHTMLは8件中0件しか掲載日が取れない。**掲載日が取れないと期間フィルタが機能せず毎回全件が候補になるため、保持件数が少なくても掲載日が確実なRSSを選ぶ。**dc:subjectはどのRSSにも無いのでcategory_includesは使えない。個別案件URLは/329847.htmのようなページ番号で発行され、年度や回次で固定URLを上書き再利用する形ではない
+    notes: 全庁の入札公告、デジタル改革課とデジタル基盤整備課の更新情報を収集する対象都道府県。公式サイトの名称は「とりネット」で、ASP.NET系のCMSのため本文は#ContentPane、一覧はdiv.BrowserPickUP_torinet_notitle_dateやdiv.BrowserItemList_torinet_contentに入る。**この自治体はHTMLではなくRSSを採る。**3ページがRSS 1.0（RDF）を配信しており、**HTML側は掲載日をほとんど取得できないのに対しRSSはdc:dateを全件に持つ。**入札情報のHTMLは日付のdiv.SubBoxとリンクのdiv.Titleが兄弟としてフラットに並ぶため行テキストから日付を関連付けられず、実測で50件中8件しか掲載日が取れず、しかもその一部は「鳥取県からのお知らせ（2026年8月13日）」のようなタイトル内の日付を拾った誤取得だった。デジタル改革課のHTMLは14件中1件、デジタル基盤整備課のHTMLは8件中0件しか掲載日が取れない。**掲載日が取れないと期間フィルタが機能せず毎回全件が候補になるため、保持件数が少なくても掲載日が確実なRSSを選ぶ。**dc:subjectはどのRSSにも無いのでcategory_includesは使えない。個別案件URLは/329847.htmのようなページ番号で発行され、年度や回次で固定URLを上書き再利用する形ではない。**content_selectorに#ContentPaneを明示することが必須である。**とりネットはASP.NET WebFormsでbody直下がまるごとform id="Form1"になっており、抽出器のEXCLUDED_ELEMENTSにformが含まれるため、content_selectorを省略するとフォールバックのbodyが0文字になりcontent_extractが200文字判定で失敗する。RSS由来の記事8件（.htm形式とdd.aspx?menuid=形式の両方）で実測すると、未設定は全件失敗し#ContentPaneでは477文字から2,973文字を取得できた。#Middleや.BodyDefでも文字数は増えるがサイドバーや全庁ナビが混ざるため#ContentPaneを採る
 
   - id: chiba-city
     name: 千葉市
@@ -3209,6 +3209,7 @@ sources:
     source_category: procurement
     priority: high
     enabled: true
+    content_selector: "#ContentPane"
     document_type_hints:
       - 調達公告
       - 公募型プロポーザル
@@ -3225,6 +3226,7 @@ sources:
     source_category: digital_news
     priority: high
     enabled: true
+    content_selector: "#ContentPane"
     document_type_hints:
       - 情報システム調達
       - デジタル政策
@@ -3240,6 +3242,7 @@ sources:
     source_category: rfi
     priority: high
     enabled: true
+    content_selector: "#ContentPane"
     document_type_hints:
       - 情報提供依頼
       - データ連携基盤
