@@ -189,6 +189,7 @@ describe('allow_empty_candidatesの検証', () => {
       'gifu-digital-strategy',
       'gifu-industry-innovation',
       'gifu-proposal-list',
+      'hyogo-service-procurement',
       'kawasaki-sounding',
       'kobe-rfi-rfc',
       'kobe-sounding',

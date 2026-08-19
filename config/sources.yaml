@@ -312,6 +312,22 @@ organizations:
     parent_organization_id: osaka-prefecture
     notes: 大阪府と府内43市町村、企業、大学、シビックテック等が運営する大阪スマートシティパートナーズフォーラム（OSPF）を、独自公式ドメインへの安全なアクセス制限のため別組織として管理する。公式サイトが配信するWordPress RSSを収集に使用し、個別記事の本文は.entry-contentに入る
 
+  - id: hyogo-prefecture
+    name: 兵庫県
+    organization_type: prefecture
+    prefecture: 兵庫県
+    official_domain: web.pref.hyogo.lg.jp
+    enabled: true
+    notes: デジタル実証、市町DX、行政DX、全庁の委託・役務、公民連携を調査対象とする都道府県。神戸市はcity.kobe.lg.jpの別組織として登録済みで、親子関係は結んでいない。県公式CMSは一覧・個別ページとも本文が#tmp_contentsに入る。委託・役務一覧は案件ごとにtable.datatableを置き、名称リンクと公示日を別のtrに分けているため、現行Collectorでは候補のpublishedAtを取得できない。ひょうごSDGs 公民連携プラットフォームは独自ドメインのため、parent_organization_idで兵庫県に結び付けた別組織として管理する
+
+  - id: hyogo-prefecture-sdgs-platform
+    name: 兵庫県
+    organization_type: external_organization
+    official_domain: hyogo-sdgs.com
+    enabled: true
+    parent_organization_id: hyogo-prefecture
+    notes: 兵庫県の公式ページから案内される「ひょうごSDGs 公民連携プラットフォーム」を、独自公式ドメインへの安全なアクセス制限のため別組織として管理する。連携先募集はWordPressの公開RSSを配信し、個別ページの本文は.page_content2に入る
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3078,5 +3094,93 @@ sources:
       - 企画提案
       - 業務委託
     notes: 全庁の公募型プロポーザルを公募期間、案件名、所管課とともに集約する一覧。実施基準PDFと年度別アーカイブをselectorで外し、設計コンサルティングと一般委託の案件だけを取得する。確認時点は生148件・構造上有効148件・重複URL2件を除いたfilter後146件で、146件すべてに和暦の公募開始日があり、共通開始日2026-07-01以降は12件、initial_sinceの2026-08-01以降の初回期間対象は5件だった。**高価値だが未巡回にする理由は、年度の異なる新規調達へ同一URLを再利用する実例が現行一覧にもあるためである。**/o110040/2025dtsu_proposal.htmlは令和7年度と令和8年度のディープテックスタートアップ事業化支援委託業務へ、/o180040/kotogakko/eigo/kaigaikoryu.htmlは令和7年度の大阪府立学校海外交流支援センター運営事業と令和8年度の高校生大使派遣プロジェクトへ使われている。過去一覧にも/o130240/koken_keikaku/hattyu_kennkonn/hattyuu_puropo.htmlを複数年度・複数設計業務へ使う例があり、特定のURLパターンだけを安全に除外できない。URL単位duplicate-firstでは過年度登録済みURLの新年度案件を本文取得前にスキップするため、内容差分で再解析できる仕組みが用意されるか、案件固有URLへ統一されたことを確認できるまで未巡回とする
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: hyogo-tech-innovation-project
+    organization_id: hyogo-prefecture
+    name: ひょうごTECHイノベーションプロジェクト
+    url: https://web.pref.hyogo.lg.jp/sr10/hyogo-tech.html
+    collector_type: single_page
+    source_category: proposal
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 行政課題
+      - デジタル実証
+      - 協業先募集
+    notes: スタートアップ等との協業により県庁各課の行政課題を解決する高関連度の事業。確認時点は令和8年度の行政課題13件とスタートアップ提案枠5件を募集しているが、現年度の課題詳細はteirei.pdfへの直リンクで、個別課題のHTML URLを持たない。令和4年度から令和7年度の課題・採択結果も同じ固定ページへ蓄積され、外部応募サイトもJavaScriptで描画される固定トップページである。single_pageなら生件数・構造上有効・filter後・共通開始日2026-07-01適用後がすべて1件になるが、複数課題が1レコードに潰れ、登録後はOfficial URL単位duplicateで翌年度の募集を本文取得前にスキップするため未巡回とする。現行募集が必要な場合はnotion:register等の単発登録で扱い、年度または課題ごとの固有HTML URLが公開された場合に再有効化を検討する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: hyogo-municipal-dx-support
+    organization_id: hyogo-prefecture
+    name: 地域DXの推進に向けた市町DX支援
+    url: https://web.pref.hyogo.lg.jp/kk26/johoseisaku/smachidx.html
+    collector_type: single_page
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 市町DX
+      - 自治体システム標準化
+      - DX支援
+    notes: 市町DXのダッシュボード、推進計画、支援パッケージを案内する固定施策ページ。ページ内リンクは同一ページの見出し、固定ダッシュボード、Power BI、各市町の計画、支援パッケージPDFであり、日付付きの募集・調達・支援案件一覧ではない。single_pageなら生件数・構造上有効・filter後・共通開始日2026-07-01適用後がすべて1件になるが、同じURLへの施策更新は登録後のOfficial URL単位duplicateで拾えないため未巡回とする。案件固有URLを持つ公募や支援情報の一覧へ変わった場合に再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: hyogo-digital-reform-division
+    organization_id: hyogo-prefecture
+    name: デジタル改革課
+    url: https://web.pref.hyogo.lg.jp/org/digital/index.html
+    collector_type: single_page
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 行政DX
+      - 行政手続オンライン化
+      - 情報システム
+    notes: デジタル改革課の業務、連絡先、主要施策をまとめた固定組織ページ。主要施策のリンクは行政手続オンライン化、電子自治体推進協議会、兵庫情報ハイウェイ、共通基盤、情報セキュリティ等の恒久的な案内5件で、課の新着一覧やRSSは存在しない。single_pageなら生件数・構造上有効・filter後・共通開始日2026-07-01適用後がすべて1件になるが、同じURLへの組織・施策更新は登録後のOfficial URL単位duplicateで拾えないため未巡回とする。課所管の案件固有URLを時系列で掲載する一覧が確認できた場合に再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: hyogo-service-procurement
+    organization_id: hyogo-prefecture
+    name: 入札公告／委託・役務
+    url: https://web.pref.hyogo.lg.jp/bid/bid_opn_02.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    link_selector: "#tmp_contents table.datatable a[href]"
+    content_selector: "#tmp_contents"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 公募型プロポーザル
+      - 一般競争入札
+      - 業務委託
+      - 情報システム調達
+    notes: 全庁の委託・役務を集約し、名称、発注機関、入札方法、公示日、申込期限を案件単位の表で掲載する一覧。確認時点は生件数・構造上有効・filter後がいずれも19件だった。名称リンクと公示日が別のtrにあるため、現行Collectorが名称リンクの最寄りtrだけを日付解析する構造では19件すべてpublishedAt不明となり、共通開始日2026-07-01適用後の初回期間対象も19件、既定limit 5なら未登録時に最大5件が後続処理へ進む。一覧はページャを持たず、2026年度分を4月10日から8月4日まで19件保持していたが、すべての申込期限を過ぎても掲載が続いているため、単なる公開中案件だけではなく当年度公告の有限な一覧と判断する。**高価値だが未巡回にする理由は、年度の異なる新規調達へ同一URLを再利用する実例が現行候補に含まれるためである。**/awk01/r7sinnrinnseibi03.htmlは令和7年度を示すURLのまま令和8年度の淡路地区保安林総合改良事業へ、/kf11/houkago/houkago07.htmlは令和7年度を示すURLのまま令和8年度の放課後児童支援員認定資格研修等事業へ本文と添付を差し替えている。いずれも年度の異なる新規調達で、同一案件の質問回答や結果追記ではない。19件すべてpublishedAt不明のためinitial_sinceでは絞れず、年度替わりや長期間未巡回時に一覧から消えた案件を後追いできないうえ、過年度に登録したURLは翌年度の再利用時にduplicate-firstで本文取得前にスキップされる。内容差分で再解析できる仕組みが用意されるか、案件固有URLへ統一されたことを確認できるまで未巡回とする。公開中案件が0件になる期間への備えとしてallow_empty_candidatesは維持する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: hyogo-public-private-partnership-rss
+    organization_id: hyogo-prefecture-sdgs-platform
+    name: ひょうご公民連携プラットフォーム 連携先募集 RSS
+    url: https://hyogo-sdgs.com/hub/project/feed/
+    collector_type: rss
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    content_selector: ".page_content2"
+    document_type_hints:
+      - 官民連携
+      - 連携先募集
+      - 社会課題解決
+    notes: ユーザー指定の兵庫県公式ページが現在も案内する「ひょうごSDGs 公民連携プラットフォーム」の連携先募集RSS。確認時点は生件数・構造上有効・filter後がいずれも33件で、33件すべてにpubDateがあり、範囲は2023-10-03から2026-07-23、共通開始日2026-07-01以降の初回期間対象は1件だった。既定limit 5でも未登録時に後続処理へ進むのは最大1件である。HTMLの全3ページは12件・12件・9件でRSSの33件と完全一致し、RSSが現時点の全アーカイブを保持しているため、通常巡回で大きく取りこぼす構造ではない。個別募集は/hub/project/15909/のようなWordPressの固有連番URLで発行され、33件すべてURLと数値IDが一意で、更新型の固定URLではない。RSSのpubDateは記事ページに表示される公開日と一致するが、UTCで前日になる時刻の投稿は日本時間の表示日より1日早くなる例が1件あり、継続巡回は3日重複期間で吸収される。企業・団体からの連携提案も含むため対象性は後続のAI判定に任せる
     last_verified_at: "2026-08-19"
     verification_status: verified
