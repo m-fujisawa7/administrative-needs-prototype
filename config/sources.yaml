@@ -368,6 +368,14 @@ organizations:
     enabled: true
     notes: 全庁の事業者募集、事業者向け新着情報、スタートアップ共創の行政ニーズを収集する対象政令指定都市。静岡県（pref.shizuoka.jp）とは別ドメインなので別組織として登録する。**CMSは神戸市・山梨県と同じ#tmp_接頭辞系で、本文は#tmp_contentsに入る。#tmp_honbunは実測9文字で空**なので本文セレクタには使えない。個別ページのmainはナビゲーションまで含む5,500文字前後になり、**/startup/配下だけは旧テンプレートでmain要素そのものが無く0文字になる**ため、content_selectorは必ず#tmp_contentsを指定する。**掲載日の在り方が一覧ごとに違う。**事業者募集（p000358）は日付のマークアップが無く、新着情報一覧（p0000039）とお知らせ一覧（p0000038）はリンクと同じtrに日付があるが「8月7日」のように年を含まずparseDateCandidateがnullを返す。Startup Hubの新着だけが「2026年7月8日」形式で解釈できる。個別ページには「更新日 2026年8月7日」があるが、候補の期間フィルタは一覧側の掲載日で判定するため効かない。**個別案件URLは/s2547/s012632.htmlのような案件別ファイルで年度をまたぐ再利用ではないが、案件の進行に応じて同じURLの内容とタイトル接頭辞が募集→【質問に対する回答の公表】→【選定結果の公表】と書き換わる固定URL更新型である。**一覧側のタイトルは個別ページより遅れることがあり、確認時点では総務事務センター運営等業務が一覧で【質問に対する回答の公表】のまま、実ページは選定結果と契約予定者名まで掲載していた。様式がワード、別紙がエクセルの案件があり、PDF以外の添付は取得対象外である
 
+  - id: okayama-prefecture
+    name: 岡山県
+    organization_type: prefecture
+    prefecture: 岡山県
+    official_domain: pref.okayama.jp
+    enabled: true
+    notes: 全庁の入札公告・公募の公告と、デジタル推進課の政策シグナルを収集する対象都道府県。**CMSは他県と別系統で、入札系の一覧はdiv.info_list_wrap配下のdiv.info_list > ul > li、課ページの新着はdiv.section_information_list > ul > liに入る。**掲載日はどの一覧もリンクと同じliのspan.article_dateに「（2026年8月14日更新）」形式で入り、年を含むためparseDateCandidateが解釈できる。日付の意味は更新日で、入札日や締切日ではない。実測では賃貸型応急住宅の企画提案が更新日7月2日・参加申請期限7月3日と別の日付だった。**本文セレクタは#mainを使う。**#main_bodyは本文だけの入れ物で最も綺麗だが、公示1行と添付リンクだけのページでは実測174文字と200文字の下限を割る。#mainはscript除去後398〜929文字で、先頭に「2026年8月10日更新／長寿社会課」という更新日と所属課が入る。**main要素は存在せず、article・[role=main]・#mol_contentsも無い**ため、content_selectorを省略するとfallbackは#mainまで進みWarningになる。個別ページのURLは/site/321/1050676.htmlや/page/1045356.htmlのような記事別ファイルである。表示上の「ページ番号」とURLの数字は一致しないことがあり、確認した5件のうち主任介護支援専門員研修だけがURL 708558・ページ番号0799293だった。/page/799293.htmlと/site/321/799293.htmlはどちらも404で別名URLは存在しないため、重複判定への影響は無い。**ただし令和8年度の案件に102万番台の新しいIDと70万〜96万番台の古いIDが混在するので、年度ごとに同じURLを更新している案件がある可能性は残る。**同一事業でも潜在的有資格者等再就業促進事業は令和7年度が992793、令和8年度が1038137と別URLだった。添付は公告と仕様書がPDF、様式がWordで、Wordは取得対象外である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3617,5 +3625,95 @@ sources:
     priority: low
     enabled: false
     notes: 事業者向けお知らせのRSS。**RSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。**確認時点はitem 11件でdc:dateが11件すべてにあり、山形県のRSSと同じ形式なのでpublishedAtは取得できる。**それでも採らない。**channelはp000345.htmlで内容はお知らせ一覧p0000038.htmlと一致し、11件のうち8件が事業者募集、5件が新着情報一覧と重複する。独自は近年の水質汚濁防止法の改正と【募集終了】第38回日本ものづくりワールド機械要素技術展の2件だけで、どちらも募集本体ではない。11件の内訳も選定結果の公表5件、募集終了2件と対象密度が低く、学習者用端末調達RFI、サウンディング型市場調査、指定管理者募集は1件も含まれない。dc:subjectは全件「しごと・産業」の1種類だけなのでcategory_includesによる絞り込みにも使えない。再確認条件は、HTML一覧の構造が変わって使えなくなった場合、または掲載日ベースの期間フィルタが静岡市で必要になった場合である
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: okayama-bid-ict
+    organization_id: okayama-prefecture
+    name: 入札公告（情報・通信サービス）
+    url: https://www.pref.okayama.jp/site/321/list328-1552.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "div.info_list_wrap div.info_list ul li span.article_title > a[href]:first-child"
+    content_selector: "#main"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 一般競争入札
+      - 情報システム調達
+      - ネットワーク機器
+    notes: 入札公告を分類別に分けた一覧のうち情報・通信サービス分で、岡山県で最も自社領域と重なる情報源。**確認時点は1件だけで、岡山県小橋町庁舎ネットワーク機器更新業務の一般競争入札（条件付）だった。**掲載日は1件とも取得でき、共通開始日2026-07-01の期間内も1件である。**allow_empty_candidatesが必要である。**入札公告の分類別一覧は受付中の公告だけを載せ、結果は別の入札結果等の公表（list328-1556）へ移るため、公告が途切れると0件になる。同じ分類群の入札公告（調査・研究）（list328-1548）は確認時点で0件で「現在、掲載されている情報はありません。」と表示された。**link_selectorはspan.article_titleの最初のアンカーだけを取る。**span.article_title内には案件リンクと所属課リンクの2つのアンカーがあり、first-childを付けないと候補が2倍になり課のトップページが混ざる。個別ページの本文は365文字で、公告と入札説明書はPDF、様式はWord、質問回答書はPDFで追記される。仕様書が窓口交付のみの案件もある。RSSのsite-321.xmlはこの1件を含むが全庁の入札・業務委託を配信する別粒度なので、この分類一覧の代わりにはならない
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: okayama-koubo
+    organization_id: okayama-prefecture
+    name: 公募の公告
+    url: https://www.pref.okayama.jp/site/321/list328-1555.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "div.info_list_wrap div.info_list ul li span.article_title > a[href]:first-child"
+    content_selector: "#main"
+    title_excludes:
+      - 結果の公表
+      - 結果についての公表
+      - 審査結果
+      - 選考結果
+      - 結果公表
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+      - 技術提案
+      - 業務委託
+    notes: 全庁の公募の公告を集約する一覧。**確認時点は38件・構造上有効38件で、掲載日は38件すべて取得できる（2025年1月23日から2026年8月14日）。**期間フィルタが効くので、共通開始日2026-07-01では7件、title_excludes適用後は4件が初回対象になる。**除外語は結果公表の段階マーカーだけにした。**内訳は結果の公表20件、結果についての公表1件、審査結果4件、選考結果3件、結果公表2件で、重複を除くと25件が除外され13件が残る。除外した25件はすべて技術提案・企画提案・選考の結果公表で、募集本体は1件も落ちていない。**質問回答は除外しない。**岡山県は段階マーカーを置き換えず募集本体のタイトルへ追記する型で、賃貸型応急住宅の企画提案（質問回答更新）は更新日7月2日・参加申請期限7月3日と回答公表中に応募期間が残っていた。【質問回答書】を先頭に付けた移住・定住イメージアッププロモーションの公告も同じ型である。**link_selectorはspan.article_titleの最初のアンカーだけを取る。**first-childが無いと所属課リンクを含めて76件になる。タイトルに日付文字列を含む候補は0件なので、締切日を掲載日として誤取得する事例は確認していない。同じ分類群には調査・研究、企画・製作、発注見通しなど未登録の一覧があり、取りこぼしが確認されたら追加を検討する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: okayama-digital-division
+    organization_id: okayama-prefecture
+    name: デジタル推進課 新着情報
+    url: https://www.pref.okayama.jp/soshiki/20/index-2.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title > a[href]:first-child"
+    content_selector: "#main"
+    document_type_hints:
+      - DX推進指針
+      - オープンデータ
+      - 情報化施策
+    notes: デジタル推進課のページ内にある新着情報。**link_selectorはdiv.section_information_listを指す。**同じページのdiv.info_listは課の目次で10セクション41件のリンクを持つが日付が1件も無く、そちらを使うと掲載日不明の索引リンクが候補になる。**確認時点の新着は11件で掲載日は11件すべて取得できるが、並び順は日付順ではなく2016年4月1日の項目が7番目に入る。**内容はオープンデータカタログサイト、岡山県DX推進指針、地域ITベンチャー企業等優先発注制度、岡山情報ハイウェイ、誹謗中傷相談窓口など恒久的な施策紹介が中心で調達案件は載らない（入札はlist328-1552へ載る）ためsource_categoryはpolicy_signalとする。共通開始日2026-07-01では初回対象はサイバーセキュリティ対策オンラインセミナーの1件だけである。恒久ページは更新のたびに更新日が変わるが、URLは変わらないので登録後は重複でスキップされる
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: okayama-bid-rss
+    organization_id: okayama-prefecture
+    name: 岡山県庁RSS（入札・業務委託）
+    url: https://www.pref.okayama.jp/rss/10/site-321.xml
+    collector_type: rss
+    source_category: procurement
+    priority: medium
+    enabled: false
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 技術提案
+    notes: 全庁の入札・業務委託を配信するRSS。**RSS 1.0（RDF）でdc:dateが100件すべてにあり、dc:subjectには所属課名が入る（確認時点で財務課23件、子ども未来課8件、循環型社会推進課7件などの31種）。**岡山県でcategory_includesにより所属課で絞れる唯一の情報源である。**それでも初回は有効化しない。**確認時点は100件で保持は2026年4月30日から8月19日の約3.7か月と回転が速く、共通開始日2026-07-01でも56件が対象になる。うちタイトルに結果を含むものが28件、全体では72件が結果公表である。残りも工業技術センターの測定システム賃貸借や原子吸光光度計、県立図書館の図書購入など物品調達が多く、対象密度に対して初回のAI処理量が大きい。HTML2本との重複は15件で独自85件と価値は明確に別だが、絞り込み方（category_includesで課を選ぶか、title_includesで案件種別を選ぶか）は実データのAI判定と突き合わせてから決める。再確認条件は、公募の公告と情報・通信サービスの2本で取りこぼしが確認された場合、または課横断のIT調達を追う必要が出た場合である
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: okayama-digital-rss
+    organization_id: okayama-prefecture
+    name: 岡山県庁RSS（デジタル推進課）
+    url: https://www.pref.okayama.jp/rss/10/soshiki-3-20.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: low
+    enabled: false
+    notes: デジタル推進課の新着情報を配信するRSS。**確認時点の11件はHTMLの新着情報とURL・掲載日が完全一致し、独自の候補は1件も無い。**dc:subjectは全件「デジタル推進課」の1種類だけなのでcategory_includesによる絞り込みにも使えない。HTMLと同じものを二重に巡回する意味がないため無効とする。再確認条件は、課ページのdiv.section_information_listの構造が変わってHTML側が使えなくなった場合である
     last_verified_at: "2026-08-19"
     verification_status: verified

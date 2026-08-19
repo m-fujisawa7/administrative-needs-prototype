@@ -193,6 +193,7 @@ describe('allow_empty_candidatesの検証', () => {
       'kawasaki-sounding',
       'kobe-rfi-rfc',
       'kobe-sounding',
+      'okayama-bid-ict',
       'sapporo-smartcity-procurement',
       'sendai-cross-lab-partnership',
       'sendai-smart-frontier',
