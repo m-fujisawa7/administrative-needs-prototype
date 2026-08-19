@@ -344,6 +344,14 @@ organizations:
     enabled: true
     notes: 民間提案、スマートシティ実証、行政DX、情報システム、全庁の業務委託を調査対象とする政令指定都市。市公式CMSは一覧・個別ページとも本文が#contents_editableに入る。業務委託一覧は公開日を年なしの月日で表示し、同じtr内に和暦の募集期間も置くため、現行Collectorでは募集期間の日付をpublishedAtとして誤取得する。専用RSSは正しいdc:dateを持つが10件だけを保持する
 
+  - id: saitama-city
+    name: さいたま市
+    organization_type: designated_city
+    prefecture: 埼玉県
+    official_domain: city.saitama.lg.jp
+    enabled: true
+    notes: 全庁のプロポーザルと業務委託入札、デジタル改革推進部の調達を収集する対象政令指定都市。**本文は#contentsに入り、フォールバック候補にも#contentsが含まれるため未設定でも動くが、全情報源で明示している。**個別ページには「更新日付：2026年8月13日 / ページ番号：C131659」の形式で更新日があり解釈できる。**一覧のテンプレートが2系統ある。**部の取扱い情報一覧は旧テンプレートで.ul_contents_list01のli配下にリンクが並び、プロポーザルと業務委託は新テンプレート（.l-container配下）でdiv.in_column_box内のh2.ttl_type1_linkにリンクが入るためliでは取れない。新着情報一覧はh2.ttl_type1に日付、div.item_box配下のdl.new_list01のddにリンクが入る**兄弟構造で、日付とリンクを関連付けられないため掲載日が0件になる。**新着情報はRSSも配信しており、RSSはdc:dateを全件に持つのでRSSを採る。個別案件URLは/005/001/017/012/p131659.htmlのようにページ番号で発行され、年度や回次で固定URLを上書き再利用する形ではない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3366,4 +3374,94 @@ sources:
       - 情報システム調達
     notes: 人間向け一覧はhttps://www.city.chiba.jp/portal/business/index19/nyusatsujoho/anken/itaku/index.htmlで、確認時点は案件固有リンク200件、重複URL0件を保持する。一覧の公開日は年なしの月日だが、各trに和暦の募集期間もあるため、現行Collectorでは200件中198件で募集開始日または期限をpublishedAtとして誤取得し、残る2件は日付不明になる。そこで正しいdc:dateを全件に持つRSSを登録する。RSSは生件数・構造上有効・filter後が各10件で、日付範囲は2026-08-14から2026-08-19、共通開始日2026-07-01以降の初回期間対象も10件、既定limit 5なら未登録時に最大5件が後続処理へ進む。**未巡回にする理由は、RSSが10件・約5日分しか保持せず、長期間未巡回時に取りこぼすうえ、年度の異なる新規調達へ同一URLを再利用する実例があるためである。**Wayback Machineで/hokenfukushi/hogo/r7kakei.htmlが2025年の令和7年度案件から2026年の令和8年度案件へ本文と添付を差し替えたことを確認した。URL単位duplicate-firstでは過年度に登録済みのURLを新年度案件として再解析できない。巡回間隔を短くしてもURL再利用は解決しないため、内容差分で再解析できる仕組みが用意されるか、案件固有URLへ統一されたことを確認できるまで未巡回とする
     last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: saitama-proposal-list
+    organization_id: saitama-city
+    name: プロポーザル方式
+    url: https://www.city.saitama.lg.jp/005/001/017/012/index.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#contents h2.ttl_type1_link a[href]"
+    content_selector: "#contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+    notes: 全庁の公募型プロポーザルを集約する一覧で、さいたま市の主力情報源。確認時点は45件で**掲載日は0件**なので45件すべてが掲載日不明として毎回候補になる。initial_sinceは効かないため初回は--limitで分割する前提とし、対象外判定でもNotionページが作られ次回から重複でスキップされるので全件分析は一度きりのコストである。**link_selectorはh2.ttl_type1_linkを使う。**このページは新テンプレート（.l-container配下）でdiv.in_column_box内のh2にリンクが入るため、#contents li a[href]では0件になる。**段階マーカーの内訳は終了系36件・それ以外9件だが、title_excludesは設定しない。**理由は**質問回答が募集本体のタイトル接頭辞へ追記される愛知県型だからである。**確認時点で「【質問書に対する回答を追加しました】さいたま市学校施設リフレッシュ基本計画改定方針検討業務」「【質問に対する回答を追加しました】（仮称）次世代型スポーツ施設の誘致・整備基礎的調査支援業務」のように、回答掲載中も募集本体であるものが3件あった。**したがって質問や回答を除外語にしてはいけない。**【最優秀提案者が決定しました】【参加受付は終了しました】【企画提案書受付終了】【受託候補者を特定しました】【申込終了】は明確な終了マーカーだが、広島市以降の方針どおり実登録してAI判定と人間分類を突き合わせてから語を決める。募集中側には新庁舎整備技術協力業務（建築・電気設備・機械設備）の技術提案書募集や令和7年度さいたま市3D都市モデル活用業務が含まれる。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: saitama-itaku-bid
+    organization_id: saitama-city
+    name: 一般競争入札告示「業務委託」
+    url: https://www.city.saitama.lg.jp/005/001/017/006/003/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "#contents h2.ttl_type1_link a[href]"
+    content_selector: "#contents"
+    document_type_hints:
+      - 一般競争入札
+      - 業務委託
+    notes: 業務委託の一般競争入札告示を集約する一覧。確認時点は37件で、タイトルは全件が「〜の入札情報」の形式である。**掲載日として取得できるのは6件だけで、しかもその日付は掲載日ではなく入札日または開札日と見られる。**実測した6件は2026-09-02が2件、2026-08-31、2026-08-24、2026-08-21、2026-03-13で、確認日（2026-08-18）より後の未来日付が4件あった。**未来日付はrun.tsの判定により掲載日不明として処理へ回されるため実害は限定的だが、publishedAtとして信頼できない前提で扱う。**結果として実質37件すべてが掲載日不明相当で毎回候補になるため、初回は--limitで分割する。link_selectorはプロポーザル方式と同じ新テンプレートなのでh2.ttl_type1_linkを使う。結果公表の段階マーカーは確認時点で見当たらず、37件すべてが案件だった。saitama-bid-news-rssとは高重複だが、あちらは5件しか保持しないため一覧側が網羅性を担う。title_excludesは実登録してAI判定と突き合わせてから決める。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: saitama-digital-bureau-list
+    organization_id: saitama-city
+    name: デジタル改革推進部 取扱い情報一覧
+    url: https://www.city.saitama.lg.jp/soshiki/0010025/0010033/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: ".ul_contents_list01 li a[href]"
+    content_selector: "#contents"
+    title_includes:
+      - 告示
+      - 入札
+      - 公募
+      - プロポーザル
+      - 意見招請
+      - 情報提供依頼
+    document_type_hints:
+      - 一般競争入札
+      - 意見招請
+      - 情報提供依頼
+    notes: デジタル改革推進部が取り扱う全ページの索引で、案件一覧ではない。**title_includesが無いと成立しない情報源である。**確認時点は生422件で、掲載日を持つのは67件だけ（範囲は2022-09-05から2026-08-05）、残る355件は掲載日不明なので**フィルタ無しでは期間対象が357件になりClaude利用上限の約9倍に達する。**しかも**調達・公募語を含むのは11件（3%）**だけで、残りはCIOの部屋、スマホ相談会、Saitama City Free Wi-Fi、テレビ受信対策工事、DX推進本部会議のような固定ページと広報である。**そこでtitle_includesで告示・入札・公募・プロポーザル・意見招請・情報提供依頼に絞り、422件を11件へ削減した（411件を除外）。**残る11件は告示第XXXX号の一般競争入札7件、さいたまＲＰＡ活用支援業務の一般競争入札、**さいたま市情報セキュリティ運用支援業務に関する意見招請（ＲＦＣ）**、公募型プロポーザル方式の手続の開始である。**RFCとRPA活用支援業務はsaitama-proposal-listやsaitama-itaku-bidには載らないため、この情報源だけが拾える。**さいたま市は調達を「告示第XXXX号」形式で出す運用なので告示が主軸として機能する。**includesは語彙依存が強いという制約を承知の上で採用した。**募集を語に足すと「スマホ相談会の学生ボランティア募集！」まで通るため入れていない。告示番号も入札語も含まないタイトルで調達が出た場合は取り逃すため、実登録後のAI判定と突き合わせて語を見直す。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: saitama-bid-news-rss
+    organization_id: saitama-city
+    name: 入札・契約 新着情報 RSS
+    url: https://www.city.saitama.lg.jp/005/001/017/news.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: true
+    content_selector: "#contents"
+    document_type_hints:
+      - 一般競争入札
+      - 業務委託
+    notes: 入札・契約分野の新着情報を配信するRSS。**HTML版（/005/001/017/news.html）ではなくRSSを採る。**HTMLは11件を保持するが、日付がh2.ttl_type1、リンクがdiv.item_box配下のdl.new_list01のddにあり兄弟構造のため関連付けられず**掲載日が0件になる。**RSSは5件すべてにdc:dateがあり、確認時点の範囲は2026-07-27から2026-08-17で2026-07-01以降は5件すべてが該当した。**保持が5件と少ないので網羅性はsaitama-proposal-listとsaitama-itaku-bidが担い、こちらは掲載日が効く新着検知として機能させる。**掲載日を持つため期間フィルタが働き、恒常的なClaude消費が小さいのが利点である。確認時点の内容は一般競争入札告示、さいたま市契約公報、入札結果、発注見通し、古繊維類売買業務の入札情報で、**契約公報や入札結果のような段階マーカーも混ざるが5件と少ないためtitle_excludesは設定しない。**保持が5件で回転が速いため、巡回間隔が3週間を超えると取り逃す可能性がある。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: saitama-dx-news-rss
+    organization_id: saitama-city
+    name: DX 新着情報 RSS
+    url: https://www.city.saitama.lg.jp/006/007/013/news.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: low
+    enabled: false
+    content_selector: "#contents"
+    document_type_hints:
+      - デジタル政策
+    notes: DX分野の新着情報を配信するRSS。HTML版（/006/007/013/news.html）は7件を保持するが掲載日が0件、RSSは5件すべてにdc:dateを持つのでRSSを選んだが、**次の3点により無効で登録する。**第一に、**確認時点の5件は学生主催の写真撮影イベント「ふぉさんぽ」、ＣＩＯの部屋2回分、スマホ相談会、令和7年度DX推進本部会議、第4回Digi田甲子園で、調達案件が0件である。**第二に、**範囲が2025-04-07から2025-12-26で2026-07-01以降が0件、最新が確認日から約8か月前と更新が止まっている。**第三に、デジタル改革推進部の調達はsaitama-digital-bureau-listがtitle_includes適用で拾うため、**このRSSに独自価値が無い。**内容が広報中心である点は部の索引の実測（422件中3%だけが調達）とも整合する。DX分野で調達や意見招請が配信される実績が確認できた時点で有効化を再検討する。
+    last_verified_at: "2026-08-18"
     verification_status: verified
