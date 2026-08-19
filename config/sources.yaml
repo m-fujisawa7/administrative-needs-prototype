@@ -336,6 +336,14 @@ organizations:
     enabled: true
     notes: 全庁の入札公告、デジタル改革課とデジタル基盤整備課の更新情報を収集する対象都道府県。公式サイトの名称は「とりネット」で、ASP.NET系のCMSのため本文は#ContentPane、一覧はdiv.BrowserPickUP_torinet_notitle_dateやdiv.BrowserItemList_torinet_contentに入る。**この自治体はHTMLではなくRSSを採る。**3ページがRSS 1.0（RDF）を配信しており、**HTML側は掲載日をほとんど取得できないのに対しRSSはdc:dateを全件に持つ。**入札情報のHTMLは日付のdiv.SubBoxとリンクのdiv.Titleが兄弟としてフラットに並ぶため行テキストから日付を関連付けられず、実測で50件中8件しか掲載日が取れず、しかもその一部は「鳥取県からのお知らせ（2026年8月13日）」のようなタイトル内の日付を拾った誤取得だった。デジタル改革課のHTMLは14件中1件、デジタル基盤整備課のHTMLは8件中0件しか掲載日が取れない。**掲載日が取れないと期間フィルタが機能せず毎回全件が候補になるため、保持件数が少なくても掲載日が確実なRSSを選ぶ。**dc:subjectはどのRSSにも無いのでcategory_includesは使えない。個別案件URLは/329847.htmのようなページ番号で発行され、年度や回次で固定URLを上書き再利用する形ではない
 
+  - id: chiba-city
+    name: 千葉市
+    organization_type: designated_city
+    prefecture: 千葉県
+    official_domain: city.chiba.jp
+    enabled: true
+    notes: 民間提案、スマートシティ実証、行政DX、情報システム、全庁の業務委託を調査対象とする政令指定都市。市公式CMSは一覧・個別ページとも本文が#contents_editableに入る。業務委託一覧は公開日を年なしの月日で表示し、同じtr内に和暦の募集期間も置くため、現行Collectorでは募集期間の日付をpublishedAtとして誤取得する。専用RSSは正しいdc:dateを持つが10件だけを保持する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3268,4 +3276,91 @@ sources:
       - 会議資料
     notes: 行政改革プロジェクトチーム会議の回次別アーカイブ。**候補4件すべてが会議資料PDFへの直リンク**（/secure/1428948/R8PTkaigi1.pdfなど）で、個別のHTML案件ページが存在しないため無効にする。掲載日は4件とも取得でき範囲は2025-04-28から2026-05-28だが、2026-07-01以降は0件で更新は年に数回である。現行のCollectorはHTML前提なのでrequireHtmlContentTypeで全件失敗する。**奈良県の行財政改革推進会議、長野県のDX推進本部、石川県の会議アーカイブと同じ扱いで無効のまま保持する。**行政改革の方向性やアウトソーシング方針は政策シグナルとして価値があり、鳥取県は課題提示型募集でアウトソーシングを実際に募集しているため、会議資料がHTMLページとして掲載される形へ変わった場合は再評価する。
     last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: chiba-connected-center
+    organization_id: chiba-city
+    name: コネクテッドセンターちば
+    url: https://www.city.chiba.jp/sogoseisaku/miraitoshi/smartcity/chosei/connectedcenter.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#contents_editable"
+    document_type_hints:
+      - 民間提案
+      - 行政課題
+      - テーマ型提案
+    notes: 自由型提案と行政課題を示すテーマ型提案の総合窓口。確認時点は4テーマを募集中で対象性は高いが、各テーマは同じ固定ページの本文へ追加され、詳細はPDF直リンク、申請は外部フォームで、テーマごとの固有HTML URLを持たない。Wayback Machineでも同一URLが2023年、2025年、2026年に年度内容を差し替えていることを確認した。single_pageでは生件数・構造上有効・filter後・共通開始日2026-07-01適用後がすべて1件になるが、複数テーマが1レコードに潰れ、登録後はOfficial URL単位duplicateで次年度の新テーマを本文取得前にスキップするため未巡回とする。現行テーマが必要な場合はnotion:register等の単発登録で扱い、テーマごとの固有HTML URLが公開された場合に再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: chiba-smart-city-demonstration
+    organization_id: chiba-city
+    name: 千葉市スマートシティ実証事業
+    url: https://www.city.chiba.jp/sogoseisaku/miraitoshi/smartcity/jisyouprojiect.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#contents_editable"
+    document_type_hints:
+      - スマートシティ
+      - 実証事業
+      - 公募型プロポーザル
+    notes: スマートシティ実証の制度説明と令和4年度以降の実績をまとめる固定ページ。令和6年度・令和7年度は公募ごとの固有HTML URLを持つ一方、確認時点の令和8年度募集はコネクテッドセンターちばの固定ページを案内しており、この入口から現行案件固有のHTML候補を取得できない。Wayback Machineでも同じ入口URLへ年度ブロックを継続追加している。single_pageでは生件数・構造上有効・filter後・共通開始日2026-07-01適用後がすべて1件になるが、登録後はURL単位duplicateで次年度更新を拾えず、複数年度・複数実証の粒度も崩れるため未巡回とする。公募が再び案件固有HTMLで公開される構造へ統一された場合に再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: chiba-business-reform-division
+    organization_id: chiba-city
+    name: 業務改革推進課 重要なお知らせ
+    url: https://www.city.chiba.jp/somu/joho/kaikaku/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#contents_editable > h2 + ul a[href^='/'], #contents_editable > h2 + ul a[href^='https://www.city.chiba.jp/']"
+    content_selector: "#contents_editable"
+    document_type_hints:
+      - 行政DX
+      - 業務改革
+      - 募集
+    notes: 行政デジタル化と業務改革を所管する課の「重要なお知らせ」だけを取得する。主なコンテンツ、関連リンク、右ナビゲーション、総務省への外部リンクはselectorで外す。確認時点は生件数・構造上有効・filter後が各6件で、1件だけタイトル内の2021-05-27をpublishedAtとして取得し、残る5件は日付不明である。共通開始日2026-07-01適用後の初回期間対象は5件、既定limit 5なら未登録時に最大5件が後続処理へ進む。現行候補は令和8年度包括外部監査人募集と行政改革・行政デジタル化等の固定情報で対象密度は高くないため優先度は中とし、業務内容によるtitle filterは設定しない。現在の募集ページはr8koubo.htmlの年度固有URLで、候補6件に重複はなく、年度の異なる独立案件へのURL再利用実例も確認していない
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: chiba-information-systems-division
+    organization_id: chiba-city
+    name: 情報システム課 情報提供依頼（RFI）
+    url: https://www.city.chiba.jp/somu/joho/system/index.html
+    collector_type: list_page
+    source_category: rfi
+    priority: high
+    enabled: false
+    link_selector: "#contents_editable a[href*='/somu/joho/system/'][href*='rfi']"
+    content_selector: "#contents_editable"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - システム標準化
+    notes: 情報システム課の固定組織ページから標準準拠システム移行のRFIページだけを取得する設定。確認時点は生件数・構造上有効・filter後・共通開始日2026-07-01適用後が各1件だが、リンク先hyoujyunka_rfi.htmlは「現在、実施中のRFIはありません」と表示する固定ページで、募集時に本文を更新し終了後に内容を取り下げる。令和5年度の次期総合窓口システムRFIはr5_hyojunka_rfi_soumado.htmlという固有URLも残るが、今後のRFIが必ず固有URLになる保証はなく、固定ページを一度登録すると次回募集をduplicate-firstで拾えないため未巡回とする。RFIが案件固有URLの一覧として公開される構造へ変わった場合に再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: chiba-outsourcing-rss
+    organization_id: chiba-city
+    name: 業務委託 募集案件一覧 RSS
+    url: https://www.city.chiba.jp/portal/business/index19/nyusatsujoho/anken/itaku/rss.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: false
+    content_selector: "#contents_editable"
+    document_type_hints:
+      - 業務委託
+      - 公募型プロポーザル
+      - 情報システム調達
+    notes: 人間向け一覧はhttps://www.city.chiba.jp/portal/business/index19/nyusatsujoho/anken/itaku/index.htmlで、確認時点は案件固有リンク200件、重複URL0件を保持する。一覧の公開日は年なしの月日だが、各trに和暦の募集期間もあるため、現行Collectorでは200件中198件で募集開始日または期限をpublishedAtとして誤取得し、残る2件は日付不明になる。そこで正しいdc:dateを全件に持つRSSを登録する。RSSは生件数・構造上有効・filter後が各10件で、日付範囲は2026-08-14から2026-08-19、共通開始日2026-07-01以降の初回期間対象も10件、既定limit 5なら未登録時に最大5件が後続処理へ進む。**未巡回にする理由は、RSSが10件・約5日分しか保持せず、長期間未巡回時に取りこぼすうえ、年度の異なる新規調達へ同一URLを再利用する実例があるためである。**Wayback Machineで/hokenfukushi/hogo/r7kakei.htmlが2025年の令和7年度案件から2026年の令和8年度案件へ本文と添付を差し替えたことを確認した。URL単位duplicate-firstでは過年度に登録済みのURLを新年度案件として再解析できない。巡回間隔を短くしてもURL再利用は解決しないため、内容差分で再解析できる仕組みが用意されるか、案件固有URLへ統一されたことを確認できるまで未巡回とする
+    last_verified_at: "2026-08-19"
     verification_status: verified
