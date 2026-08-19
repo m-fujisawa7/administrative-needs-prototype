@@ -328,6 +328,14 @@ organizations:
     parent_organization_id: hyogo-prefecture
     notes: 兵庫県の公式ページから案内される「ひょうごSDGs 公民連携プラットフォーム」を、独自公式ドメインへの安全なアクセス制限のため別組織として管理する。連携先募集はWordPressの公開RSSを配信し、個別ページの本文は.page_content2に入る
 
+  - id: tottori-prefecture
+    name: 鳥取県
+    organization_type: prefecture
+    prefecture: 鳥取県
+    official_domain: pref.tottori.lg.jp
+    enabled: true
+    notes: 全庁の入札公告、デジタル改革課とデジタル基盤整備課の更新情報を収集する対象都道府県。公式サイトの名称は「とりネット」で、ASP.NET系のCMSのため本文は#ContentPane、一覧はdiv.BrowserPickUP_torinet_notitle_dateやdiv.BrowserItemList_torinet_contentに入る。**この自治体はHTMLではなくRSSを採る。**3ページがRSS 1.0（RDF）を配信しており、**HTML側は掲載日をほとんど取得できないのに対しRSSはdc:dateを全件に持つ。**入札情報のHTMLは日付のdiv.SubBoxとリンクのdiv.Titleが兄弟としてフラットに並ぶため行テキストから日付を関連付けられず、実測で50件中8件しか掲載日が取れず、しかもその一部は「鳥取県からのお知らせ（2026年8月13日）」のようなタイトル内の日付を拾った誤取得だった。デジタル改革課のHTMLは14件中1件、デジタル基盤整備課のHTMLは8件中0件しか掲載日が取れない。**掲載日が取れないと期間フィルタが機能せず毎回全件が候補になるため、保持件数が少なくても掲載日が確実なRSSを選ぶ。**dc:subjectはどのRSSにも無いのでcategory_includesは使えない。個別案件URLは/329847.htmのようなページ番号で発行され、年度や回次で固定URLを上書き再利用する形ではない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3183,4 +3191,81 @@ sources:
       - 社会課題解決
     notes: ユーザー指定の兵庫県公式ページが現在も案内する「ひょうごSDGs 公民連携プラットフォーム」の連携先募集RSS。確認時点は生件数・構造上有効・filter後がいずれも33件で、33件すべてにpubDateがあり、範囲は2023-10-03から2026-07-23、共通開始日2026-07-01以降の初回期間対象は1件だった。既定limit 5でも未登録時に後続処理へ進むのは最大1件である。HTMLの全3ページは12件・12件・9件でRSSの33件と完全一致し、RSSが現時点の全アーカイブを保持しているため、通常巡回で大きく取りこぼす構造ではない。個別募集は/hub/project/15909/のようなWordPressの固有連番URLで発行され、33件すべてURLと数値IDが一意で、更新型の固定URLではない。RSSのpubDateは記事ページに表示される公開日と一致するが、UTCで前日になる時刻の投稿は日本時間の表示日より1日早くなる例が1件あり、継続巡回は3日重複期間で吸収される。企業・団体からの連携提案も含むため対象性は後続のAI判定に任せる
     last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: tottori-bid-rss
+    organization_id: tottori-prefecture
+    name: 入札情報 RSS
+    url: https://www.pref.tottori.lg.jp/services/rdf/rss10/1523.xml
+    collector_type: rss
+    source_category: procurement
+    priority: high
+    enabled: true
+    document_type_hints:
+      - 調達公告
+      - 公募型プロポーザル
+      - 企画コンペ
+    notes: 全庁の入札公告を配信するRSS 1.0（RDF）。**HTML版（/1326.htm）ではなくRSSを採る。**HTMLは50件を保持するが掲載日は8件しか取れず、日付のdiv.SubBoxとリンクのdiv.Titleが兄弟としてフラットに並ぶ構造のため行テキストから関連付けられない。しかも取れた8件の一部は「鳥取県からのお知らせ（2026年8月13日）」のようなタイトル内の日付で、掲載日ではない誤取得である。**RSSは15件すべてにdc:dateがあり、確認時点の範囲は2026-07-29から2026-08-18の3週間分で、2026-07-01以降は15件すべてが該当する。**内容は【公告】【調達公告】【公募型プロポーザル】が中心で、確認時点は職業訓練委託訓練の企画コンペ、公有財産売却の一般競争入札、県立厚生病院の灯油供給、とっとりGXバイオプラットフォーム形成推進業務、災害対策本部室等映像音響設備更新、太陽光発電所のオンライン制御化改修3件、庁内LAN通信機器賃貸借の再公告、高付加価値型ものづくり産業育成支援業務委託などだった。**保持が3週間分と短く回転が速いため、通常巡回（前回成功日時の3日前起点）では追随できるが巡回間隔が3週間を超えると取り逃す。**dc:subjectが無いためcategory_includesは使えない。ノイズは「鳥取県からのお知らせ」と「しゃんしゃん♪サンドと夏祭り」の2件だけで、いずれも1件ずつなのでtitle_excludesは過剰適合になるため設定しない。**tottori-digital-reform-rssと期間内候補が1件重複する**（庁内LAN通信機器賃貸借の再公告）が公式URL単位の重複判定でスキップされる。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: tottori-digital-reform-rss
+    organization_id: tottori-prefecture
+    name: デジタル改革課 更新情報 RSS
+    url: https://www.pref.tottori.lg.jp/services/rdf/rss10/25780.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: high
+    enabled: true
+    document_type_hints:
+      - 情報システム調達
+      - デジタル政策
+    notes: デジタル改革課の更新情報を配信するRSS 1.0（RDF）。**HTML版（/jouhou/）は14件中1件しか掲載日が取れず、その1件も「フォーラムを開催しました（2026年3月15日）」というタイトル内の日付なので、RSSを採る。**RSSは12件すべてにdc:dateがあり、範囲は2020-05-14から2026-08-05と5年以上を保持する。**確認時点の2026-07-01以降は1件で、令和8年度庁内LAN通信機器賃貸借の調達再公告だった（tottori-bid-rssと重複するため重複判定でスキップされる）。**期間外の項目は情報的健康全国フォーラム、知事名を騙る偽メールへの注意喚起、情報的健康とっとりプロジェクトポータルサイト開設、人間主導AI（えぇ愛）ガイドライン、自治体デジタル民主主義シンポジウムなどで、**調達よりデジタル政策の広報が中心である。**ただし庁内LANのような情報システム調達がこの課から出る実績が確認できたため、優先度を高くして有効化する。更新頻度は年に数件で、保持期間が長いので巡回間隔の制約は無い。dc:subjectが無いためcategory_includesは使えない。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: tottori-digital-kiban-rss
+    organization_id: tottori-prefecture
+    name: デジタル基盤整備課 更新情報 RSS
+    url: https://www.pref.tottori.lg.jp/services/rdf/rss10/640099.xml
+    collector_type: rss
+    source_category: rfi
+    priority: high
+    enabled: true
+    document_type_hints:
+      - 情報提供依頼
+      - データ連携基盤
+    notes: デジタル基盤整備課の更新情報を配信するRSS 1.0（RDF）。**HTML版（/digital-kiban/）は8件中0件しか掲載日が取れず「もどる」のようなナビゲーションも混ざるため、RSSを採る。**RSSは4件すべてにdc:dateがあり、範囲は2024-11-19から2026-08-06である。**確認時点の2026-07-01以降は1件で、県・市町村共同利用による公共施設予約システム導入検討に係る情報提供依頼（RFI）だった。**情報提供依頼は公告前の情報収集段階なので入札公告より早い接触機会になり、共同利用型の施設予約システムは自社領域と直接重なる。期間外の項目は鳥取県デジタルイノベーションセンター、鳥取県データ連携基盤共同利用ビジョンの策定、マイナ保険証への完全移行で、**この課は情報システムの基盤整備を所管するため件数は少ないが対象性が高い。**source_categoryはrfiにした。保持件数が4件と少ないが更新頻度も年に数件なので巡回間隔の制約は無い。dc:subjectが無いためcategory_includesは使えない。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: tottori-kadai-teiji
+    organization_id: tottori-prefecture
+    name: 課題提示型募集一覧
+    url: https://www.pref.tottori.lg.jp/324335.htm
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#ContentPane"
+    document_type_hints:
+      - 行政課題
+      - 民間提案
+    notes: 県が抱える行政課題や民間事業者へ求めたいアイデアを提示し、提案・相談を募集する一覧。**内容は行政ニーズそのもので対象性が非常に高いが、構造上の理由で無効にする。**表形式で「募集中のテーマ／募集内容／募集期間／担当課」の4列に19件が並び、確認時点のテーマは総合事務センター業務のアウトソーシング、鳥取県出資法人の金融リテラシー向上、未来人材育成奨学金支援助成金業務のアウトソーシング、とっとりの未来予想図を活用した提案、県外の空き家所有者への働きかけ、性別によるアンコンシャス・バイアスの解消、防災士の活躍機会創出などだった。**無効にする理由は2つある。第一に、各行の「詳しくはこちらから」リンクが/secure/1398755/1outsourcing1.pdfのようにPDFを直接指し、19件すべてがPDF直リンクである。**現行のCollectorはCandidate URLをHTMLとして取得する前提なのでrequireHtmlContentTypeで全件失敗する。愛知県の都市総務課はHTML候補が主体でPDFが1件混ざるケースだったためselectorで除外できたが、こちらは全件PDFなので回避できない。**第二に、リンクテキストが全件「詳しくはこちらから」で候補タイトルが識別に使えず、title_excludesやtitle_includesも機能しない。**掲載日も「令和８年度末まで」という募集期間の表現で掲載日ではない。ページ内に19件の独立した課題が並ぶためsingle_pageの粒度とも合わない。**課題が個別のHTMLページで公開される形へ変わった場合はlist_page化を再検討する。**現時点で内容を取り込みたい場合はnotion:registerでこの一覧ページを単発登録する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: tottori-kaikaku-pt
+    organization_id: tottori-prefecture
+    name: 行政改革プロジェクトチーム会議
+    url: https://www.pref.tottori.lg.jp/323039.htm
+    collector_type: list_page
+    source_category: council
+    priority: medium
+    enabled: false
+    content_selector: "#ContentPane"
+    document_type_hints:
+      - 会議資料
+    notes: 行政改革プロジェクトチーム会議の回次別アーカイブ。**候補4件すべてが会議資料PDFへの直リンク**（/secure/1428948/R8PTkaigi1.pdfなど）で、個別のHTML案件ページが存在しないため無効にする。掲載日は4件とも取得でき範囲は2025-04-28から2026-05-28だが、2026-07-01以降は0件で更新は年に数回である。現行のCollectorはHTML前提なのでrequireHtmlContentTypeで全件失敗する。**奈良県の行財政改革推進会議、長野県のDX推進本部、石川県の会議アーカイブと同じ扱いで無効のまま保持する。**行政改革の方向性やアウトソーシング方針は政策シグナルとして価値があり、鳥取県は課題提示型募集でアウトソーシングを実際に募集しているため、会議資料がHTMLページとして掲載される形へ変わった場合は再評価する。
+    last_verified_at: "2026-08-18"
     verification_status: verified
