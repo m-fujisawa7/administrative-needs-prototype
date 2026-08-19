@@ -280,6 +280,14 @@ organizations:
     enabled: true
     notes: 情報提供依頼（RFI）と意見招請（RFC）、全庁の企画提案コンペ、デジタル推進局の更新情報を収集する対象都道府県。**本文は#center-contentsに入る。**#wrapper、#container、#container-inner、.center-contents-wlsは外側の入れ物である。フォールバック候補の#main、#contents、#content、.contentに該当する要素が無いため、content_selectorを省略するとbody全体が本文になりWARNINGが出るので全情報源で明示する。**一覧はどのページも共通で.news-box配下のtable.cell-aで、trごとにtd.date-aへ日付、td.news-aへ表題とリンク、td.from-aへ所属名とリンクが入る。**岐阜県・愛知県と同じくtd.from-aにも所属別リンクがあるため、link_selectorをtd.news-aまで絞らないと候補が倍になる（デジタル推進局の更新情報では生200件が400件になり重複除去で198件が落ちる）。**掲載日はゼロ埋めの和暦「令和08年08月18日」形式で、parseDateCandidateがそのまま2026-08-18として解釈できることを確認した。**個別ページの本文冒頭にはSNS共有ラベルが約30文字入るが実害はない。確認した4ページにRSSの配信は無く、取得手段はHTMLだけである。**継続巡回性は良好である。**個別案件URLは/NYUSATSU/m0030700309.htmや/KYOSYOK/HP/000247105_00024.htmのように記事ごとの固有連番で発行され、同じシリーズでも回次ごとに番号が増える（学校情報ネットワークの2件は_00023と_00024、地理情報システムの2件はm0364300074とm0364300075）。**年度や回次で固定URLを上書き再利用する形ではないため、URL単位のduplicate判定と相性が良い。**一方で4ページともページャが無く、一覧は固定件数のウィンドウ表示なので、保持件数の少ない一覧は巡回間隔を空けると取り逃す
 
+  - id: nara-prefecture
+    name: 奈良県
+    organization_type: prefecture
+    prefecture: 奈良県
+    official_domain: pref.nara.lg.jp
+    enabled: true
+    notes: 情報システム調達、デジタル戦略課の担当ページ、行政・施策の入札を収集する対象都道府県。**山梨県・長野県・石川県・宮城県・富山県と同じ#tmp_接頭辞のCMSで、本文は#tmp_contentsに入る。**#tmp_wrapper、#tmp_main、.wrap_col_main、.col_main、#tmp_read_contentsは外側の入れ物である。**一覧の形式がページごとに3種類あり、掲載日の持ち方も異なる。**情報システム入札情報はli内に「令和8年3月5日掲載：」の和暦プレフィックスを置き、デジタル戦略課の担当ページ一覧はli内のp.dateに「2026年8月17日」の西暦を置き、行政・施策に関する入札等はdiv.idx3_list配下のli直下にaがあるだけで掲載日を持たない。和暦・西暦ともparseDateCandidateが行テキストから解釈できることを確認した。確認した5ページにRSSの配信は無く、取得手段はHTMLだけである。**個別案件URLは/n026/p155023.htmlや/n003/p149036.htmlのように所属コードと連番で発行され、年度や回次で固定URLを上書き再利用する形ではない。**ページャはどの一覧にも無く固定件数のウィンドウ表示である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2786,5 +2794,90 @@ sources:
       - スタートアップ
       - 補助金
     notes: 産業イノベーション推進課が所管するスタートアップ支援の一覧。確認時点は5件で全件に掲載日があり、2026-07-01以降は3件だった。**優先度を低くしているのは、確認時点の5件がすべて事業者向け支援施策の広報で県が民間へ発注する調達案件が0件だったためである。**内訳は令和8年度スタートアップ支援補助金の採択結果、スタートアップインキュベーション／アクセラレーションプログラムの参加者募集および募集説明会、三重県起業支援金の申請者募集、スタートアップ支援補助金に係る質問への回答である。**岐阜県の産業イノベーション推進課とほぼ同型の構成なので、同じ結果になる可能性が高いことを承知の上で試す。**件数が3件と少なくAI判定の消費が小さいこと、MIE StartUp FIELDの枠組みで実証事業や共創案件の公募が将来この一覧に出る可能性があることが理由である。AI判定で対象外が続く場合は無効化を検討する。**#center-contents a[href]で書くと生60件になり、外部ドメイン11件と情報源ページ自身へのリンク14件が混ざる**ので、他の三重県の情報源と同じく.news-box td.news-aへ絞る。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: nara-system-bid
+    organization_id: nara-prefecture
+    name: 情報システム入札情報
+    url: https://www.pref.nara.lg.jp/n026/10452.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents ul li a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 情報システム調達
+    notes: 奈良県が発注する情報システムにかかる物品等の調達のうち、一般競争入札とプロポーザル方式の案件を掲載する専用一覧。**18件すべてが情報システム調達で、このセッションで登録した自治体の中でも対象密度が高い。**h2で一般競争入札とプロポーザル方式に分かれるが、どちらのulも候補にしたいため見出しでは絞らない。確認時点は18件で全件に掲載日があり、範囲は2026-02-18から2026-08-04、2026-07-01以降は4件だった。内訳は不動産取得税調査及び課税処理基盤ツール、未払金償還請求管理ツール、職員健康管理システム、児童扶養手当システムのサーバ借入、第5次大和路情報ハイウェイ回線サービス、電子納品保管管理システム、全庁モバイルワーク環境更新、児童相談所のICT化推進、Microsoft365ライセンス借入、道路防災情報システム開発などである。**掲載日はli内の「令和8年3月5日掲載：」という和暦プレフィックスから解釈する。**ulのliにはstrongが挟まるが、#tmp_contents ul li a[href]でもul > li > strong > a[href]でも同じ18件になるため単純な方を採る。**nara-digital-page-listと期間内候補が3件重複する**（道路防災情報システム開発委託、自治体情報セキュリティクラウド再構築の第2回情報提供依頼、事前登録方式手数料等納付オンライン決済システムの開発に関する情報提供依頼）が、公式URL単位の重複判定でClaude到達前にスキップされる。title_excludesは未設定とし、実登録してAI判定と突き合わせてから決める。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: nara-digital-page-list
+    organization_id: nara-prefecture
+    name: デジタル戦略課／デジタル管理室 担当ページ一覧
+    url: https://www.pref.nara.lg.jp/n026/ichiran.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: ".news_col_list ul > li p.simple_link a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 情報提供依頼
+      - 情報システム調達
+      - デジタル政策
+    notes: デジタル戦略課とデジタル管理室が所管するページを更新日順に並べた一覧。**確認時点は100件で全件にp.dateの掲載日があり、範囲は2026-03-31から2026-08-17、2026-07-01以降は8件だった。**初回対象8件は奈良スーパーアプリ、道路防災情報システム開発委託、特定個人情報保護評価書、情報システム入札情報、事前登録方式手数料等納付オンライン決済システムの開発に関する情報提供依頼、児童支援・請求事務システム開発にかかる情報提供依頼、Microsoft365ライセンスの借入れ、自治体情報セキュリティクラウド再構築・運用業務に係る第2回情報提供依頼で、**8件すべてが自社領域にあたり、うち3件が情報提供依頼である。**情報提供依頼は公告前の情報収集段階なので入札一覧より早い接触機会になる。link_selectorは.news_col_list配下のp.simple_linkへ絞った。#tmp_contents ul li a[href]でも同じ100件になるが、構造を明示するため限定的な方を採る。**この一覧にはnara-system-bidの一覧URL自体（/n026/10452.html）も候補として含まれる。**一覧ページが1件Notionへ登録されるだけでノイズは小さいため、除外語は設定しない。nara-system-bidとは期間内で3件重複するが重複判定でスキップされる。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: nara-gyousei-bid
+    organization_id: nara-prefecture
+    name: 行政・施策に関する入札等
+    url: https://www.pref.nara.lg.jp/shigoto/nyuusatsu/oshirase/gyousei/index.html
+    collector_type: list_page
+    source_category: proposal
+    priority: medium
+    enabled: true
+    link_selector: ".idx3_list ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 一般競争入札
+      - 業務委託
+    notes: 行政・施策分野の入札と公募型プロポーザルを部局横断で集めた一覧。情報システム調達はnara-system-bidに分かれているため、こちらは移住プロモーション、知的財産戦略、企業版ふるさと納税マッチング、メンタルヘルス相談窓口、ドローンを活用した日用品等配送の実証実験、万博関連の広報・イベントなどが対象になる。**確認時点は40件で掲載日は0件であり、40件すべてが掲載日不明として毎回候補になる。**したがってinitial_sinceは効かず、初回は--limitで分割して消化する前提とする。対象外判定でもNotionページが作られ次回から重複でスキップされるので、全件分析は一度きりのコストである。**内訳を実測した。ナビゲーション7件（会計局に関する入札情報など「入札情報」で終わる5件、入札・調達、入札等の発注情報）、結果公表18件（審査結果・選定結果・実施結果・入札結果の公表）、募集本体15件で、募集本体のうち7件は2025年大阪・関西万博や令和5年度・令和7年度の過年度案件である。**掲載日が無いため過年度案件と現行案件をタイトルの年度表記でしか区別できないのがこの一覧の弱点である。**title_excludesは未設定で登録する。**実測では「入札情報」がナビゲーション5件だけを落として案件を1件も落とさず、段階マーカー7語を足すと40件が16件になることを確認済みだが、広島市以降の方針どおり実登録してAI判定と人間分類を突き合わせてから語を決める。奈良県では同一案件の実施と結果が別URLの独立ページになっている（産業廃棄物等実態調査業務が実施と結果で2件）ため、愛知県のように募集本体タイトルへ結果が追記される誤爆は起きない。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: nara-dive-su
+    organization_id: nara-prefecture
+    name: Dive+Su Meetup（奈良県スタートアッププロモーション事業）
+    url: https://www.pref.nara.lg.jp/n033/68627.html
+    collector_type: single_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - ガバメントピッチ
+      - スタートアップ
+    notes: スタートアップの製品・サービスで行政課題の解決を図り、県内スタートアップの公共調達を促進する事業のページ。ガバメントピッチで行政課題を提示する枠組みなので対象性は高い。**無効にする理由は2つある。**第一に、**公式ドメイン内の候補リンクが0件で、list_pageとしては「タイトルと公式ドメイン内URLを持つ候補リンクがありません」で失敗する。**外部リンクはpeatixとeiicon.netと支援先企業のサイトだけである。第二に、**本文7,825文字の単一ページへ令和7年度と令和8年度の複数イベントが時系列で積み上がっている。**見出しは33個あり、令和8年度のガバメントピッチ開催報告、令和7年度の成果報告会、取り組み状況、参加者募集（募集期間・応募資格・募集課題を含む）が同じURLに同居する。single_pageは1ページ1候補なので複数回次が1レコードに潰れ、さらに公式URL単位の重複判定で初回1回しか解析されないため、翌年度の募集を継続的に拾えない。config/README.mdのsingle_pageの説明にある「各年度、各テーマを同じURLで更新する」「ページ内に複数の独立案件が並ぶ」に該当する。次年度の参加者募集が別URLで発行されるようになった場合はlist_page化またはSource追加を検討する。掲載中の募集を取得したい場合は有効化ではなくnotion:registerで単発登録する。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: nara-gyozaisei-council
+    organization_id: nara-prefecture
+    name: 行財政改革推進会議
+    url: https://www.pref.nara.lg.jp/n018/p162005.html
+    collector_type: single_page
+    source_category: council
+    priority: medium
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 会議資料
+    notes: 行財政改革推進会議の回次別アーカイブ。第7回（令和8年6月17日）から過去回まで、回ごとに会議資料のPDFリンクが並ぶ。**無効にする理由は、候補が会議資料PDFへの直リンクだけで個別のHTML案件ページが存在しないことである。**実測では#tmp_contents ul li a[href]で10件を取得できるが掲載日は0件で、いずれもPDFを直接指す。現行のCollectorはCandidate URLをHTMLとして取得する前提のため、requireHtmlContentTypeで「HTMLではないContent-Type」として失敗する。愛知県の都市総務課で同種のPDF直リンクを確認済みだが、あちらはHTML候補が主体でPDFが1件混ざるケースだったのに対し、こちらは全件がPDFなのでselectorでの回避ができない。**長野県のDX推進本部や石川県の会議アーカイブと同じ扱いで、無効のまま保持する。**行財政改革の方向性は政策シグナルとして価値があるため、会議資料をHTMLページとして掲載する形へ変わった場合は再評価する。
     last_verified_at: "2026-08-18"
     verification_status: verified
