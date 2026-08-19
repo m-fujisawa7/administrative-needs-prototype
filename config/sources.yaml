@@ -296,6 +296,22 @@ organizations:
     enabled: true
     notes: デジタル実証、官民共創、行政DX、全庁の入札・プロポーザルを調査対象とする都道府県。県公式CMSは一覧・個別ページとも本文が#contentに入り、その直下にh1とdiv.articleまたは日付付き一覧が置かれる。行政企画課の新着はdiv.list.list-dateのliに掲載日と個別ページへのリンクを持つ。入札・物品・役務はHTMLとRSS 2.0を同数保持するが、一部の案件URLを年度別の別調達へ再利用するため、現行のURL単位duplicateとは相性が悪い
 
+  - id: osaka-prefecture
+    name: 大阪府
+    organization_type: prefecture
+    prefecture: 大阪府
+    official_domain: pref.osaka.lg.jp
+    enabled: true
+    notes: スマートシティ、公民連携、行政DX、共同調達、全庁の公募型プロポーザルを調査対象とする都道府県。大阪市はcity.osaka.lg.jpの別組織として登録済みで、親子関係は結んでいない。府公式CMSは一覧・個別ページとも本文が#tmp_contentsに入る。全庁プロポーザルはliの行テキストに和暦の公募開始日と終了日を持ち、parseDateCandidateが先頭の開始日を掲載日として解釈する。大阪スマートシティパートナーズフォーラムは独自ドメインのため、parent_organization_idで大阪府に結び付けた別組織として管理する
+
+  - id: osaka-prefecture-ospf
+    name: 大阪府
+    organization_type: external_organization
+    official_domain: smartcity-partners.osaka
+    enabled: true
+    parent_organization_id: osaka-prefecture
+    notes: 大阪府と府内43市町村、企業、大学、シビックテック等が運営する大阪スマートシティパートナーズフォーラム（OSPF）を、独自公式ドメインへの安全なアクセス制限のため別組織として管理する。公式サイトが配信するWordPress RSSを収集に使用し、個別記事の本文は.entry-contentに入る
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2957,5 +2973,98 @@ sources:
       - 一般競争入札
       - 業務委託
     notes: 入札・物品・役務HTMLページから公式にリンクされるRSS 2.0。確認時点はHTMLとRSSがともに生274件・構造上有効273件・filter後273件で、外部ドメイン1件だけを除外した。HTMLでは平成表記を解釈できない過去20件がpublishedAt不明になる一方、RSSは273件すべてにpubDateがあり、範囲は2018-02-26から2026-08-19、共通開始日2026-07-01以降の初回期間対象は27件、既定limit 5なら未登録時に最大5件が後続処理へ進む。**高価値だが無効にする理由は、年度の異なる新規調達へ同一URLを再利用する実例が現在候補に含まれるためである。**/prefg/032000/d00217849.htmlは令和6年度から令和8年度の県有施設太陽光発電設備導入事業へ、/prefg/070400/d00210583.htmlは令和4年度から令和8年度のわかやまジビエフェスタ広告宣伝業務へ、/prefg/010700/d00218908.htmlは令和6年度から令和8年度の第1回公有財産売却へ本文が差し替わっていた。いずれも同じ案件への質問・結果追記ではなく年度の異なる別調達である。d連番URL自体が再利用されるため安全なselectorやtitle filterで再利用型だけを除外できず、URL単位duplicate-firstでは過年度登録済みURLの新年度案件を本文取得前にスキップする。内容差分で再解析できる仕組みが用意されるか、案件ごとに固有URLが発行される構造へ変わったことを確認できるまで未巡回とする
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: osaka-ospf-news-rss
+    organization_id: osaka-prefecture-ospf
+    name: 大阪スマートシティパートナーズフォーラム NEWS RSS
+    url: https://smartcity-partners.osaka/feed/
+    collector_type: rss
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    content_selector: ".entry-content"
+    document_type_hints:
+      - 官民共創
+      - 実証事業
+      - 補助金公募
+      - 自治体課題
+    notes: ユーザー指定のOSPF公式トップページが配信するWordPress RSS 2.0。トップページのNEWS表示より保持件数が多く、確認時点は生件数・構造上有効・filter後がいずれも20件、20件すべてにpubDateがあり、範囲は2025-09-25から2026-08-04、共通開始日2026-07-01以降の初回期間対象は6件だった。既定limit 5なら未登録時に最大5件が後続処理へ進む。自治体の課題一覧そのものは会員専用だが、公開RSSには自治体の地域課題解決事業、実証プロジェクト補助金、スタートアップ登壇募集など対象性の高い記事が含まれる。個別記事はWordPressの案件固有slugで発行され、確認できた年度・募集回ごとに別URLだったためURL単位duplicateとの不整合は確認していない
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: osaka-pref-smart-city-strategy-businesses
+    organization_id: osaka-prefecture
+    name: スマートシティ戦略部 戦略企画課 事業一覧
+    url: https://www.pref.osaka.lg.jp/o060020/senryaku_kikaku/ichiran.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - スマートシティ
+      - 行政DX
+      - デジタル実証
+      - 公民連携
+    notes: 大阪スマートシティ戦略、行政AIエージェントコンソーシアム、ブロードリスニング、ORDEN、公民連携、AIオンデマンド交通等の事業ハブ。確認時点は生件数・構造上有効・filter後がいずれも20件で、一覧に掲載日がないため20件すべてpublishedAt不明、共通開始日2026-07-01適用後の初回期間対象も20件だった。**未巡回にする理由は、候補の大半が施策ごとの固定トップページで、年度をまたいだ更新が同じURLへ蓄積されるためである。**初回に各施策を1件として解析できても、登録後はOfficial URL単位duplicateで本文取得前にスキップされ、同じページへ追加される新しい実証、公募、会議情報を継続取得できない。OSPFは別の公式RSSで取得し、全庁プロポーザルは別Sourceとして保持する。将来、事業一覧が日付付きの個別記事一覧へ変わった場合に再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: osaka-pref-administrative-dx-businesses
+    organization_id: osaka-prefecture
+    name: 行政DX推進課 事業一覧
+    url: https://www.pref.osaka.lg.jp/o050180/dxsuishin/ichiran.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: false
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 行政DX
+      - 行政手続オンライン化
+      - 意見招請
+    notes: 行政手続オンライン化と調達に係る意見招請への固定リンクを持つ事業ハブ。確認時点は生件数・構造上有効・filter後がいずれも2件で、2件ともpublishedAt不明、共通開始日2026-07-01適用後の初回期間対象も2件だった。**未巡回にする理由は、意見招請のリンク先が同じ固定URLで更新され、確認時点では個別案件リンクが0件であり、この事業一覧から案件固有URLを候補化できないためである。**初回に固定ページを登録すると、その後の追加内容はOfficial URL単位duplicateで本文取得前にスキップされる。意見招請ページが案件ごとの固有HTML URLを掲載する一覧へ変わった場合に、直接のSourceとして再評価する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: osaka-pref-govtech-osaka
+    organization_id: osaka-prefecture
+    name: 大阪市町村スマートシティ推進連絡会議（GovTech大阪）
+    url: https://www.pref.osaka.lg.jp/o060030/digital_gyosei/govtechosaka/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > h2 + ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 共同調達
+      - 情報システム調達
+      - 公募型プロポーザル
+      - 一般競争入札
+    notes: 大阪府と府内市町村が連携して行う情報システム・デジタルサービスの共同調達一覧。確認時点は生件数・構造上有効・filter後がいずれも11件で、一覧に掲載日がないため11件すべてpublishedAt不明、共通開始日2026-07-01適用後の初回期間対象も11件だった。既定limit 5なら未登録時に最大5件が後続処理へ進む。初期のチャット、電子申請、文書管理等は用途別の固有URL、近年のRPA・LGWAN関連は20250416.html、20250418.html、20250618.htmlのような案件固有URLで追加されている。結果の追記または別結果ページは同じ調達の続報であり、年度の異なる新規調達へ同一URLを差し替える実例は確認していない。ページ本文にも今後の共同調達公告を本ページへ掲載すると明記されているため高優先度で継続確認する
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: osaka-pref-proposal-list
+    organization_id: osaka-prefecture
+    name: 全庁 公募型プロポーザル
+    url: https://www.pref.osaka.lg.jp/o040100/keiyaku_2/e-nyuusatsu/puropo.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: false
+    link_selector: "#tmp_contents > h3 + p + ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    initial_since: "2026-08-01"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+      - 業務委託
+    notes: 全庁の公募型プロポーザルを公募期間、案件名、所管課とともに集約する一覧。実施基準PDFと年度別アーカイブをselectorで外し、設計コンサルティングと一般委託の案件だけを取得する。確認時点は生148件・構造上有効148件・重複URL2件を除いたfilter後146件で、146件すべてに和暦の公募開始日があり、共通開始日2026-07-01以降は12件、initial_sinceの2026-08-01以降の初回期間対象は5件だった。**高価値だが未巡回にする理由は、年度の異なる新規調達へ同一URLを再利用する実例が現行一覧にもあるためである。**/o110040/2025dtsu_proposal.htmlは令和7年度と令和8年度のディープテックスタートアップ事業化支援委託業務へ、/o180040/kotogakko/eigo/kaigaikoryu.htmlは令和7年度の大阪府立学校海外交流支援センター運営事業と令和8年度の高校生大使派遣プロジェクトへ使われている。過去一覧にも/o130240/koken_keikaku/hattyu_kennkonn/hattyuu_puropo.htmlを複数年度・複数設計業務へ使う例があり、特定のURLパターンだけを安全に除外できない。URL単位duplicate-firstでは過年度登録済みURLの新年度案件を本文取得前にスキップするため、内容差分で再解析できる仕組みが用意されるか、案件固有URLへ統一されたことを確認できるまで未巡回とする
     last_verified_at: "2026-08-19"
     verification_status: verified
