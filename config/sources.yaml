@@ -272,6 +272,14 @@ organizations:
     enabled: true
     notes: デジタル政策、全庁の入札・プロポーザル、事業者向け新着、公民連携の行政ニーズを収集する対象都道府県。京都市はcity.kyoto.lg.jpの別組織として登録済みで、親子関係は結んでいない。府公式CMSは一覧・個別ページとも本文が#tmp_contentsに入り、一覧の日付は年を省いた月日表記、RSSはRSS 1.0（RDF）でdc:dateとdc:subjectを持つ
 
+  - id: mie-prefecture
+    name: 三重県
+    organization_type: prefecture
+    prefecture: 三重県
+    official_domain: pref.mie.lg.jp
+    enabled: true
+    notes: 情報提供依頼（RFI）と意見招請（RFC）、全庁の企画提案コンペ、デジタル推進局の更新情報を収集する対象都道府県。**本文は#center-contentsに入る。**#wrapper、#container、#container-inner、.center-contents-wlsは外側の入れ物である。フォールバック候補の#main、#contents、#content、.contentに該当する要素が無いため、content_selectorを省略するとbody全体が本文になりWARNINGが出るので全情報源で明示する。**一覧はどのページも共通で.news-box配下のtable.cell-aで、trごとにtd.date-aへ日付、td.news-aへ表題とリンク、td.from-aへ所属名とリンクが入る。**岐阜県・愛知県と同じくtd.from-aにも所属別リンクがあるため、link_selectorをtd.news-aまで絞らないと候補が倍になる（デジタル推進局の更新情報では生200件が400件になり重複除去で198件が落ちる）。**掲載日はゼロ埋めの和暦「令和08年08月18日」形式で、parseDateCandidateがそのまま2026-08-18として解釈できることを確認した。**個別ページの本文冒頭にはSNS共有ラベルが約30文字入るが実害はない。確認した4ページにRSSの配信は無く、取得手段はHTMLだけである。**継続巡回性は良好である。**個別案件URLは/NYUSATSU/m0030700309.htmや/KYOSYOK/HP/000247105_00024.htmのように記事ごとの固有連番で発行され、同じシリーズでも回次ごとに番号が増える（学校情報ネットワークの2件は_00023と_00024、地理情報システムの2件はm0364300074とm0364300075）。**年度や回次で固定URLを上書き再利用する形ではないため、URL単位のduplicate判定と相性が良い。**一方で4ページともページャが無く、一覧は固定件数のウィンドウ表示なので、保持件数の少ない一覧は巡回間隔を空けると取り逃す
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -2708,5 +2716,75 @@ sources:
       - 府政情報
       - 一般競争入札
     notes: 府政情報の新着を10件配信するRSS 1.0（RDF）。確認時点は2026-08-14から2026-08-18までの10件でdc:dateは全件にあるが、一般競争入札2件はいずれも入札・プロポーザル一覧と重複し、残りは職員採用、仕事体験、融資制度、防災週間等の一般案内が中心だった。**独自の行政ニーズを確認できず、categoryも府政運営・行財政改革と採用情報の粗い区分だけで安全に絞れないため無効状態で保持する。**RSSの対象構成が変わるか、入札一覧に無いRFI・民間提案を掲載する実績が確認できた場合に再有効化を検討する
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: mie-rfi-list
+    organization_id: mie-prefecture
+    name: 意見・提案・情報提供依頼
+    url: https://www.pref.mie.lg.jp/common/07/ci400012315.htm
+    collector_type: list_page
+    source_category: rfi
+    priority: high
+    enabled: true
+    link_selector: ".news-box td.news-a a[href]"
+    content_selector: "#center-contents"
+    document_type_hints:
+      - 情報提供依頼
+      - 意見招請
+      - 仕様書
+    notes: 情報提供依頼（RFI）と意見招請（RFC）を全庁横断で集約する一覧。**このセッションで登録した自治体の中で最も自社領域の密度が高い情報源である。**確認時点は10件で全件にtd.date-aの掲載日があり、範囲は2026-06-15から2026-08-18、2026-07-01以降は7件だった。内訳は次期三重県設計積算システム（第7期）のRFI第4回、令和9年度小中学校旅費システム再構築及び運用保守業務のRFI、三重県Webシステム再構築及び運用保守業務の第2回意見招請（RFC）とその結果、学校情報ネットワークのサーバ機器更新および機器更新のRFI各1件、第2期三重県DX推進基盤の整備のRFI、地理情報システム専用ヘルプデスク業務委託の意見招請の結果、公共事業労務費調査業務委託のRFI、太陽光発電設備導入事業（PPA）のRFIで、**10件のうち9件が情報システム関連である。**RFIとRFCは公告前の情報収集段階なので、公告一覧より早い接触機会になる。個別ページには課題の記述が具体的に入り、旅費システムでは開発事業者の撤退による保守困難・制度改正への対応不可・専用端末と紙帳票を前提とした運用という現行課題が明記されていた。title_excludesは未設定とし、結果公表の「意見招請の結果について」も段階マーカーとして落とせそうだが、広島市以降の方針どおり実登録してAI判定と突き合わせてから決める。**mie-digital-updatesと候補が2件重複する**（地理情報システム専用ヘルプデスクの意見招請の結果と第2期DX推進基盤のRFI）が、公式URL単位の重複判定でClaude到達前にスキップされる。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: mie-proposal-compe
+    organization_id: mie-prefecture
+    name: 企画提案コンペ等情報（公告・結果）
+    url: https://www.pref.mie.lg.jp/common/07/ci400006623.htm
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: ".news-box td.news-a a[href]"
+    content_selector: "#center-contents"
+    document_type_hints:
+      - 企画提案コンペ
+      - 業務委託
+    notes: 全庁の企画提案コンペを部局横断で集約する一覧。三重県は公募型プロポーザルを企画提案コンペと呼ぶ。確認時点は5件で全件に掲載日があり、範囲は2026-08-10から2026-08-18、掲載日がすべて直近のため2026-07-01以降も5件だった。所属は雇用対策課・海外誘客課など部局をまたぐ。**保持件数が5件で確認時点の範囲が2026-08-10から2026-08-18の8日分しかなく、ページャも無いため回転が速い。通常巡回は前回成功日時の3日前を起点にするので通常は追随できるが、巡回間隔が8日を超えると取り逃す可能性がある。**確認時点の内訳は「地域で働くということ」を学ぶ旅運営業務委託、インドネシアにおける現地旅行会社招請業務委託、人口戦略フォーラムin三重運営等業務委託、地場産物の学校給食活用に向けた食育推進ワンストップパッケージ事業業務委託で、**デジタル案件は0件だった。**デジタル関連の企画提案コンペはmie-digital-updates側に載る（行政手続デジタル化推進業務委託、DX人材育成研修運営等業務委託）。**title_excludesは未設定とする。**5件のうち3件が「質問への回答について」「選定結果について」「質問及び回答」という段階マーカーで、岐阜県では同種の語を除外した。三重県では質問回答と選定結果が募集本体とは別URLの独立ページになっているため愛知県のような誤爆は起きないが、母数5件では実測の根拠が足りないので実登録してから決める。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: mie-digital-updates
+    organization_id: mie-prefecture
+    name: デジタル推進局 更新情報
+    url: https://www.pref.mie.lg.jp/D1DIGITAL/all.htm
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: ".news-box td.news-a a[href]"
+    content_selector: "#center-contents"
+    document_type_hints:
+      - 企画提案コンペ
+      - 意見招請
+      - 情報提供依頼
+    notes: デジタル推進局の更新情報を全件掲載するページ。**確認時点は200件で全件に掲載日があり、範囲は2021-12-27から2026-08-06と4年半を保持するアーカイブである。ただし更新頻度が低く2026-07-01以降は4件だけなので、件数の多さがAI判定の負荷にはならない。**初回対象4件は令和8年度行政手続デジタル化推進業務委託企画提案コンペの質問への回答、地理情報システム専用ヘルプデスク業務委託の意見招請の結果、同企画提案コンペの実施告知、USBメモリの庁内調査結果である。期間外の直近には三重県行政WAN総合ヘルプデスク業務の意見招請（RFC）とその結果、令和8年度DX人材育成研修運営等業務委託の企画提案コンペ、第2期三重県DX推進基盤の整備のRFIが並び、**デジタル調達の一次情報が集まる情報源である。**link_selectorをtd.news-aまで絞る効果がここで最も大きく、td a[href]と書くと生400件になって重複URLとして198件が落ちる。**mie-rfi-listと候補が2件重複する**が公式URL単位の重複判定でスキップされる。会計年度任用職員の募集のような人事案件も混ざるが、件数が少ないためtitle_excludesは設定しない。
+    last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: mie-startup
+    organization_id: mie-prefecture
+    name: スタートアップ（MIE StartUp FIELD）
+    url: https://www.pref.mie.lg.jp/common/05/ci400015914.htm
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: low
+    enabled: true
+    link_selector: ".news-box td.news-a a[href]"
+    content_selector: "#center-contents"
+    document_type_hints:
+      - スタートアップ
+      - 補助金
+    notes: 産業イノベーション推進課が所管するスタートアップ支援の一覧。確認時点は5件で全件に掲載日があり、2026-07-01以降は3件だった。**優先度を低くしているのは、確認時点の5件がすべて事業者向け支援施策の広報で県が民間へ発注する調達案件が0件だったためである。**内訳は令和8年度スタートアップ支援補助金の採択結果、スタートアップインキュベーション／アクセラレーションプログラムの参加者募集および募集説明会、三重県起業支援金の申請者募集、スタートアップ支援補助金に係る質問への回答である。**岐阜県の産業イノベーション推進課とほぼ同型の構成なので、同じ結果になる可能性が高いことを承知の上で試す。**件数が3件と少なくAI判定の消費が小さいこと、MIE StartUp FIELDの枠組みで実証事業や共創案件の公募が将来この一覧に出る可能性があることが理由である。AI判定で対象外が続く場合は無効化を検討する。**#center-contents a[href]で書くと生60件になり、外部ドメイン11件と情報源ページ自身へのリンク14件が混ざる**ので、他の三重県の情報源と同じく.news-box td.news-aへ絞る。
     last_verified_at: "2026-08-18"
     verification_status: verified
