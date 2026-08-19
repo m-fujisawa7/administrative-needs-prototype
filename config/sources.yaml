@@ -352,6 +352,14 @@ organizations:
     enabled: true
     notes: 全庁のプロポーザルと業務委託入札、デジタル改革推進部の調達を収集する対象政令指定都市。**本文は#contentsに入り、フォールバック候補にも#contentsが含まれるため未設定でも動くが、全情報源で明示している。**個別ページには「更新日付：2026年8月13日 / ページ番号：C131659」の形式で更新日があり解釈できる。**一覧のテンプレートが2系統ある。**部の取扱い情報一覧は旧テンプレートで.ul_contents_list01のli配下にリンクが並び、プロポーザルと業務委託は新テンプレート（.l-container配下）でdiv.in_column_box内のh2.ttl_type1_linkにリンクが入るためliでは取れない。新着情報一覧はh2.ttl_type1に日付、div.item_box配下のdl.new_list01のddにリンクが入る**兄弟構造で、日付とリンクを関連付けられないため掲載日が0件になる。**新着情報はRSSも配信しており、RSSはdc:dateを全件に持つのでRSSを採る。個別案件URLは/005/001/017/012/p131659.htmlのようにページ番号で発行され、年度や回次で固定URLを上書き再利用する形ではない
 
+  - id: shimane-prefecture
+    name: 島根県
+    organization_type: prefecture
+    prefecture: 島根県
+    official_domain: pref.shimane.lg.jp
+    enabled: true
+    notes: 全庁の入札情報と、デジタル戦略室・教育連携推進課の入札公告を収集する対象都道府県。**本文は#page-contentに入り、#honbunはお問い合わせ先まで含む外側の入れ物である。**一覧の構造は2系統で、全庁の入札情報トップはul.genre-newsのli、部局別の入札公告ページは#page-content配下のul.page_listのliにリンクが入る。**掲載日はどの一覧でもリンク行の中にあるが「（ 8月19日）」のように年を含まないため、parseDateCandidateがnullを返し掲載日を1件も取得できない。**山梨県のDX課新着と同じ表記で、個別ページにも掲載日のマークアップが無い。**したがって全候補が掲載日不明として毎回対象になり、initial_sinceは効かない。**対象外判定でもNotionページが作られ次回から重複でスキップされるので、全件分析は一度きりのコストである。**RSSは採らない。**bid_info/index.rdfが配信されているが、拡張子がrdfでも中身はRSS 2.0で、確認時点はitem 10件・pubDateもdc:dateも0件で日付を1件も持たない。HTML側は18件を保持するため、件数でも日付でもHTMLが優位である。個別案件URLは/bid_info/bid_kyouikurenkei/R8kyoudoutyoutatu.htmlのように所属ディレクトリ配下の案件別ファイル名で、令和7年度版と令和8年度版が別ファイル（shimanegigakyodo/R8kyoudoutyoutatu）として並存するため固定URLの上書き再利用ではない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3466,4 +3474,57 @@ sources:
       - デジタル政策
     notes: DX分野の新着情報を配信するRSS。HTML版（/006/007/013/news.html）は7件を保持するが掲載日が0件、RSSは5件すべてにdc:dateを持つのでRSSを選んだが、**次の3点により無効で登録する。**第一に、**確認時点の5件は学生主催の写真撮影イベント「ふぉさんぽ」、ＣＩＯの部屋2回分、スマホ相談会、令和7年度DX推進本部会議、第4回Digi田甲子園で、調達案件が0件である。**第二に、**範囲が2025-04-07から2025-12-26で2026-07-01以降が0件、最新が確認日から約8か月前と更新が止まっている。**第三に、デジタル改革推進部の調達はsaitama-digital-bureau-listがtitle_includes適用で拾うため、**このRSSに独自価値が無い。**内容が広報中心である点は部の索引の実測（422件中3%だけが調達）とも整合する。DX分野で調達や意見招請が配信される実績が確認できた時点で有効化を再検討する。
     last_verified_at: "2026-08-18"
+    verification_status: verified
+
+  - id: shimane-bid-info
+    organization_id: shimane-prefecture
+    name: 入札情報
+    url: https://www.pref.shimane.lg.jp/bid_info/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: ".genre-news li a[href]"
+    content_selector: "#page-content"
+    document_type_hints:
+      - 一般競争入札
+      - 提案競技
+      - 情報提供依頼
+    notes: 全庁の入札情報を所属横断で集約する新着一覧。確認時点は18件で、範囲はリンク行の表記から2026-07-13から2026-08-19の約5週間分だった。**掲載日は取得できない。**リンク行に「（ 8月19日）」の形式で日付があるものの年を含まないためparseDateCandidateがnullを返し、18件すべてが掲載日不明として毎回候補になる。ページャは無く固定件数のウィンドウ表示だが、過去一覧へのリンクは存在する。内容は所属名を角括弧で冠した形式で、確認時点は産業技術センターの試験機校正、松江県土整備事務所の溝堀機購入、企業局のろ過材購入、中央病院の医薬品購入のような物品・役務と、**「島根県学びのデザイン支援センター」構築・運用業務に係る提案競技**のようなデジタル案件が混在していた。過去には島根県次期セキュリティクラウドに係る情報提供依頼（RFI）も掲載されている。**shimane-bid-kyouikurenkeiと候補が2件重複する**（学びのデザイン支援センターの提案競技、県立学校教職員用端末モバイル通信回線調達）が、公式URL単位の重複判定でClaude到達前にスキップされる。**保持が約5週間と短いため、巡回間隔が5週間を超えると取り逃す。**部局別の入札公告ページが流れ落ちた案件を保持するので、両方を登録して補完させる設計にしている。title_excludesは未設定とし、実登録してAI判定と突き合わせてから決める。
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: shimane-bid-kyouikurenkei
+    organization_id: shimane-prefecture
+    name: 入札公告（教育連携推進課）
+    url: https://www.pref.shimane.lg.jp/bid_info/bid_kyouikurenkei/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#page-content ul.page_list li a[href]"
+    content_selector: "#page-content"
+    document_type_hints:
+      - 共同調達
+      - 提案競技
+      - 校務支援システム
+    notes: 教育連携推進課と教育指導課の入札公告を集約する所属別一覧。**確認時点の6件すべてが自社領域にあたり、島根県で最も対象密度が高い。**内訳は「島根県学びのデザイン支援センター」構築・運用業務に係る提案競技、島根県市町村立小中学校・義務教育学校次世代校務支援システムの共同調達、県立学校教職員用端末モバイル通信回線調達の公募、令和8年度と令和7年度の学習者用コンピュータ共同調達、令和7年度県立学校ICT支援員派遣業務の公募である。**市町村と共同で調達する枠組みが多く、校務支援システムは設計・構築と稼働後5年間の運用保守を一括発注する規模である。**掲載日はリンク行にあるが年を含まないため取得できず、6件すべてが掲載日不明として毎回候補になる。保持範囲はリンク行の表記から2025-02-25から2026-08-18で、**shimane-bid-infoの約5週間ウィンドウから流れ落ちた案件を保持する点がこの情報源の価値である。**確認時点でshimane-bid-infoと2件重複するが重複判定でスキップされる。**令和7年度版と令和8年度版の学習者用コンピュータ共同調達が別ファイル（shimanegigakyodo.htmlとR8kyoudoutyoutatu.html）として並存しており、年度で固定URLを上書き再利用しないことを確認した。**ページャは無い。
+    last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: shimane-bid-senryaku
+    organization_id: shimane-prefecture
+    name: 入札公告（デジタル戦略室）
+    url: https://www.pref.shimane.lg.jp/bid_info/bid_senryaku/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#page-content ul.page_list li a[href]"
+    content_selector: "#page-content"
+    document_type_hints:
+      - 提案競技
+      - ICT戦略
+    notes: 地域振興部地域政策課デジタル戦略室が所管する入札公告の所属別一覧。**確認時点は2件だけだが両方とも自社領域である。**島根県ICT総合戦略推進支援業務に係る提案競技と、デジタル人材育成研修企画・運営業務（成果連動型）提案競技への質問に対する回答である。掲載日はリンク行にあるが年を含まないため取得できず、2件とも掲載日不明として毎回候補になる。保持範囲はリンク行の表記から2026-03-30から2026-05-15で、**確認時点ではどちらもshimane-bid-infoの約5週間ウィンドウ（2026-07-13以降）から流れ落ちており、shimane-bid-infoとの重複は0件だった。**件数は少ないがデジタル戦略室はICT総合戦略と情報システム調達を所管するため、新しい公告が出れば最初にここへ載る。件数が2件と少なくAI判定の消費が小さいこともあわせて優先度を高くしている。専用RSSは確認できず、上位のbid_info/index.rdfは日付を持たないためHTMLを採る。ページャは無い。
+    last_verified_at: "2026-08-19"
     verification_status: verified
