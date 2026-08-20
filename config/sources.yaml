@@ -441,6 +441,14 @@ organizations:
     enabled: true
     notes: 全庁の意見招請と、スマート行政推進課・デジタルシフト推進課・官民共創推進課の新着情報を収集する対象都道府県。**CMSは岡山県と同系統で、入札の分類別一覧はdiv.info_list_wrap配下のdiv.info_list > ul > li、課の新着はdiv.section_information_list > ul > liに入る。**liはspan.article_dateとspan.article_title > aの2要素で、article_title内のアンカーは1本だけなので所属課リンクによる候補汚染は無い。**掲載日はリンクと同じliのspan.article_dateに「2026年8月10日」形式で入り、4つの一覧すべてで全件解析できる。**日付の意味は更新日で、一覧は日付の降順である。**本文セレクタは#mainを使う。**#main_bodyは本文だけで綺麗だが実測228〜2,246文字と200文字の下限に対する余裕が小さく、#mainは286〜2,330文字で差は80文字程度である。main・article・[role=main]・#mol_contentsはいずれも存在しないため、下限を割った場合のfallbackはbody（1,537〜3,591文字）まで進む。**3課のRSSは登録しない。**スマート行政推進課は/rss/20/soshiki-6-20.xml、デジタルシフト推進課は/rss/20/soshiki-6-22.xml、官民共創推進課は/rss/20/soshiki-5-278.xmlが配信され、いずれもRSS 2.0でpubDateが全件（RFC822の+0900）あるが、**確認時点でHTMLの新着と11件・16件・26件が完全一致し独自候補は0件だった。**categoryも所属課名1種だけなのでcategory_includesにも使えない。意見・提案・情報提供依頼の一覧にはRSSが無い
 
+  - id: kochi-prefecture
+    name: 高知県
+    organization_type: prefecture
+    prefecture: 高知県
+    official_domain: pref.kochi.lg.jp
+    enabled: true
+    notes: 全庁の一般競争入札・プロポーザルと、デジタル政策課・会計管理課・産業イノベーション課の情報を収集する対象都道府県。**一覧の構造は2系統ある。**所属課の新着（/soshiki/配下のmore.html）はdiv.contentOrganization配下のul > li > a.doc_linkで、日付のspan.update_dateとタイトルのspan.titleが**同じアンカーの中**に入るため候補タイトルが「2026年08月07日令和８年度インターネット接続用仮想基盤再構築等委託業務」のように日付付きになる。カテゴリ一覧（/category/配下のmore@docs_N.html）はdiv.docs配下のul > liで、span.update_dateがspan.title_linkの外にあるため候補タイトルは案件名だけになる。**掲載日はどちらもliから取得でき、表記は「2026年08月19日」で年を含み、意味は更新日である。**個別ページのh1はヘッダーロゴなのでtitle_selectorが必要である。h1が2つあり1つ目は高知県ロゴのimgでテキストが空、2つ目が案件名なので#content h1を指定する。確認した7ページすべてで30〜49文字の案件名が取れた。未設定だとtitleタグへfallbackし「案件名 | 高知県」になる。**本文セレクタは#contentを使う。**#wrapperと#mainは同じ範囲で、articleは185〜1,383文字と200文字の下限を割る場合がある。main要素と[role=main]は存在しない。**質疑回答と結果は独立ページである。**質疑への回答は本文251〜738文字で添付が回答PDF 1件だけ、審査結果は570文字で審査結果通知PDFだけであり、募集本体（919〜1,444文字、募集要領・企画提案書作成要領・審査要領・仕様書・契約書案）とは明確に分かれる。**RSSは登録しない。**一般競争入札・プロポーザルのindex.rssはRSS 2.0でpubDateとcategoryを持つが、確認時点でitem 10件がHTML 100件へ完全に包含され独自候補は0件だった。**所属課の新着とカテゴリ一覧はページャがあるが現行collectorは1ページ目だけを見る。**デジタル政策課はmore.p2.htmlのように遡れる
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4382,5 +4390,101 @@ sources:
       - 官民共創
       - 実証支援
     notes: 官民共創推進課の新着情報。**正式調達の前段を取れる点に価値がある。**地域課題の抽出から共創テーマ設定、官民マッチング、実証支援までを扱い、確認時点では愛媛県共創プロジェクト実証支援事業費補助金の申請受付、えひめ食・観光・農林漁業プラットフォームの各アクションラボ、官民共創拠点E:N BASEの記事が並ぶ。**確認時点は26件で掲載日は26件すべて取得でき、保持は2024年3月14日から2026年8月12日である。**共通開始日2026-07-01の期間内は1件だけになる。**title_excludesは審査結果と募集は終了しましたの2語にした。**【審査結果】が5件、【募集は終了しました】が1件で合わせて6件を除外し20件が残る。どちらも本体タイトルの前へ追記する型で、募集中を示すマーカーは確認時点で存在しない。イベント・セミナー告知や記者発表要旨が多く対象密度はデジタルシフト推進課より低いためpriorityはmediumとする。他3SourceとのURL重複は0件だった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kochi-digital-policy
+    organization_id: kochi-prefecture
+    name: デジタル政策課 新着情報
+    url: https://www.pref.kochi.lg.jp/soshiki/080000/080501/more.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.contentOrganization ul li a.doc_link"
+    title_selector: "#content h1"
+    content_selector: "#content"
+    title_excludes:
+      - 審査結果
+      - の結果について
+      - 質疑書回答
+      - 質疑回答
+    document_type_hints:
+      - 情報提供依頼
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 共通基盤
+    notes: デジタル政策課の新着情報で、高知県で最も自社領域と重なる情報源。**確認時点は1ページ目30件で掲載日は30件すべて取得でき、保持は2025年5月23日から2026年8月7日である。**全4ページで102件あるが現行collectorは1ページ目だけを見る。1ページ目で1年3か月を遡れて期間フィルタも効くので実害にならない。共通開始日2026-07-01の期間内は、令和8年度インターネット接続用仮想基盤再構築等委託業務と次期高知県情報ハイウェイに係る情報提供依頼（RFI）の2件になる。**title_excludesは段階マーカーだけにした。**審査結果2件、の結果について1件、質疑書回答1件、質疑回答1件で重複を除くと5件を除外し25件が残る。期間内には1件も当たらないが、高知県は結果と質疑回答を独立ページで作り更新日順の一覧へ載せるため、除外語が無いと結果段階の候補が期間フィルタを通る。**title_includesは設定しない。**期間内2件でAI処理量に問題が無く、内容も共通基盤再構築、県庁ネットワーク運用保守、第4次庁内クラウド移行、社会保障・税番号制度システム整備など自社領域が中心である。固定ページとして地上デジタル放送、高知県スマサポ、第2期高知県デジタル化推進計画があるが、いずれも期間外なので除外語を増やしていない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kochi-kaikei-kanri
+    organization_id: kochi-prefecture
+    name: 会計管理課 新着情報
+    url: https://www.pref.kochi.lg.jp/soshiki/180000/180101/more.html
+    collector_type: list_page
+    source_category: procurement
+    priority: low
+    enabled: true
+    link_selector: "div.contentOrganization ul li a.doc_link"
+    title_selector: "#content h1"
+    content_selector: "#content"
+    title_excludes:
+      - の結果について
+      - 入札結果
+      - 質疑及び回答
+    document_type_hints:
+      - 情報提供依頼
+      - 財務会計システム
+      - 一般競争入札
+    notes: 会計管理課の新着情報。**確認時点は1ページ目30件で掲載日は30件すべて取得でき、保持は2022年4月1日から2026年8月6日と4年余りで30件なので回転が非常に遅い。**ページャはあるが現行collectorは1ページ目だけを見る。**対象密度は低い。**30件のうち自社領域と重なるのは高知県次期財務会計システム構築に関する情報提供依頼（RFI）、財務会計システム再構築等委託業務の入札結果、財務会計システム運用等委託業務、財務会計システム基本設計委託業務など6件程度で、残りは災害義援金、収入証紙、契約規則の一部改正、当初予算見積の概要といった会計事務の案内である。共通開始日2026-07-01の期間内は熊本地震の災害義援金受付と政府調達苦情検討委員会の2件で、どちらも自社領域ではない。**それでも有効にする。**次期財務会計システムのような大型調達のRFIがこの一覧へ出た実績があり、老朽化やベンダー固定化といった行政課題を仕様策定前に取得できる。回転が遅く継続巡回のコストが小さいのでpriorityはlowとする。title_excludesは3語で、確認時点は電気の調達の質疑及び回答2件、電気の調達の入札結果1件、財務会計システム再構築の入札結果1件の計4件を除外し26件が残る
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kochi-nyusatsu-proposal
+    organization_id: kochi-prefecture
+    name: 一般競争入札・プロポーザル（公共事業以外）
+    url: https://www.pref.kochi.lg.jp/category/bunya/shigoto_sangyo/nyusatsujoho/ippankyosonyusatsu_proposal/more%40docs_1.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "div.docs ul li span.title_link a[href]"
+    title_selector: "#content h1"
+    content_selector: "#content"
+    title_excludes:
+      - 審査結果
+      - の結果について
+      - 入札結果
+      - 質疑への回答
+      - 質疑及び回答
+      - 質疑回答
+    document_type_hints:
+      - 公募型プロポーザル
+      - 一般競争入札
+      - 委託業務
+    notes: 全庁の一般競争入札・プロポーザル（公共事業以外）を集約する一覧で、正式調達段階の取りこぼし防止用。**確認時点は100件で掲載日は100件すべて取得でき、保持は2023年8月3日から2026年8月19日である。**ページャはあるが現行collectorは1ページ目だけを見る。1ページ目で3年分を保持するので実害にならない。**title_excludesは段階マーカー6語にした。**審査結果25件、の結果について12件、入札結果4件、質疑への回答5件、質疑及び回答3件、質疑回答1件で、重複を除くと50件を除外し50件が残る。**除外50件はすべて結果ページか独立の質疑回答ページで、募集本体の誤除外は0件だった。**共通開始日2026-07-01の期間内は13件から9件になり、被災者支援システム構築等委託業務、データ連携基盤活用実証事業委託業務、道路台帳管理システム再構築委託業務、令和8年度インターネット接続用仮想基盤再構築等委託業務などのプロポーザル・入札本体が残る。**title_includesは設定しない。**期間内9件でAI処理量に問題が無く、県営林整備や食堂・売店運営のような対象外案件も含むが、内容トピックの除外は実登録後のAI判定と突き合わせてから判断する。デジタル政策課の一覧とは正式調達で一部重複するが、被災者支援・道路台帳・医療・データ連携など他部局のICT案件はこちらにしか出ない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kochi-boshu-innovation
+    organization_id: kochi-prefecture
+    name: 募集情報（産業イノベーション課）
+    url: https://www.pref.kochi.lg.jp/category/mokuteki/boshujoho/more%40docs_6%40g_121701.html
+    collector_type: list_page
+    source_category: proposal
+    priority: medium
+    enabled: true
+    link_selector: "section.category.docs_6 div.docs ul li span.title_link a[href]"
+    title_selector: "#content h1"
+    content_selector: "#content"
+    title_excludes:
+      - 受付を終了しました
+      - 質疑への回答
+    document_type_hints:
+      - 実証実験支援
+      - 補助金
+      - 公募型プロポーザル
+    notes: 産業イノベーション課の募集情報。**一覧に日付のマークアップが無く掲載日を1件も取得できないため、10件すべてが掲載日不明として毎回対象になる。**initial_sinceは効かない。**そのぶんtitle_excludesの効果が大きい。**受付を終了しましたが5件、質疑への回答が3件で計8件を除外し2件が残る。除外8件は終了済みの募集と独立の質疑回答ページだけで、募集本体の誤除外は0件だった。残る2件は令和8年度高知県ヘルスケア産業実証実験支援事業費補助金の募集と令和6年度高知県産学官連携産業創出支援事業費補助金新規テーマの募集である。**link_selectorはsection.category.docs_6でスコープする。**このページにはsection.categoryが7つあり、確認時点でdiv.docsを持つのはdocs_6だけだが、将来他セクションへdocsが増えたときに混ざらないよう限定している。市町村・医療機関・企業と外部企業や大学がデジタル技術等でPoCを行い社会実装を目指す実証実験支援が中心で、正式調達より前の段階を取れる点に価値がある
     last_verified_at: "2026-08-20"
     verification_status: verified
