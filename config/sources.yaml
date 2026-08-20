@@ -425,6 +425,14 @@ organizations:
     enabled: true
     notes: 全庁の委託・役務と入札・売却の新着、地方創生分野の募集を収集する対象都道府県。**一覧はdiv.title-list配下のul.totaling > li.display_dateで、liはtime要素・span.title内のリンク・span.belongの3要素を持つ。**リンクはspan.title内の1本だけなのでbelongによる候補汚染は無く、候補URLは絶対URLで同一ドメインである。**掲載日はtime要素でliの先頭にあり、年を含むため全件解析できる。**表記は「2026年8月19日」でdatetime属性に「2026-08-19 16:41」が入る。日付の意味は更新日で、timeがタイトルより前に来るためタイトル内の日付を誤取得しない。**ページャはjavascript:void(0)で、HTTPで2ページ目を取得するURLが無い。**したがって現行collectorが取得できるのは初期表示の30件（募集一覧は12件）までで、これが実質の保持上限である。**本文セレクタはdiv.area.area3を使う。**#main・#contents・main・article・[role=main]・#mol_contentsはいずれも存在せず、div.area.area3が本文、area1がパンくず225文字、area5が共通案内246文字である。確認した3ページのarea3は181〜2,764文字で、短いページは200文字の下限を割りbodyへfallbackする。ただしbody全体でも757〜3,291文字で共通部分は約510文字なので、fallbackしても混入は小さい。**RSSの候補URLは末尾スラッシュが無い。**カテゴリRSSのlinkは/chihososei/7315556で、HTML一覧のhrefは/chihososei/7315556/と末尾スラッシュ付きである。現在のduplicate判定は完全一致なので、RSSとHTMLを同時に有効化すると同じ案件が二重登録される
 
+  - id: niigata-city
+    name: 新潟市
+    organization_type: designated_city
+    prefecture: 新潟県
+    official_domain: city.niigata.lg.jp
+    enabled: true
+    notes: 全庁の事業者向け新着と、デジタル化推進・学校教育の募集情報を収集する対象政令指定都市。新潟県（pref.niigata.lg.jp）とは別ドメインなので別組織として登録する。**一覧の構造は2系統ある。**所管課の募集情報ページは#main配下のul.norcor > li > aで日付のマークアップが無く、事業者向け新着一覧は#main配下のul.info-list > liでspan.dateに「2026年8月20日」形式の更新日が入る。**個別ページには「最終更新日 2025年3月10日」があるが、候補の期間フィルタは一覧側で判定するためul.norcorの2本では効かない。**本文セレクタは#mainを使う。確認した3ページで699〜1,444文字あり、main要素も[role=main]として存在するので省略してもfallbackできるが、#mainの方が狭く共通部分が入らない。h1に実タイトルが入るのでtitle_selectorは不要である。**RSSは確認できなかった。**4つの一覧にlink[type=rss]もxmlリンクも無く、rss.xml・index.rdf・rss/index.xml・shinchaku.xmlはいずれも404だった。添付は依頼文・仕様書・実施要領がPDFでリンクテキストに資料種別が入るため、PDF優先度判定が働く
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4201,5 +4209,82 @@ sources:
     priority: low
     enabled: false
     notes: 地方創生・市町村・地域づくりの所属カテゴリRSS。**RSS 2.0でitem 30件すべてにpubDateがあり、+0900のRFC822形式なのでparseDateCandidateが日付ズレ無く解釈できる。categoryも付いており、確認時点はその他12件、募集10件、委託・役務4件、許認可・届出4件、イベント・講座3件、助成・融資2件、調査・資料1件だった。**徳島県でcategory_includesにより募集だけへ絞れる唯一の情報源である。**それでも採らない。**RSSのlinkは/chihososei/7315556のように末尾スラッシュが無く、HTML一覧のhrefは/chihososei/7315556/と末尾スラッシュ付きである。現在のduplicate判定は公式URLの完全一致なので、募集一覧と同時に有効化すると同じ案件が二重登録される。またこのRSSは募集専用ではなく、確認時点の30件には中国・四国地区宗教法人実務研修会や四国知事会も含まれる。末尾スラッシュを正規化して比較すると募集一覧12件のうち10件と重複し、独自20件は募集以外が中心だった。再確認条件は、duplicate判定が末尾スラッシュを正規化するようになった場合、またはcategory_includesで募集だけを追う必要が出た場合である
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: niigata-city-dx-boshu
+    organization_id: niigata-city
+    name: 募集情報（デジタル化（DX）の推進）
+    url: https://www.city.niigata.lg.jp/shisei/seisaku/it/boshu/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#main ul.norcor li a[href]"
+    content_selector: "#main"
+    document_type_hints:
+      - 情報提供依頼
+      - 一般競争入札
+      - プロポーザル
+      - 共通基盤システム
+    notes: デジタル化（DX）の推進の募集情報。**確認時点は5件で全件がIT調達なので、新潟市で最も対象密度が高い。**内訳は公共施設予約システムのRFI、庁内システムにおける第2期共通基盤システム構築のRFI、Microsoft365の一般競争入札参加者公募、ICTガバナンス評価支援業務委託の一般競争入札公募、次期共通基盤システム構築プロポーザル（結果公表）である。**一覧に日付のマークアップが無く掲載日を1件も取得できない。**5件すべてが掲載日不明として毎回対象になるためinitial_sinceは効かないが、5件なので初回から全件処理できる。**title_excludesは設定しない。**【結果公表】が1件あるが5件中1件で削減効果が小さく過剰適合になるため、後続のAI判定に任せる。事業者向け新着一覧とのURL重複は確認時点で0件で、新着から消えた後もRFIを長期保持するため新着一覧の代替にはならない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: niigata-city-jigyo-news
+    organization_id: niigata-city
+    name: 事業者向け情報 新着一覧
+    url: https://www.city.niigata.lg.jp/jigyo/allNewsList.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#main ul.info-list li span a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - を更新
+      - 訂正しました
+      - 一覧
+      - 名簿
+      - 単価表
+      - 積算基準
+    document_type_hints:
+      - 公募型プロポーザル
+      - 指定管理者
+      - 発注見通し
+    notes: 事業者向け情報の新着一覧。**確認時点は28件で掲載日は28件すべて取得でき（span.dateの更新日）、保持は2026年3月27日から8月20日でページャは無い。**共通開始日2026-07-01の期間内はfilter前21件、title_excludes適用後12件になる。**title_excludesは固定ページと基準類の更新通知に限る。**不調案件一覧、その他の入札結果一覧、競争入札参加資格者名簿、小額工事等契約希望者登録制度の名簿、単価表、土木積算基準、中止公告・訂正公告などが「〜を更新しました」の形で繰り返し新着へ載るため、を更新・訂正しました・一覧・名簿・単価表・積算基準の6語で11件を除外する。除外された11件はいずれも案件ではなく索引・基準・名簿の更新通知だった。**「掲載しました」は除外語に入れない。**確認時点では単価表と総合評価方式改定と選定結果の3件に当たるが、将来「募集要項を掲載しました」のような募集本体の告知にも当たるため、募集中の案件を落とす危険を避ける。残る17件には表彰プロモーション業務のプロポーザル、北区児童館等の指定管理者募集、家庭ごみ収集カレンダー広告掲載事業者募集、中央図書館他3館1室の窓口等業務委託、生成AIビジネスリサーチ・システム作成業務のプロポーザル、発注見通しの追加案件公表などが含まれる。契約関係のお知らせと政府調達（WTO）契約に係る入札の2件は固定ページだが1件ずつのコストなので除外語を増やさない。**終了案件が一覧から外れる。**別調査で挙がっていた口座振込情報通知サービス調達のRFIは確認時点の28件に無く、保持が不規則なので巡回間隔を短く保つ前提とする
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: niigata-city-gakko-jigyosya
+    organization_id: niigata-city
+    name: 学校教育 事業者向け情報
+    url: https://www.city.niigata.lg.jp/kosodate/gakko/jigyosya/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "#main ul.norcor li a[href]"
+    content_selector: "#main"
+    document_type_hints:
+      - 委託業者選定プロポーザル
+      - 一般競争入札
+      - 教育ICT
+    notes: 学校教育の事業者向け情報。**確認時点は3件で全件が教育ICTの調達である。**教職員用コンピュータ初期設定業務の一般競争入札、デジタルドリル及びデジタルテストの教育系クラウドサービス導入業務プロポーザル（選定結果）、GIGAスクール支援業務プロポーザルが並ぶ。**一覧に日付のマークアップが無く掲載日を1件も取得できない。**3件すべてが掲載日不明として毎回対象になりinitial_sinceは効かないが、3件なので初回から全件処理できる。title_excludesは設定しない。【選定結果】が1件あるが3件中1件で削減効果が小さい。事業者向け新着一覧とのURL重複は確認時点で0件で、教育ICTの案件を長期保持するため新着一覧の代替にはならない。対象密度は高いが件数が少なく更新も年数件なのでpriorityはmediumとする
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: niigata-city-sounding
+    organization_id: niigata-city
+    name: サウンディング型市場調査について
+    url: https://www.city.niigata.lg.jp/shisei/seisaku/PPP/sounding/index.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: low
+    enabled: false
+    document_type_hints:
+      - サウンディング型市場調査
+      - 民間活力導入
+    notes: サウンディング型市場調査の一覧。**現行のcollectorでは候補タイトルを取得できないため無効とする。**table.table01は件名・対話実施時期・担当課・実施要領・対話結果の5列で、**件名列にはリンクが無くプレーンテキストである。**案件へのリンクは実施要領列と対話結果列にあり、そのリンクテキストは「実施要領」「実施要項」「対話結果」なので、td:nth-child(4)とtd:nth-child(5)へ絞って抽出しても候補タイトルが資料名だけになり案件名が入らない。実測では生17件・構造上有効16件・利用可能12件で、タイトルは全件が実施要領か対話結果だった。**掲載日も信頼できない。**日付は対話実施時期の列にある「令和8年6月15日から令和8年8月7日まで」という対話実施期間で、trをcontextにすると開始日を掲載日として取得してしまう。12件のうち8件でこの誤取得が起き、残る4件は随時受付などで日付不明になった。担当課列のリンクは24件あり列指定で除外できる。国土交通省主催案件の実施要領は外部ドメインなので1件が除外され、実施要領と対話結果が同一URLの案件があるため重複URLで4件が除外される。**内容の密度も低い。**跡地の売却・賃貸借、展望展示室、スポーツ施設、旧市長公舎などが中心でデジタル案件は確認できなかった。再確認条件は、件名列にリンクが付く構造へ変わった場合、または一覧の行から案件名を取得できる仕組みが入った場合である。市有不動産民間活用ポータルの現行案件はこの一覧に含まれるため、そちらも別登録しない
     last_verified_at: "2026-08-20"
     verification_status: verified
