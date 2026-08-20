@@ -201,6 +201,7 @@ describe('allow_empty_candidatesの検証', () => {
     expect(configured).toEqual([
       'aichi-digital-strategy',
       'aichi-toshi-somu',
+      'ehime-iken-shosei',
       'fukui-dx-kobo',
       'fukuoka-ppp-pfi',
       'gifu-digital-strategy',

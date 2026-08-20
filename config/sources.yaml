@@ -433,6 +433,14 @@ organizations:
     enabled: true
     notes: 全庁の事業者向け新着と、デジタル化推進・学校教育の募集情報を収集する対象政令指定都市。新潟県（pref.niigata.lg.jp）とは別ドメインなので別組織として登録する。**一覧の構造は2系統ある。**所管課の募集情報ページは#main配下のul.norcor > li > aで日付のマークアップが無く、事業者向け新着一覧は#main配下のul.info-list > liでspan.dateに「2026年8月20日」形式の更新日が入る。**個別ページには「最終更新日 2025年3月10日」があるが、候補の期間フィルタは一覧側で判定するためul.norcorの2本では効かない。**本文セレクタは#mainを使う。確認した3ページで699〜1,444文字あり、main要素も[role=main]として存在するので省略してもfallbackできるが、#mainの方が狭く共通部分が入らない。h1に実タイトルが入るのでtitle_selectorは不要である。**RSSは確認できなかった。**4つの一覧にlink[type=rss]もxmlリンクも無く、rss.xml・index.rdf・rss/index.xml・shinchaku.xmlはいずれも404だった。添付は依頼文・仕様書・実施要領がPDFでリンクテキストに資料種別が入るため、PDF優先度判定が働く
 
+  - id: ehime-prefecture
+    name: 愛媛県
+    organization_type: prefecture
+    prefecture: 愛媛県
+    official_domain: pref.ehime.jp
+    enabled: true
+    notes: 全庁の意見招請と、スマート行政推進課・デジタルシフト推進課・官民共創推進課の新着情報を収集する対象都道府県。**CMSは岡山県と同系統で、入札の分類別一覧はdiv.info_list_wrap配下のdiv.info_list > ul > li、課の新着はdiv.section_information_list > ul > liに入る。**liはspan.article_dateとspan.article_title > aの2要素で、article_title内のアンカーは1本だけなので所属課リンクによる候補汚染は無い。**掲載日はリンクと同じliのspan.article_dateに「2026年8月10日」形式で入り、4つの一覧すべてで全件解析できる。**日付の意味は更新日で、一覧は日付の降順である。**本文セレクタは#mainを使う。**#main_bodyは本文だけで綺麗だが実測228〜2,246文字と200文字の下限に対する余裕が小さく、#mainは286〜2,330文字で差は80文字程度である。main・article・[role=main]・#mol_contentsはいずれも存在しないため、下限を割った場合のfallbackはbody（1,537〜3,591文字）まで進む。**3課のRSSは登録しない。**スマート行政推進課は/rss/20/soshiki-6-20.xml、デジタルシフト推進課は/rss/20/soshiki-6-22.xml、官民共創推進課は/rss/20/soshiki-5-278.xmlが配信され、いずれもRSS 2.0でpubDateが全件（RFC822の+0900）あるが、**確認時点でHTMLの新着と11件・16件・26件が完全一致し独自候補は0件だった。**categoryも所属課名1種だけなのでcategory_includesにも使えない。意見・提案・情報提供依頼の一覧にはRSSが無い
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4291,5 +4299,83 @@ sources:
       - サウンディング型市場調査
       - 民間活力導入
     notes: サウンディング型市場調査の一覧。**現行のcollectorでは候補タイトルを取得できないため無効とする。**table.table01は件名・対話実施時期・担当課・実施要領・対話結果の5列で、**件名列にはリンクが無くプレーンテキストである。**案件へのリンクは実施要領列と対話結果列にあり、そのリンクテキストは「実施要領」「実施要項」「対話結果」なので、td:nth-child(4)とtd:nth-child(5)へ絞って抽出しても候補タイトルが資料名だけになり案件名が入らない。実測では生17件・構造上有効16件・利用可能12件で、タイトルは全件が実施要領か対話結果だった。**掲載日も信頼できない。**日付は対話実施時期の列にある「令和8年6月15日から令和8年8月7日まで」という対話実施期間で、trをcontextにすると開始日を掲載日として取得してしまう。12件のうち8件でこの誤取得が起き、残る4件は随時受付などで日付不明になった。担当課列のリンクは24件あり列指定で除外できる。国土交通省主催案件の実施要領は外部ドメインなので1件が除外され、実施要領と対話結果が同一URLの案件があるため重複URLで4件が除外される。**内容の密度も低い。**跡地の売却・賃貸借、展望展示室、スポーツ施設、旧市長公舎などが中心でデジタル案件は確認できなかった。再確認条件は、件名列にリンクが付く構造へ変わった場合、または一覧の行から案件名を取得できる仕組みが入った場合である。市有不動産民間活用ポータルの現行案件はこの一覧に含まれるため、そちらも別登録しない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: ehime-iken-shosei
+    organization_id: ehime-prefecture
+    name: 意見・提案・情報提供依頼
+    url: https://www.pref.ehime.jp/site/nyusatsu/list92-348.html
+    collector_type: list_page
+    source_category: rfi
+    priority: high
+    enabled: true
+    link_selector: "div.info_list_wrap div.info_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 意見招請
+      - 調達仕様書案
+      - 情報提供依頼
+    notes: 入札情報を分類別に分けた一覧のうち意見・提案・情報提供依頼分で、調達仕様書案への意見招請が載る最上流の情報源。**確認時点は1件だけで、2023年2月8日の第5次庁内LANシステムサーバ機器等の借入れ調達仕様書案に係る意見招請依頼だった。**掲載日は取得できるが共通開始日2026-07-01の期間内は0件である。**allow_empty_candidatesを設定する。**div.info_list_wrapは1つ、#main_body内のアンカーも1本だけ、ページャも無いことを確認しており、この1件が下がれば0件になる。同じ分類群の随意契約状況は26件、参加資格は18件を保持しているのにこの一覧だけ1件しか無いのは、意見招請が掲載期間の短い案件だけを載せる運用を示す。**別調査で挙がっていた2026年の意見招請3件は確認時点で載っていない。**第3次庁内LAN強靭化設備や第五次愛媛情報スーパーハイウェイ基幹回線網の意見招請は一覧から外れており、掲載が短期間で終わる前提で巡回間隔を短く保つ必要がある。title_excludesは設定しない。1件しか無く段階マーカーも無い
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: ehime-smart-gyosei
+    organization_id: ehime-prefecture
+    name: スマート行政推進課 新着情報
+    url: https://www.pref.ehime.jp/soshiki/20/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 審査結果
+    document_type_hints:
+      - 公募型プロポーザル
+      - 技術提案
+      - ライセンス調達
+    notes: スマート行政推進課の新着情報。**確認時点は11件で掲載日は11件すべて取得でき、保持は2024年2月28日から2026年8月10日と2年半で11件なので回転が遅い。**共通開始日2026-07-01の期間内は、ウイルス対策ソフトのライセンス調達と文書管理・電子決裁システム構築業務（八幡浜市・砥部町）技術提案の募集の2件になる。**title_excludesは審査結果だけにした。**愛媛県は【審査結果掲載】を募集本体のタイトル前へ追記する型で、確認時点では業務改革（BPR）推進業務と地域課題解決型AI人材育成研修の2件が該当する。一覧は日付の降順なので、審査結果を掲載すると日付が更新されて上位へ戻り期間フィルタを通過するため除外語が必要である。**募集中を示すマーカーは確認時点で存在しない。**【質問回答掲載】のような募集中の追記が将来現れても審査結果には一致しないので誤除外は起きない。内容はBPR、電子契約、文書管理・電子決裁、クラウド、AI人材育成が中心で、他3SourceとのURL重複は0件だった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: ehime-digital-shift
+    organization_id: ehime-prefecture
+    name: デジタルシフト推進課 新着情報
+    url: https://www.pref.ehime.jp/soshiki/22/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+      - AI人材育成
+    notes: デジタルシフト推進課の新着情報。**確認時点は16件で掲載日は16件すべて取得でき、保持は2024年3月27日から2026年7月27日である。**共通開始日2026-07-01の期間内は、えひめJr.AIクエストの開催と愛媛県デジタルコーディネーター等の委嘱の2件になる。**title_excludesは設定しない。**16件に段階マーカーが1件も無く、除外すべき固定ページも見当たらない。第3期愛媛県デジタル総合戦略策定支援委託業務の企画提案募集、AI人材育成・共創マッチング支援業務、トライアングルエヒメ2.0管理・運営業務、データマネジメントプラットフォーム運用サポート業務、QGIS活用推進業務など自社領域と重なるプロポーザルが並ぶ一方、えひめDXキッズフェスタのようなイベント告知も含むが、件数が少ないので候補削減の必要が無い。他3SourceとのURL重複は0件だった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: ehime-kanmin-kyoso
+    organization_id: ehime-prefecture
+    name: 官民共創推進課 新着情報
+    url: https://www.pref.ehime.jp/soshiki/282/index-2.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 審査結果
+      - 募集は終了しました
+    document_type_hints:
+      - 企画提案
+      - 官民共創
+      - 実証支援
+    notes: 官民共創推進課の新着情報。**正式調達の前段を取れる点に価値がある。**地域課題の抽出から共創テーマ設定、官民マッチング、実証支援までを扱い、確認時点では愛媛県共創プロジェクト実証支援事業費補助金の申請受付、えひめ食・観光・農林漁業プラットフォームの各アクションラボ、官民共創拠点E:N BASEの記事が並ぶ。**確認時点は26件で掲載日は26件すべて取得でき、保持は2024年3月14日から2026年8月12日である。**共通開始日2026-07-01の期間内は1件だけになる。**title_excludesは審査結果と募集は終了しましたの2語にした。**【審査結果】が5件、【募集は終了しました】が1件で合わせて6件を除外し20件が残る。どちらも本体タイトルの前へ追記する型で、募集中を示すマーカーは確認時点で存在しない。イベント・セミナー告知や記者発表要旨が多く対象密度はデジタルシフト推進課より低いためpriorityはmediumとする。他3SourceとのURL重複は0件だった
     last_verified_at: "2026-08-20"
     verification_status: verified
