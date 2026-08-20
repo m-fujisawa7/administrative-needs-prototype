@@ -409,6 +409,14 @@ organizations:
     enabled: true
     notes: 全庁の新着情報と、業務委託・賃借売払いの入札等公募案件を収集する対象政令指定都市。**一覧は3本ともdiv#main配下のul.info-list > liで、liはspan.date（掲載日）とspan > a（案件リンク）の2要素だけを持つ。**liごとのアンカーは1本で所属課リンクは無いため、first-childの指定は不要である。掲載日は「2026年8月19日」形式で年を含み、3本すべて全件解析できる。**日付の意味は更新日で、タイトル冒頭の「（令和8年7月28日公表）」は公表日として別に存在する。**質問書回答を追加した案件は更新日だけが進み公表日は元のままになる（都心交通のあり方検討支援業務は公表7月21日・更新8月6日）。liの先頭がspan.dateなのでparseDateCandidateは更新日を先に読み、タイトル内の公表日や開札日を誤取得しない。**タイトルに康熙部首の⽉・⽇が混ざるページがある**が、NFKC正規化で月・日へ変換されるため日付解析とfilter判定には影響しない。**本文セレクタは#mainを使う。**個別ページはh1に実タイトルが入るのでtitle_selectorは不要で、#mainはscript除去後584〜1070文字、#contentはパンくずまで含む。main要素・article・#mol_contentsは存在しないため、content_selectorを省略するとfallbackがWarningになる。個別案件URLは/kenko/fukushikaigo/R8_RFI.htmlのような案件別ファイルで、r8toshinkotsu-itakuやacceleration_r8のように年度をファイル名へ含める例が多い。添付は実施要領・仕様書・入札説明書がPDFで、リンクテキストに資料種別が入るためPDF優先度判定が働く
 
+  - id: kagawa-prefecture
+    name: 香川県
+    organization_type: prefecture
+    prefecture: 香川県
+    official_domain: pref.kagawa.lg.jp
+    enabled: true
+    notes: 全庁一覧ではなく所管課単位のお知らせ一覧から、情報システム調達の意見招請とDX施策を収集する対象都道府県。**一覧はcgi-bin/page/list.phpへdirとlink_page_idを渡す動的ページで、table.datatableの1行が1候補になる。**trは番号・公開日・タイトル・担当課の4tdで、リンクはタイトルtdの1本だけなので担当課による候補汚染は無い。**掲載日はリンクとは別のtdにあるが同じtr内なので取得できる。**list-page-checkerはanchorのclosestでtr全体をcontextにするため、別セルの「2026年7月9日」をparseDateCandidateが解釈する。tdの並びが番号→公開日→タイトルなので、タイトル内に日付があっても公開日が先に一致する。**日付の意味は公開日だが更新でも動く。**かがわDXフェア2026はファイル名が20260615でありながら公開日が2026年7月22日で、本文にも6月15日と7月22日の両方が載っていた。**本文セレクタは#tmp_contentsを使う。**神戸市・静岡市と同じ#tmp_接頭辞のCMSだが、#tmp_mainはページによって左右ナビを含み実測で17,000文字を超えるため使えない。#tmp_contentsは確認した6ページで158〜3,462文字で、意見招請と入札公告の2ページだけが200文字の下限を割る。main・article・[role=main]・#mol_contents・#main・#contentsはいずれも存在しないため、下限を割ったページはbody（17,000文字前後）までfallbackしWarningになる。**RSSは確認できなかった。**3つの一覧にlink[type=rss]もxmlリンクも無く、rss.xml・rss/index.xml・index.rdfはいずれも404だった。個別案件URLは/joho/20260709-2.htmlのような日付ベースとr8_siboffice_renovationのような年度接頭辞が主だが、/kodomokatei/jidou/siryousyousei.htmlのように汎用名の固定URLもあり、年度ごとの上書き再利用に注意が必要である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4043,5 +4051,61 @@ sources:
     priority: low
     enabled: false
     notes: 全庁新着情報のRSS。**RSS 2.0でchannelは堺市ホームページ、item 100件すべてにpubDateがある。**同時刻に取得して照合すると、item 100件はHTMLの全新着一覧とURLが100件一致し、独自の候補は0件だった。**pubDateがGMT表記なので日付が1日ずれる。**「Thu, 20 Aug 2026 06 00 00 GMT」の形式で配信され、同時刻照合ではGMTの日付がHTMLのspan.dateと95件一致し5件が1日前になった。ずれた5件はすべてJSTへ換算するとHTMLと一致するので、原因は時差だけである。**categoryは現行のrss-checkerでは読めない。**item内にはcms:categoryのname属性（イベントなど）とcms:orgShortName（所管課）があるが、rss-checkerはitem.categoryとdc:subjectだけを読むためcategory_includesの条件には使えない。更新日の意味はHTML側と同じで、同一URLが再公開されるとpubDateも更新日も進む（ゲートキーパー研修動画の項目は1時間の間に8月13日から8月20日へ動き、HTMLのspan.dateも8月20日になった）。HTMLと同じ100件を日付精度を落として取得することになるため無効とする。再確認条件は、全新着一覧のul.info-list構造が変わってHTML側が使えなくなった場合である
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kagawa-joho-system
+    organization_id: kagawa-prefecture
+    name: デジタル戦略総室情報システム課 お知らせ・新着情報
+    url: https://www.pref.kagawa.lg.jp/cgi-bin/page/list.php?dept_code=&dir=%2Fjoho%2F&link_page_id=15836&page_type=4&tpl_id=&tpl_type=2
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "table.datatable td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 意見招請
+      - 仕様書案
+      - 企画提案方式
+      - 情報システム
+    notes: 情報システム課のお知らせ一覧。**確認時点は4件で全件が情報システムの調達関連であり、香川県で最も対象密度が高い。**内訳は基幹系情報システムのチャットシステム・グループウェアシステム・統合宛名システムの更改に係る仕様書案への意見招請3件と、令和8年度情報システムPMO支援業務の企画提案方式による受託者公募1件である。掲載日は4件すべて取得でき、保持は2026年2月10日から7月9日、ページャは無い。共通開始日2026-07-01の期間内は2件になる。**title_includesは設定しない。**4件すべてが対象で除外すべき候補が無く、期間フィルタも効くので候補削減の必要が無い。全庁の入札一覧にも一部載るがそちらは275件規模なので、この一覧の方が密度が高く代替にならない。**この一覧の主力である意見招請はHTML本文が短く、AI入力の品質に注意が必要である。**チャットシステムの意見招請でcontent:checkを実行すると、#tmp_contentsが158文字で下限を割りbody 17,699文字へfallbackしてWarningになった。#tmp_read_contentsは174文字、div.col_mainは184文字なので、200文字を超えるSource固有のセレクタは存在しない。本文の実体は意見招請の鑑PDFにあるため、共通の下限を下げるのではなくPDF抽出側で内容を取る前提とする
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kagawa-digital-strategy
+    organization_id: kagawa-prefecture
+    name: デジタル戦略総室デジタル戦略課 お知らせ・新着情報
+    url: https://www.pref.kagawa.lg.jp/cgi-bin/page/list.php?dept_code=&dir=%2Fdigital%2F&link_page_id=22894&page_type=4&tpl_id=&tpl_type=2
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "table.datatable td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 意見招請
+      - 企画提案方式
+      - 実証実験
+      - 一般競争入札
+    notes: デジタル戦略課のお知らせ一覧。**確認時点は1ページ目30件で掲載日は30件すべて取得でき、保持は2025年2月3日から2026年8月14日である。**共通開始日2026-07-01の期間内は5件になる。**2ページ構成で現行collectorは1ページ目だけを見る。**「次のページ」がlist.phpのpara_page_no=2へのリンクで、2ページ目に18件が残るため一覧全体では48件である。1ページ目だけで約1年半を遡れて期間フィルタも効くので、ページャ非対応による取りこぼしは実害にならない。**title_includesは設定しない。**期間内5件でAI処理量に問題が無く、30件全体を見ても基幹系情報システムの意見招請、AI等活用人材養成講座やイントラプレナー養成講座の企画提案方式公募、かがわDX Labの研究項目募集と実証実験、一般競争入札が中心で、除外すべき固定ページや結果公表の段階マーカーが見当たらない。かがわDX Lab専用の一覧はこの一覧に包含されるため別登録しない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: kagawa-kodomo-katei
+    organization_id: kagawa-prefecture
+    name: 子ども政策推進局子ども家庭課 お知らせ・新着情報
+    url: https://www.pref.kagawa.lg.jp/cgi-bin/page/list.php?dept_code=&dir=%2Fkodomokatei%2F&link_page_id=15878&page_type=4&tpl_id=&tpl_type=2
+    collector_type: list_page
+    source_category: procurement
+    priority: low
+    enabled: true
+    link_selector: "table.datatable td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 資料招請
+      - システム調達
+      - 業務委託
+    notes: 子ども家庭課のお知らせ一覧。**確認時点は26件で掲載日は26件すべて取得でき、保持は2020年12月10日から2026年7月28日と5年半で26件なので回転が非常に遅い。**共通開始日2026-07-01の期間内は3件になる。**対象密度は低い。**26件のうち自社領域と重なるのは香川県児童相談所システムの調達に係る資料等の招請と、令和8年度児童虐待防止のためのSNS相談業務委託に係る一般競争入札の質問回答の2件だけで、残りはヤングケアラーの案内、ひとり親世帯給付金、里親制度など一般の子育て情報である。**それでも有効にする。**児童相談所システムの調達が期間内に入っており、回転が遅いので継続巡回のコストが小さい。期間内3件のうち2件はヤングケアラーの恒久ページで一度きりの解析コストである。priorityはlowとし、内容トピックによる除外は実登録後のAI判定と人間分類を突き合わせてから判断する。**/kodomokatei/jidou/siryousyousei.htmlのように汎用名の固定URLがあり、年度ごとに同じURLへ次の招請が載ると登録済みとして重複スキップされる可能性がある。**この点は将来再確認とする
     last_verified_at: "2026-08-20"
     verification_status: verified
