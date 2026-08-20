@@ -376,6 +376,14 @@ organizations:
     enabled: true
     notes: 全庁の入札公告・公募の公告と、デジタル推進課の政策シグナルを収集する対象都道府県。**CMSは他県と別系統で、入札系の一覧はdiv.info_list_wrap配下のdiv.info_list > ul > li、課ページの新着はdiv.section_information_list > ul > liに入る。**掲載日はどの一覧もリンクと同じliのspan.article_dateに「（2026年8月14日更新）」形式で入り、年を含むためparseDateCandidateが解釈できる。日付の意味は更新日で、入札日や締切日ではない。実測では賃貸型応急住宅の企画提案が更新日7月2日・参加申請期限7月3日と別の日付だった。**本文セレクタは#mainを使う。**#main_bodyは本文だけの入れ物で最も綺麗だが、公示1行と添付リンクだけのページでは実測174文字と200文字の下限を割る。#mainはscript除去後398〜929文字で、先頭に「2026年8月10日更新／長寿社会課」という更新日と所属課が入る。**main要素は存在せず、article・[role=main]・#mol_contentsも無い**ため、content_selectorを省略するとfallbackは#mainまで進みWarningになる。個別ページのURLは/site/321/1050676.htmlや/page/1045356.htmlのような記事別ファイルである。表示上の「ページ番号」とURLの数字は一致しないことがあり、確認した5件のうち主任介護支援専門員研修だけがURL 708558・ページ番号0799293だった。/page/799293.htmlと/site/321/799293.htmlはどちらも404で別名URLは存在しないため、重複判定への影響は無い。**ただし令和8年度の案件に102万番台の新しいIDと70万〜96万番台の古いIDが混在するので、年度ごとに同じURLを更新している案件がある可能性は残る。**同一事業でも潜在的有資格者等再就業促進事業は令和7年度が992793、令和8年度が1038137と別URLだった。添付は公告と仕様書がPDF、様式がWordで、Wordは取得対象外である
 
+  - id: hiroshima-prefecture
+    name: 広島県
+    organization_type: prefecture
+    prefecture: 広島県
+    official_domain: pref.hiroshima.lg.jp
+    enabled: true
+    notes: 企画提案、DX推進課、教育ICTのRFIを継続収集する対象都道府県。公式CMSの一覧はリンクと同じliにspan.article_dateを持ち、年を含む掲載日を取得できる。個別ページの本文は#main_bodyに入り、確認した18件で本文抽出に成功した。教育委員会のHTML新着は日付を持たないため、100件すべてにdc:dateがある公式RSSを採る。一般競争入札情報（その他委託役務）は、同一URLを年度の異なる新規案件へ上書き再利用する実例があり、URL単位duplicate-firstでは将来の案件を取りこぼすため台帳へ登録するが継続巡回は行わない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3716,4 +3724,99 @@ sources:
     enabled: false
     notes: デジタル推進課の新着情報を配信するRSS。**確認時点の11件はHTMLの新着情報とURL・掲載日が完全一致し、独自の候補は1件も無い。**dc:subjectは全件「デジタル推進課」の1種類だけなのでcategory_includesによる絞り込みにも使えない。HTMLと同じものを二重に巡回する意味がないため無効とする。再確認条件は、課ページのdiv.section_information_listの構造が変わってHTML側が使えなくなった場合である
     last_verified_at: "2026-08-19"
+    verification_status: verified
+
+  - id: hiroshima-pref-proposal-list
+    organization_id: hiroshima-prefecture
+    name: 企画提案募集等
+    url: https://www.pref.hiroshima.lg.jp/site/nyusatsukeiyaku/list945-4046.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#main_body > div.news_box > ul.list_icon1.list_stripe > li > span.article_title > a[href]:first-child"
+    content_selector: "#main_body"
+    title_excludes:
+      - 選定結果
+      - 結果等の公表
+    document_type_hints:
+      - 公募型プロポーザル
+      - 企画提案
+      - 業務委託
+    notes: 全庁の企画提案募集を集約する一覧。**確認時点はraw 36件・構造上有効36件で、掲載日は36件すべて取得できる。**保持範囲は2023年11月20日から2026年8月14日で、ページャは無い。結果段階だけを示す「選定結果」「結果等の公表」で18件を除外し、filter後は18件。除外対象はすべて募集後の結果ページで、募集本体への誤爆は無い。共通開始日2026-07-01以降の初回対象は4件である。年度継続案件を確認すると、愛護動物啓発事業はaigo-jimukyoku07.htmlとaigo-jimukyoku08.html、国際平和拠点ひろしま構想推進事業はr7kokusai.htmlとr8kokusai.htmlのように年度別URLが発行される。教育委員会RSSとは端末共同調達1件が同一URLで重複するが、他Sourceにはない企画提案を多く含むため主力Sourceとする
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: hiroshima-pref-dx-updates
+    organization_id: hiroshima-prefecture
+    name: ＤＸ推進課 新着情報
+    url: https://www.pref.hiroshima.lg.jp/soshiki/265/index-2.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#main_a > div.news_box > ul.list_icon1.list_stripe > li > span.article_title > a[href]:first-child"
+    content_selector: "#main_body"
+    title_excludes:
+      - 選定結果
+    document_type_hints:
+      - 行政DX
+      - AI
+      - オンライン行政手続
+      - データ連携
+    notes: DX推進課ページの新着情報を対象とする。**#main_a直下のnews_boxだけを選ぶ。**#main_body内にはカテゴリ・固定案内を含む別の27リンクがあるため、そこまで広げない。確認時点はraw 19件・構造上有効19件で掲載日は全件取得でき、保持範囲は2021年7月20日から2026年8月1日でページャは無い。「選定結果」1件を除いたfilter後は18件、共通開始日2026-07-01以降の初回対象は電子申請システムの電子納付機能1件である。公式RSSは19件のURL・タイトル・日付がHTMLと完全一致し、独自候補が無いため人が確認しやすいHTMLを採る。政策・恒久ページは同じURLを更新する場合があり、その更新はURL単位duplicate-firstでは再解析されないが、新着記事は案件・記事ごとのURLが発行される
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: hiroshima-pref-education-rss
+    organization_id: hiroshima-prefecture
+    name: 広島県教育委員会 新着情報 RSS
+    url: https://www.pref.hiroshima.lg.jp/rss/10/site-260.xml
+    collector_type: rss
+    source_category: rfi
+    priority: high
+    enabled: true
+    content_selector: "#main_body"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - 共同調達
+      - システム
+      - GIGA
+      - 端末
+      - ICT
+      - DX
+      - AI
+      - デジタル
+      - 情報化
+      - セキュリティ
+    title_excludes:
+      - 選定結果
+    document_type_hints:
+      - RFI
+      - 情報提供依頼
+      - 教育ICT
+      - 共同調達
+    notes: 教育委員会の新着情報。**HTML一覧の30件には掲載日が1件も無い一方、公式RSSは100件すべてにdc:dateがあり、保持範囲は2026年1月5日から8月19日で、HTMLの30件もすべて含むためRSSを採る。**候補100件を教育ICTに固有なtitle_includesで5件へ絞り、別URLの「選定結果」1件を除いたfilter後は4件。残るのは統合型校務支援システムRFI、学校教育情報化推進計画、教育情報セキュリティポリシー、1人1台端末共同調達の4件で、共通開始日2026-07-01以降の初回対象はRFI 1件である。「オンライン」は研修・留学等の一般案内、「データ」は統計・コンテスト等にも当たるため含めず、「情報」単独も使わない。1人1台端末共同調達は募集本体r8kyoudou.htmlと結果r8kyoudou-kekka.htmlが別URLで、結果だけを安全に除外できる
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: hiroshima-pref-service-bid-list
+    organization_id: hiroshima-prefecture
+    name: 一般競争入札情報（その他委託役務）
+    url: https://www.pref.hiroshima.lg.jp/site/nyusatsukeiyaku/list945-4041.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: false
+    link_selector: "#main_body > div.news_box > ul.list_icon1.list_stripe > li > span.article_title > a[href]:first-child"
+    content_selector: "#main_body"
+    title_excludes:
+      - 入札結果
+    document_type_hints:
+      - 一般競争入札
+      - 業務委託
+      - 役務
+    notes: 全庁一覧より委託役務へ絞った一覧で、確認時点はraw 21件・構造上有効21件、掲載日は全件取得できる。保持範囲は2025年1月8日から2026年8月20日でページャは無い。「入札結果」1件を除いたfilter後は20件、共通開始日2026-07-01以降は8件である。**ただし継続巡回には使用しない。**同じr7-kasengomityosa.htmlが2025年には令和7年度河川等の散乱ごみ状況調査、現在は令和8年度の別調達へ本文・添付を差し替えて使われている実例を確認した。令和7年度をNotion登録済みの場合、翌年度はURL単位duplicate-firstでHTML取得前にスキップされ、将来の新規案件を取りこぼす。URL単位のSource固有除外機能がなく、この1件だけを理由にテーマ語で除外するのも安全ではないため、台帳には残すがdisabledとする。必要なcurrent案件はnotion:register等で個別に扱い、URL再利用を安全に識別する設計が整った場合のみ再有効化を検討する
+    last_verified_at: "2026-08-20"
     verification_status: verified
