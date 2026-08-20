@@ -393,7 +393,7 @@ organizations:
     notes: デジタル政策、行政DX、課題提示型実証、全庁のデジタル調達を収集する対象都道府県。県公式CMSは個別ページの本文が#main_bodyに入る。課の新着一覧はdiv.section_information_list内のliにリンク・更新日・所属がまとまり、年を含む更新日を取得できる。所属別RSSはRSS 1.0（RDF）でdc:dateを全件に持つ。シビックテック チャレンジ YAMAGUCHIは県公式ページから事業公式サイトとして案内される別ドメインのため、親子関係を持つ外部組織へ分ける
 
   - id: yamaguchi-civic-tech
-    name: シビックテック チャレンジ YAMAGUCHI
+    name: 山口県
     organization_type: external_organization
     prefecture: 山口県
     parent_organization_id: yamaguchi-prefecture
