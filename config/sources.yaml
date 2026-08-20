@@ -449,6 +449,14 @@ organizations:
     enabled: true
     notes: 全庁の一般競争入札・プロポーザルと、デジタル政策課・会計管理課・産業イノベーション課の情報を収集する対象都道府県。**一覧の構造は2系統ある。**所属課の新着（/soshiki/配下のmore.html）はdiv.contentOrganization配下のul > li > a.doc_linkで、日付のspan.update_dateとタイトルのspan.titleが**同じアンカーの中**に入るため候補タイトルが「2026年08月07日令和８年度インターネット接続用仮想基盤再構築等委託業務」のように日付付きになる。カテゴリ一覧（/category/配下のmore@docs_N.html）はdiv.docs配下のul > liで、span.update_dateがspan.title_linkの外にあるため候補タイトルは案件名だけになる。**掲載日はどちらもliから取得でき、表記は「2026年08月19日」で年を含み、意味は更新日である。**個別ページのh1はヘッダーロゴなのでtitle_selectorが必要である。h1が2つあり1つ目は高知県ロゴのimgでテキストが空、2つ目が案件名なので#content h1を指定する。確認した7ページすべてで30〜49文字の案件名が取れた。未設定だとtitleタグへfallbackし「案件名 | 高知県」になる。**本文セレクタは#contentを使う。**#wrapperと#mainは同じ範囲で、articleは185〜1,383文字と200文字の下限を割る場合がある。main要素と[role=main]は存在しない。**質疑回答と結果は独立ページである。**質疑への回答は本文251〜738文字で添付が回答PDF 1件だけ、審査結果は570文字で審査結果通知PDFだけであり、募集本体（919〜1,444文字、募集要領・企画提案書作成要領・審査要領・仕様書・契約書案）とは明確に分かれる。**RSSは登録しない。**一般競争入札・プロポーザルのindex.rssはRSS 2.0でpubDateとcategoryを持つが、確認時点でitem 10件がHTML 100件へ完全に包含され独自候補は0件だった。**所属課の新着とカテゴリ一覧はページャがあるが現行collectorは1ページ目だけを見る。**デジタル政策課はmore.p2.htmlのように遡れる
 
+  - id: hamamatsu-city
+    name: 浜松市
+    organization_type: designated_city
+    prefecture: 静岡県
+    official_domain: city.hamamatsu.shizuoka.jp
+    enabled: true
+    notes: 全庁の業務委託・賃貸借の入札とプロポーザル、事業者向けお知らせを収集する対象政令指定都市。静岡県（pref.shizuoka.jp）・静岡市（city.shizuoka.lg.jp）とは別ドメインなので別組織として登録する。**CMSは静岡市・神戸市と同じ#tmp_接頭辞系で、本文は#tmp_contentsに入る。#tmp_honbunは実測9文字で空である。**個別ページのmain・article・[role=main]・#mol_contents・#mainはいずれも存在せず、#tmp_contentsは確認4ページで382〜1,426文字だった。div.col_mainは約58文字、#tmp_mainは約100文字多いだけで、body全体でも1,004〜2,002文字なのでfallbackしても混入は小さい。h1は1つで実タイトルなのでtitle_selectorは不要である。**一覧の構造は2系統ある。**業務委託・賃貸借の入札一覧は#tmp_contents配下のtable.datatableで、trが日付・タイトル・所管課の3tdに分かれリンクはタイトルtdの1本だけである。事業者向けお知らせは#tmp_contents直下のul > liで、日付はタイトル末尾の括弧内に入る。**掲載日の扱いが一覧ごとに大きく違う。**入札一覧は「2026年8月20日」形式で年を含み、リンクとは別のtdだが同じtr内なのでlist-page-checkerがtr全体をcontextにして34件すべて解析できる。事業者向けお知らせは「（8月20日）」のように年を含まないため50件中48件が掲載日不明になり、残る2件はタイトル内のイベント開催日を掲載日として誤取得する。**RSSは登録しない。**業務委託・賃貸借にはRSS 1.0のkoshin.xmlがありdc:dateとcategoryを持つが、確認時点でitem 10件のうち9件がHTML 34件と重複し、残る1件は一覧ページ自身だったので独自候補は0件である
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4486,5 +4494,75 @@ sources:
       - 補助金
       - 公募型プロポーザル
     notes: 産業イノベーション課の募集情報。**一覧に日付のマークアップが無く掲載日を1件も取得できないため、10件すべてが掲載日不明として毎回対象になる。**initial_sinceは効かない。**そのぶんtitle_excludesの効果が大きい。**受付を終了しましたが5件、質疑への回答が3件で計8件を除外し2件が残る。除外8件は終了済みの募集と独立の質疑回答ページだけで、募集本体の誤除外は0件だった。残る2件は令和8年度高知県ヘルスケア産業実証実験支援事業費補助金の募集と令和6年度高知県産学官連携産業創出支援事業費補助金新規テーマの募集である。**link_selectorはsection.category.docs_6でスコープする。**このページにはsection.categoryが7つあり、確認時点でdiv.docsを持つのはdocs_6だけだが、将来他セクションへdocsが増えたときに混ざらないよう限定している。市町村・医療機関・企業と外部企業や大学がデジタル技術等でPoCを行い社会実装を目指す実証実験支援が中心で、正式調達より前の段階を取れる点に価値がある
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: hamamatsu-ippan-consignment
+    organization_id: hamamatsu-city
+    name: 一般競争入札・公募型プロポーザル情報（業務委託・賃貸借）
+    url: https://www.city.hamamatsu.shizuoka.jp/tyotatu/bid/consignment/ippan/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents table.datatable td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 一般競争入札
+      - 公募型プロポーザル
+      - 業務委託
+      - 賃貸借
+    notes: 業務委託・賃貸借の一般競争入札と公募型プロポーザルを集約する一覧で、浜松市の主力情報源。**確認時点は34件で掲載日は34件すべて取得できる。**日付はリンクとは別のtdにあるが同じtr内なのでtrをcontextにして解析でき、保持は2026年5月11日から8月20日の約3か月、ページャは無い。共通開始日2026-07-01の期間内は20件になる。**title_excludesは設定しない。**段階マーカーは【入札中止】1件だけで、34件中1件では削減効果が小さく過剰適合になるため後続のAI判定に任せる。内容は土木・上下水道・施設点検が多いが、令和8年度図書館システムセキュリティ診断業務、IC旅券用交付窓口端末機賃貸借、浜松市広報戦略策定に向けた現状分析及び広報活動支援業務、ETC2.0プローブデータ等を用いた交通安全対策及び渋滞対策検討業務など自社領域と重なる案件も含む。放課後児童会の運営業務委託が9件連続で並ぶ時期があり件数を押し上げるが、内容トピックによる除外は実登録後のAI判定と突き合わせてから判断する。事業者向けお知らせとのURL重複は確認時点で5件だけだった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: hamamatsu-jigyosha-oshirase
+    organization_id: hamamatsu-city
+    name: 事業者の方へのお知らせ
+    url: https://www.city.hamamatsu.shizuoka.jp/jigyosha/oshirase.html
+    collector_type: list_page
+    source_category: proposal
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - サウンディング
+      - プロポーザル
+      - 企画提案
+      - 実証
+      - システム
+      - デジタル
+      - DX
+      - データ
+      - 新産業
+      - 社会課題
+      - イノベーション
+      - 公民連携
+      - 共創
+    document_type_hints:
+      - サウンディング型市場調査
+      - 公募型プロポーザル
+      - 補助金
+    notes: 事業者向けのお知らせを集約する一覧。**掲載日を実質取得できない。**日付はタイトル末尾の「（8月20日）」に入るが年が無いため50件中48件が掲載日不明になり、残る2件は家康公祭り2026とNEOPASA浜松秋フェス2026のタイトル内にある開催日（2026年11月21日、2026年10月10日）を掲載日として誤取得している。**したがってinitial_sinceも期間フィルタも効かず全候補が毎回対象になる。**そのため残す側を列挙するtitle_includesを設定し、確認時点の50件のうち10件が残る。**15語のうち実測で一致したのは6語である。**プロポーザル6件、新産業2件、サウンディング1件、社会課題1件、イノベーション1件、デジタル1件が一致し、残った候補はサウンディング型市場調査1件、公募型プロポーザル6件、新産業創出事業費補助2件、デジタルアップデートプログラム1件だった。**残る9語は確認時点で0件の将来用である。**情報提供依頼、RFI、企画提案、実証、システム、DX、データ、公民連携、共創は一致0件だが、高シグナル案件をwhitelistから漏らさないために語として残す。title_includesは残す側の列挙なので語を増やしても募集本体を落とす方向には働かない。**「AI」は入れない。**2文字のラテン文字部分一致は英字タイトルへ誤一致するため堺市と同じ判断にした。50件には医療法人ページのリニューアル、市街化調整区域の案内、介護保険事業者向け案内、入札参加資格審査申請情報、道路施設の長寿命化など固定・制度ページが多数混ざるが、いずれもtitle_includesに一致しないので除外語を増やす必要が無い。入札一覧とのURL重複は5件だけで、独自45件のうち船明墓地区画内土地活用のサウンディング型市場調査や社会課題解決型イノベーション補助金は入札一覧に出ない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: hamamatsu-boshu-ad
+    organization_id: hamamatsu-city
+    name: 募集（産業）
+    url: https://www.city.hamamatsu.shizuoka.jp/sangyo/boshu/index.html
+    collector_type: list_page
+    source_category: other
+    priority: low
+    enabled: false
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 広告事業
+      - 事業者募集
+    notes: 産業分野の募集一覧。**確認時点の5件すべてが市の広告媒体へ出稿する事業者の募集で、行政ニーズの収集対象にならないため無効とする。**内訳はバナー広告のご案内、浜松市の広告事業（広告主の募集）、浜名区役所ほか12施設の動画広告放映事業者募集、本庁舎広告付き庁舎案内板設置事業者の入札募集、北行政センターの広告付き周辺案内地図設置事業者の決定で、前2件は固定の案内ページである。**一覧に日付のマークアップが無く掲載日を取得できない。**別調査では浜松市クラウドPBXに係る電話システム導入及び保守運用業務の情報提供依頼（RFI）がこの一覧に載った実績が挙げられていたが、確認時点の5件には無く、この一覧が情報システム系のRFIを載せる運用かは確認できなかった。**再確認条件は、RFIや情報システム関連の募集がこの一覧に載ることを確認できた場合である。**その際は募集終了後に一覧から外れる変動型なので、allow_empty_candidatesの併用を検討する
     last_verified_at: "2026-08-20"
     verification_status: verified
