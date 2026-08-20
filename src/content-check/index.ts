@@ -50,6 +50,7 @@ export async function fetchAndExtractDocument(
   const extraction = extractDocumentFromHtml({
     html: fetched.text,
     url: fetched.finalUrl,
+    titleSelector: input.source.title_selector,
     contentSelector: input.source.content_selector,
   });
   const warnings = [...extraction.warnings];

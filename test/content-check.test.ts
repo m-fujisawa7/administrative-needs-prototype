@@ -42,6 +42,58 @@ describe('個別ページHTML抽出', () => {
     ]);
   });
 
+  it('title_selector未設定時は従来どおり最初のh1を優先する', () => {
+    const result = extractDocumentFromHtml({
+      html: [
+        '<html><head><title>title要素の案件名</title></head><body>',
+        '<h1>最初のh1</h1>',
+        `<main>${'本文です。'.repeat(50)}</main>`,
+        '</body></html>',
+      ].join(''),
+      url: DOCUMENT_URL,
+    });
+
+    expect(result.title).toBe('最初のh1');
+  });
+
+  it('title_selectorの表示テキストだけを空白正規化してタイトルにする', () => {
+    const result = extractDocumentFromHtml({
+      html: [
+        '<html><head><title>title要素の案件名</title></head><body>',
+        '<h1><img src="logo.svg" alt="共通ロゴ"></h1>',
+        '<div class="project-title"> 課題解決 <span>プロジェクト</span> </div>',
+        `<main>${'本文です。'.repeat(50)}</main>`,
+        '</body></html>',
+      ].join(''),
+      url: DOCUMENT_URL,
+      titleSelector: '.project-title',
+    });
+
+    expect(result.title).toBe('課題解決 プロジェクト');
+    expect(result.title).not.toContain('<span>');
+  });
+
+  it('title_selectorが不一致または空なら汎用タイトルへfallbackしない', () => {
+    const html = [
+      '<html><head><title>汎用タイトル</title></head><body>',
+      '<h1>壊れた汎用h1</h1>',
+      '<div class="empty-title"><span></span></div>',
+      `<main>${'本文です。'.repeat(50)}</main>`,
+      '</body></html>',
+    ].join('');
+
+    expect(() => extractDocumentFromHtml({
+      html,
+      url: DOCUMENT_URL,
+      titleSelector: '.missing-title',
+    })).toThrow('title_selector「.missing-title」に一致する要素がありません');
+    expect(() => extractDocumentFromHtml({
+      html,
+      url: DOCUMENT_URL,
+      titleSelector: '.empty-title',
+    })).toThrow('title_selector「.empty-title」からタイトル文字列を取得できません');
+  });
+
   it('titleへフォールバックし、不要要素を除外してPDF URLを解決する', () => {
     const mainText = '必要な行政情報です。'.repeat(30);
     const result = extractDocumentFromHtml({
@@ -145,6 +197,27 @@ describe('個別ページ取得', () => {
     expect(result.httpStatus).toBe(200);
     expect(result.contentSelectorUsed).toBe('main');
     expect(result.warnings.join('\n')).toContain('enabled: false');
+  });
+
+  it('台帳のtitle_selectorを個別HTML抽出へ渡す', async () => {
+    const fetchDocument: DocumentFetcher = async ({ url }) => fetched(
+      [
+        '<html><head><title>汎用タイトル</title></head><body>',
+        '<h1>共通ロゴ</h1>',
+        '<h1 class="project-title">実案件タイトル</h1>',
+        `<main>${'本文です。'.repeat(50)}</main>`,
+        '</body></html>',
+      ].join(''),
+      url,
+      'text/html; charset=utf-8',
+    );
+    const result = await fetchAndExtractDocument({
+      source: makeSource({ title_selector: 'h1.project-title' }),
+      organization: makeOrganization(),
+      url: DOCUMENT_URL,
+    }, { fetchDocument });
+
+    expect(result.title).toBe('実案件タイトル');
   });
 
   it('HTML以外のContent-TypeをErrorにする', async () => {

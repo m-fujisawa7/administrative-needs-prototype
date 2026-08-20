@@ -3850,12 +3850,13 @@ sources:
     priority: high
     enabled: true
     link_selector: ".recruiting .project_list_title a[href]"
+    title_selector: "article.container h1.project_title"
     content_selector: "article.container"
     document_type_hints:
       - 課題提示
       - 実証
       - 官民共創
-    notes: 山口県・市町が地域課題や行政課題を1テーマ1ページで提示し、デジタル技術を持つ企業との実証を募集する事業公式サイト。県公式告知は年度8課題を1ページへまとめるため候補粒度が粗いが、この一覧は確認時点の令和8年度8課題を案件固有URL8件として取得できる。PROJECT欄は募集終了後も現行年度の8件を保持し、ページャとRSSは無い。リンク周辺には掲載日が無く、各ページの2026年7月12日は共通の応募締切なのでpublishedAtには使わない。したがって8件はすべて日付不明として初回期間対象になり、既定limitで後続処理へ進む最大件数は5件である。個別ページの本文はarticle.containerに入り、8件すべて4,554文字から5,928文字を取得でき、関連テーマのカルーセルを含めない。年度・テーマごとに意味のあるslugの個別URLが発行されており、固定URLへ課題を上書きする構造は確認していない。**既存のタイトル抽出器はページ先頭のロゴ用h1を優先するため、個別ページのdocument.titleがロゴ画像の遅延読込文字列になる。実案件名は本文冒頭とCollector候補タイトルに含まれる。**1件の関連資料PDFは山口市公式ドメインにあり、cc-yamaguchi.jpと親組織のpref.yamaguchi.lg.jpの許可範囲外なのでPDF取得は警告になるが、案件本文はHTMLだけで十分に取得できる
+    notes: 山口県・市町が地域課題や行政課題を1テーマ1ページで提示し、デジタル技術を持つ企業との実証を募集する事業公式サイト。県公式告知は年度8課題を1ページへまとめるため候補粒度が粗いが、この一覧は確認時点の令和8年度8課題を案件固有URL8件として取得できる。PROJECT欄は募集終了後も現行年度の8件を保持し、ページャとRSSは無い。リンク周辺には掲載日が無く、各ページの2026年7月12日は共通の応募締切なのでpublishedAtには使わない。したがって8件はすべて日付不明として初回期間対象になり、既定limitで後続処理へ進む最大件数は5件である。個別ページの本文はarticle.containerに入り、8件すべて4,554文字から5,928文字を取得でき、関連テーマのカルーセルを含めない。年度・テーマごとに意味のあるslugの個別URLが発行されており、固定URLへ課題を上書きする構造は確認していない。ページ先頭のロゴ用h1ではなく、8件すべてで一意に実案件名を持つarticle.container h1.project_titleをtitle_selectorに指定する。1件の関連資料PDFは山口市公式ドメインにあり、cc-yamaguchi.jpと親組織のpref.yamaguchi.lg.jpの許可範囲外なのでPDF取得は警告になるが、案件本文はHTMLだけで十分に取得できる
     last_verified_at: "2026-08-20"
     verification_status: verified
 

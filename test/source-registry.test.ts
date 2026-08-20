@@ -158,6 +158,23 @@ function registryWithInitialSince(initialSince: string | undefined): unknown {
   };
 }
 
+describe('title_selectorの検証', () => {
+  it('任意のCSSセレクターを受理し、未指定も従来どおり受理する', () => {
+    const configured = mutableRegistry();
+    configured.sources[0]!.title_selector = 'article h1.project-title';
+    expect(validateSourceRegistry(configured).sources[0]?.title_selector)
+      .toBe('article h1.project-title');
+
+    expect(validateSourceRegistry(mutableRegistry()).sources[0]?.title_selector).toBeUndefined();
+  });
+
+  it.each(['', '   ', null, 1])('空または文字列以外の値 %s を拒否する', (value) => {
+    const registry = mutableRegistry();
+    registry.sources[0]!.title_selector = value;
+    expect(() => validateSourceRegistry(registry)).toThrow();
+  });
+});
+
 describe('allow_empty_candidatesの検証', () => {
   it('真偽値を受理し、未指定はundefinedのままにする', () => {
     expect(validateSourceRegistry(registryWithAllowEmpty(true)).sources[0]?.allow_empty_candidates)

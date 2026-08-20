@@ -37,6 +37,7 @@ const FALLBACK_SELECTORS = [
 export type ExtractDocumentHtmlInput = {
   html: string;
   url: string;
+  titleSelector?: string;
   contentSelector?: string;
 };
 
@@ -45,13 +46,7 @@ export function extractDocumentFromHtml(
 ): ContentExtractionResult {
   const $ = load(input.html);
   const warnings: string[] = [];
-  const title = firstNonEmpty(
-    normalizeWhitespace($('h1').first().text()),
-    normalizeWhitespace($('title').first().text()),
-  );
-  if (title === null) {
-    throw new ContentExtractionError('ページタイトルを h1 または title から取得できませんでした。');
-  }
+  const title = extractTitle($, input.titleSelector);
 
   const configuredSelector = input.contentSelector?.trim() || null;
   const selectors = uniqueSelectors(configuredSelector);
@@ -131,6 +126,48 @@ export function extractDocumentFromHtml(
     usedFallback,
     warnings,
   };
+}
+
+function extractTitle(
+  $: ReturnType<typeof load>,
+  titleSelector: string | undefined,
+): string {
+  if (titleSelector !== undefined) {
+    const selector = titleSelector.trim();
+    if (selector === '') {
+      throw new ContentExtractionError('設定された title_selector が空です。');
+    }
+
+    let elements: ReturnType<typeof $>;
+    try {
+      elements = $(selector);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new ContentExtractionError(`設定された title_selector が不正です: ${detail}`);
+    }
+    if (elements.length === 0) {
+      throw new ContentExtractionError(
+        `設定された title_selector「${selector}」に一致する要素がありません。`,
+      );
+    }
+
+    const title = normalizeWhitespace(elements.first().text());
+    if (title === '') {
+      throw new ContentExtractionError(
+        `設定された title_selector「${selector}」からタイトル文字列を取得できませんでした。`,
+      );
+    }
+    return title;
+  }
+
+  const title = firstNonEmpty(
+    normalizeWhitespace($('h1').first().text()),
+    normalizeWhitespace($('title').first().text()),
+  );
+  if (title === null) {
+    throw new ContentExtractionError('ページタイトルを h1 または title から取得できませんでした。');
+  }
+  return title;
 }
 
 function extractVisibleText(elements: ReturnType<ReturnType<typeof load>>): string {

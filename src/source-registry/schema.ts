@@ -77,6 +77,7 @@ export const sourceSchema = z.strictObject({
   priority: z.enum(PRIORITIES),
   enabled: z.boolean(),
   link_selector: selectorSchema.optional(),
+  title_selector: selectorSchema.optional(),
   content_selector: selectorSchema.optional(),
   category_includes: z.array(z.string().trim().min(1)).optional(),
   /** 1件以上設定した場合、いずれかの語をタイトルに含む候補だけを残す。 */
