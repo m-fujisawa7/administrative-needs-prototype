@@ -401,6 +401,14 @@ organizations:
     enabled: true
     notes: 山口県が地域・行政課題とデジタル技術を結び付ける共創事業の公式サイト。山口県公式の事業告知からリンクされているが独自ドメインなので、取得先をcc-yamaguchi.jpだけに制限するため別組織として管理する
 
+  - id: sakai-city
+    name: 堺市
+    organization_type: designated_city
+    prefecture: 大阪府
+    official_domain: city.sakai.lg.jp
+    enabled: true
+    notes: 全庁の新着情報と、業務委託・賃借売払いの入札等公募案件を収集する対象政令指定都市。**一覧は3本ともdiv#main配下のul.info-list > liで、liはspan.date（掲載日）とspan > a（案件リンク）の2要素だけを持つ。**liごとのアンカーは1本で所属課リンクは無いため、first-childの指定は不要である。掲載日は「2026年8月19日」形式で年を含み、3本すべて全件解析できる。**日付の意味は更新日で、タイトル冒頭の「（令和8年7月28日公表）」は公表日として別に存在する。**質問書回答を追加した案件は更新日だけが進み公表日は元のままになる（都心交通のあり方検討支援業務は公表7月21日・更新8月6日）。liの先頭がspan.dateなのでparseDateCandidateは更新日を先に読み、タイトル内の公表日や開札日を誤取得しない。**タイトルに康熙部首の⽉・⽇が混ざるページがある**が、NFKC正規化で月・日へ変換されるため日付解析とfilter判定には影響しない。**本文セレクタは#mainを使う。**個別ページはh1に実タイトルが入るのでtitle_selectorは不要で、#mainはscript除去後584〜1070文字、#contentはパンくずまで含む。main要素・article・#mol_contentsは存在しないため、content_selectorを省略するとfallbackがWarningになる。個別案件URLは/kenko/fukushikaigo/R8_RFI.htmlのような案件別ファイルで、r8toshinkotsu-itakuやacceleration_r8のように年度をファイル名へ含める例が多い。添付は実施要領・仕様書・入札説明書がPDFで、リンクテキストに資料種別が入るためPDF優先度判定が働く
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3944,5 +3952,96 @@ sources:
       - システム調達
       - デジタル実証
     notes: 全庁の入札・調達・売却を横断する一覧。公式画面は3ページ77件を保持するが、現行list_page Collectorはページャを辿らないため、継続巡回で取得するraw候補は先頭ページの最新30件だけである。確認時点の先頭30件は2026年4月17日から8月20日で、全30件に年を含む更新日がある。一般的な「委託」「プロポーザル」は物理案件まで広く当たるため使わず、IT・データ・RFI・実証をタイトルで明示する案件だけをtitle_includesで残す。さらに終了・結果段階だけをtitle_excludesで除外する。3ページ77件を監査するとincludes一致4件のうち受付終了のモビリティデータ連携基盤と審査結果のドローン実証を除き2件が残る。実際の取得範囲である先頭30件もfilter後2件で、女性の健康管理アプリ無償提供とネットワークパソコン一般競争入札である。どちらも共通開始日2026-07-01以降なので初回期間対象2件、既定limitの最大件数も2件。本文は各1,444文字・1,499文字を#main_bodyから取得できる。健康管理アプリの添付PDF2件は画像PDFで本文抽出できないがHTML本文は取得でき、ネットワークパソコンの公告PDFは4,720文字を取得できる。固定URLの公告掲示板とKintone中間ページは強い技術語へ一致せず候補にならず、残る記事は/soshiki/{課ID}/{記事ID}.htmlの固有URLで固定上書き型ではない。通常巡回の間隔で30件分が入れ替わると取りこぼし得るため、長期間停止後は2ページ目以降を手動確認する
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: sakai-all-news
+    organization_id: sakai-city
+    name: 全新着一覧
+    url: https://www.city.sakai.lg.jp/allNewsList.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#main ul.info-list li span a[href]"
+    content_selector: "#main"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - サウンディング
+      - 市場調査
+      - プロポーザル
+      - 企画提案
+      - 公民連携
+      - 共創
+      - スタートアップ
+      - 実証
+      - デジタル
+      - DX
+      - 生成AI
+      - システム
+    title_excludes:
+      - 新着状況
+    document_type_hints:
+      - 情報提供依頼
+      - サウンディング型市場調査
+      - 公募プロポーザル
+    notes: 全庁の新着情報を1ページへ集約する一覧。**確認時点は100件・構造上有効100件で掲載日は100件すべて取得でき、保持は2026年7月27日から8月20日の24日間、ページャは無い。**1日あたり約4件で回転が速く、内容は子育て講座・展示・採用試験など対象外が大半なので、**title_includesで残す側を列挙する新潟県方式を採る。**確認時点の内訳は情報提供依頼1、RFI1、サウンディング1、市場調査1、プロポーザル2、共創1、スタートアップ2、実証1、デジタル2、システム3で、重複を除いた残存は11件だった。企画提案・公民連携・DX・生成AIは0件だが行政ニーズの標準語彙なので、将来の取りこぼしを防ぐため残す。**「AI」単体は入れない。**確認した100件では採択企業決定とAI共創イベントの2件が該当したが、どちらもデジタルと共創で拾えるため上積みが0件で、2文字のラテン文字部分一致は将来ラテン語中のaiへ誤一致する危険があるためである。**title_excludesは固定ページの「新着状況」だけにする。**調達課が執行する物品調達と業務委託の2件は案件ではなく更新され続ける索引ページで、現在のtitle_includesでも通らないが、除外が優先されるため明示しておく。残る11件には道路等通報システムの対応状況更新とオンライン資格確認システム障害の復旧報が含まれる。どちらもシステムに一致した固定・障害告知だが1件ずつの一度きりのコストなので除外語は増やさない。**この情報源だけが持つ候補がある。**確認時点の障害者福祉システム標準化移行のRFIと金岡公園のサウンディング型市場調査は入札等公募案件の2本に載らず、逆に重複は公募プロポーザル2件だけだった。保持24日なので入札一覧の代わりにはならない。**回転が速く、同一URLの再公開で更新日が進んで一覧の先頭へ戻る。**確認中の1時間でゲートキーパー研修動画の項目が8月13日から8月20日へ動き先頭へ移った。登録済みURLはduplicate-firstでスキップされるため再解析は発生しない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: sakai-itaku-bid
+    organization_id: sakai-city
+    name: 業務委託に係る入札等公募案件
+    url: https://www.city.sakai.lg.jp/sangyo/nyusatsu/chotatsu/koboanken/itaku/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#main ul.info-list li span a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 募集終了
+      - 受付終了
+      - 中止について
+    document_type_hints:
+      - 総合評価一般競争入札
+      - 公募プロポーザル
+      - 業務委託
+    notes: 業務委託に係る入札等公募案件の一覧。**確認時点は18件・構造上有効18件で掲載日は18件すべて取得でき、保持は2025年3月14日から2026年8月19日である。**共通開始日2026-07-01の期間内は11件、title_excludes適用後は9件になる。**除外語は段階マーカーだけにした。**募集終了1件、受付終了1件、中止について1件で、内訳は入札参加受付終了の都心交通のあり方検討支援業務、中止になった臨海工場運営事業延長検討支援業務、募集終了のバリアフリー基本構想改定等検討支援業務である。**質問書回答追加は除外しない。**堺市は【令和8年8月6日 質問書回答追加】のように募集本体のタイトルへ追記する型で、回答追加だけが付いた案件は受付中である。都心交通の1件は回答追加と入札参加受付終了が同時に付いており、受付終了の側で落ちている。総合評価一般競争入札が中心で、堺市DX新規事業創出、アクセラレーション、都心交通のあり方検討支援、ミュージアム基本計画策定準備支援、防災行政無線通信方式変更など自社領域と重なる案件が継続的に載る。全新着一覧との重複は確認時点で公募プロポーザル2件だけだった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: sakai-lease-bid
+    organization_id: sakai-city
+    name: 賃借・売払い及びその他に係る入札等公募案件
+    url: https://www.city.sakai.lg.jp/sangyo/nyusatsu/chotatsu/koboanken/lease/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "#main ul.info-list li span a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 募集終了
+      - 受付終了
+      - 中止について
+    document_type_hints:
+      - 一般競争入札
+      - 賃貸借
+      - サービス利用
+    notes: 賃借・売払い及びその他に係る入札等公募案件の一覧。**確認時点は15件・構造上有効15件で掲載日は15件すべて取得でき、保持は2024年7月23日から2026年8月12日である。**期間内は11件、title_excludes適用後は9件になる。除外は募集終了4件で、受付終了と中止については0件だが業務委託側と同じ運用なので同じ語を置いている。**期間内9件のうち5件はクリーンセンターとリサイクルプラザの資源売り払い（小型金属、金属くず、ペットボトル、アルミ缶、スチール缶）である。**売り払いは自社領域ではないが内容トピックによる除外なので現時点では設定せず、実登録後のAI判定と人間分類を突き合わせてから決める。この一覧でしか取れない候補としてクラウドPBXサービス利用の調達、南区役所タブレット端末賃貸借、口座振替収納データ伝送業務があり、業務委託側では拾えない賃借・サービス利用・データ系の調達を補完する。全新着一覧との重複は確認時点で0件だった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: sakai-news-rss
+    organization_id: sakai-city
+    name: 堺市ホームページ 新着RSS
+    url: https://www.city.sakai.lg.jp/rss_news.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: low
+    enabled: false
+    notes: 全庁新着情報のRSS。**RSS 2.0でchannelは堺市ホームページ、item 100件すべてにpubDateがある。**同時刻に取得して照合すると、item 100件はHTMLの全新着一覧とURLが100件一致し、独自の候補は0件だった。**pubDateがGMT表記なので日付が1日ずれる。**「Thu, 20 Aug 2026 06 00 00 GMT」の形式で配信され、同時刻照合ではGMTの日付がHTMLのspan.dateと95件一致し5件が1日前になった。ずれた5件はすべてJSTへ換算するとHTMLと一致するので、原因は時差だけである。**categoryは現行のrss-checkerでは読めない。**item内にはcms:categoryのname属性（イベントなど）とcms:orgShortName（所管課）があるが、rss-checkerはitem.categoryとdc:subjectだけを読むためcategory_includesの条件には使えない。更新日の意味はHTML側と同じで、同一URLが再公開されるとpubDateも更新日も進む（ゲートキーパー研修動画の項目は1時間の間に8月13日から8月20日へ動き、HTMLのspan.dateも8月20日になった）。HTMLと同じ100件を日付精度を落として取得することになるため無効とする。再確認条件は、全新着一覧のul.info-list構造が変わってHTML側が使えなくなった場合である
     last_verified_at: "2026-08-20"
     verification_status: verified
