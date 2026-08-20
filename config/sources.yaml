@@ -417,6 +417,14 @@ organizations:
     enabled: true
     notes: 全庁一覧ではなく所管課単位のお知らせ一覧から、情報システム調達の意見招請とDX施策を収集する対象都道府県。**一覧はcgi-bin/page/list.phpへdirとlink_page_idを渡す動的ページで、table.datatableの1行が1候補になる。**trは番号・公開日・タイトル・担当課の4tdで、リンクはタイトルtdの1本だけなので担当課による候補汚染は無い。**掲載日はリンクとは別のtdにあるが同じtr内なので取得できる。**list-page-checkerはanchorのclosestでtr全体をcontextにするため、別セルの「2026年7月9日」をparseDateCandidateが解釈する。tdの並びが番号→公開日→タイトルなので、タイトル内に日付があっても公開日が先に一致する。**日付の意味は公開日だが更新でも動く。**かがわDXフェア2026はファイル名が20260615でありながら公開日が2026年7月22日で、本文にも6月15日と7月22日の両方が載っていた。**本文セレクタは#tmp_contentsを使う。**神戸市・静岡市と同じ#tmp_接頭辞のCMSだが、#tmp_mainはページによって左右ナビを含み実測で17,000文字を超えるため使えない。#tmp_contentsは確認した6ページで158〜3,462文字で、意見招請と入札公告の2ページだけが200文字の下限を割る。main・article・[role=main]・#mol_contents・#main・#contentsはいずれも存在しないため、下限を割ったページはbody（17,000文字前後）までfallbackしWarningになる。**RSSは確認できなかった。**3つの一覧にlink[type=rss]もxmlリンクも無く、rss.xml・rss/index.xml・index.rdfはいずれも404だった。個別案件URLは/joho/20260709-2.htmlのような日付ベースとr8_siboffice_renovationのような年度接頭辞が主だが、/kodomokatei/jidou/siryousyousei.htmlのように汎用名の固定URLもあり、年度ごとの上書き再利用に注意が必要である
 
+  - id: tokushima-prefecture
+    name: 徳島県
+    organization_type: prefecture
+    prefecture: 徳島県
+    official_domain: pref.tokushima.lg.jp
+    enabled: true
+    notes: 全庁の委託・役務と入札・売却の新着、地方創生分野の募集を収集する対象都道府県。**一覧はdiv.title-list配下のul.totaling > li.display_dateで、liはtime要素・span.title内のリンク・span.belongの3要素を持つ。**リンクはspan.title内の1本だけなのでbelongによる候補汚染は無く、候補URLは絶対URLで同一ドメインである。**掲載日はtime要素でliの先頭にあり、年を含むため全件解析できる。**表記は「2026年8月19日」でdatetime属性に「2026-08-19 16:41」が入る。日付の意味は更新日で、timeがタイトルより前に来るためタイトル内の日付を誤取得しない。**ページャはjavascript:void(0)で、HTTPで2ページ目を取得するURLが無い。**したがって現行collectorが取得できるのは初期表示の30件（募集一覧は12件）までで、これが実質の保持上限である。**本文セレクタはdiv.area.area3を使う。**#main・#contents・main・article・[role=main]・#mol_contentsはいずれも存在せず、div.area.area3が本文、area1がパンくず225文字、area5が共通案内246文字である。確認した3ページのarea3は181〜2,764文字で、短いページは200文字の下限を割りbodyへfallbackする。ただしbody全体でも757〜3,291文字で共通部分は約510文字なので、fallbackしても混入は小さい。**RSSの候補URLは末尾スラッシュが無い。**カテゴリRSSのlinkは/chihososei/7315556で、HTML一覧のhrefは/chihososei/7315556/と末尾スラッシュ付きである。現在のduplicate判定は完全一致なので、RSSとHTMLを同時に有効化すると同じ案件が二重登録される
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4107,5 +4115,90 @@ sources:
       - システム調達
       - 業務委託
     notes: 子ども家庭課のお知らせ一覧。**確認時点は26件で掲載日は26件すべて取得でき、保持は2020年12月10日から2026年7月28日と5年半で26件なので回転が非常に遅い。**共通開始日2026-07-01の期間内は3件になる。**対象密度は低い。**26件のうち自社領域と重なるのは香川県児童相談所システムの調達に係る資料等の招請と、令和8年度児童虐待防止のためのSNS相談業務委託に係る一般競争入札の質問回答の2件だけで、残りはヤングケアラーの案内、ひとり親世帯給付金、里親制度など一般の子育て情報である。**それでも有効にする。**児童相談所システムの調達が期間内に入っており、回転が遅いので継続巡回のコストが小さい。期間内3件のうち2件はヤングケアラーの恒久ページで一度きりの解析コストである。priorityはlowとし、内容トピックによる除外は実登録後のAI判定と人間分類を突き合わせてから判断する。**/kodomokatei/jidou/siryousyousei.htmlのように汎用名の固定URLがあり、年度ごとに同じURLへ次の招請が載ると登録済みとして重複スキップされる可能性がある。**この点は将来再確認とする
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: tokushima-itaku
+    organization_id: tokushima-prefecture
+    name: 委託・役務
+    url: https://www.pref.tokushima.lg.jp/jigyoshanokata/nyusatsu/itaku/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "div.title-list ul.totaling > li span.title a[href]"
+    content_selector: "div.area.area3"
+    title_excludes:
+      - 結果について
+      - 審査結果
+      - 入札結果
+      - 選定結果
+      - 候補者の選定
+    document_type_hints:
+      - 条件付き一般競争入札
+      - 公募型プロポーザル
+      - 企画提案
+      - 情報提供依頼
+    notes: 委託・役務の新着一覧で、徳島県で最も自社領域と重なる情報源。**確認時点は30件で掲載日は30件すべて取得できるが、保持は2026年8月3日から8月20日の18日分しか無い。**1日あたり約1.7件と回転が速く、ページャがjavascript:void(0)なので30件より前へは遡れない。**巡回間隔が18日を超えると取りこぼす前提で運用する。**title_excludesは結果公表の段階マーカーだけにした。結果について11件、審査結果5件、入札結果4件、選定結果2件、候補者の選定1件で、重複を除くと14件を除外して16件が残る。**質問回答は除外しない。**徳島県は「質問に対する回答（条件付き一般競争入札『…』）」のように独立ページを作る型と、「…公募型プロポーザルの実施について(R8.8.18 質問に対する回答掲載)」のように募集本体のタイトルへ追記する型が混在する。質問や質問に対する回答を除外語にすると後者の本体案件を落とすため、独立ページ側の6件はAI判定に任せる。**確認時点にRFIは含まれない。**メーリングリストシステム更新やGIS導入検討の情報提供依頼は18日の窓より前にあり、JSページャのため遡れないので、RFIは新規掲載時に拾う前提である。残る16件にはサーバールーム監視強化業務、情報セキュリティ監査委託業務、機械警備業務、アスティとくしま敷地内動線計画等検討業務などが含まれる。入札・売却新着との重複は確認時点で3件だけだった
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: tokushima-chihososei-bosyu
+    organization_id: tokushima-prefecture
+    name: 募集（地方創生・市町村・地域づくり）
+    url: https://www.pref.tokushima.lg.jp/jigyoshanokata/kurashi/chihososei/bosyu
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "div.title-list ul.totaling > li span.title a[href]"
+    content_selector: "div.area.area3"
+    title_excludes:
+      - 結果について
+      - 審査結果
+      - 入札結果
+      - 選定結果
+      - 候補者の選定
+    document_type_hints:
+      - 提案募集
+      - 企画提案
+      - 官民協働
+    notes: 地方創生・市町村・地域づくり分野の募集一覧。**確認時点は12件で掲載日は12件すべて取得でき、保持は2019年2月20日から2026年8月7日と7年半で12件なので回転が非常に遅い。**共通開始日2026-07-01の期間内は2件になる。**正式調達より早い段階を取れる点に価値がある。**官民協働プロジェクト推進事業の「デジタル技術等を活用した地域課題等の解決に向けた提案募集」は仕様が固まる前に地域課題と民間の解決策を募る形式で、委託・役務の一覧には公告として現れない。移住促進デジタルマーケティング活用事業の企画提案募集も同様である。title_excludesは委託・役務と同じ段階マーカーを置き、確認時点では結果について1件が除外された。質問回答を除外しない理由も委託・役務と同じである。ページャUIはあるが12件で追加ページのリンクは無い。所属カテゴリRSSがあるが末尾スラッシュの違いで二重登録になるため採らない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: tokushima-nyusatsu-shinchaku
+    organization_id: tokushima-prefecture
+    name: 入札・売却情報に関する新着情報
+    url: https://www.pref.tokushima.lg.jp/ippannokata/nyusatsu/shinchaku/
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "div.title-list ul.totaling > li span.title a[href]"
+    content_selector: "div.area.area3"
+    title_excludes:
+      - 結果について
+      - 審査結果
+      - 入札結果
+      - 選定結果
+      - 候補者の選定
+    document_type_hints:
+      - 条件付き一般競争入札
+      - 賃貸借
+      - 指定管理者
+    notes: 入札・売却情報の新着一覧。**確認時点は30件で掲載日は30件すべて取得でき、保持は2026年7月8日から8月20日の43日分である。**ページャがjavascript:void(0)なので30件より前へは遡れない。**委託・役務との重複は3件だけで独自27件だった。**belongの内訳は委託・役務11件、物品9件、売却5件、その他入札4件、生涯学習1件で、電話交換機等一式の賃貸借やカラー広幅複合機の賃貸借など委託・役務の一覧に出ない物品・賃貸借の調達を補完する。title_excludesは委託・役務と同じ段階マーカーで、結果について15件、入札結果13件などを重複を除いて19件除外し11件が残る。残る11件には県有未利用地の売却や指定管理者募集も含まれるため対象密度は委託・役務より低く、priorityはmediumとする。**RFIの早期検知には向かない。**正式調達の取りこぼし防止用の位置づけである
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: tokushima-chihososei-rss
+    organization_id: tokushima-prefecture
+    name: 地方創生・市町村・地域づくり 新着RSS
+    url: https://www.pref.tokushima.lg.jp/file/rss/jigyoshanokata_kurashi_chihososei_index.rss
+    collector_type: rss
+    source_category: proposal
+    priority: low
+    enabled: false
+    notes: 地方創生・市町村・地域づくりの所属カテゴリRSS。**RSS 2.0でitem 30件すべてにpubDateがあり、+0900のRFC822形式なのでparseDateCandidateが日付ズレ無く解釈できる。categoryも付いており、確認時点はその他12件、募集10件、委託・役務4件、許認可・届出4件、イベント・講座3件、助成・融資2件、調査・資料1件だった。**徳島県でcategory_includesにより募集だけへ絞れる唯一の情報源である。**それでも採らない。**RSSのlinkは/chihososei/7315556のように末尾スラッシュが無く、HTML一覧のhrefは/chihososei/7315556/と末尾スラッシュ付きである。現在のduplicate判定は公式URLの完全一致なので、募集一覧と同時に有効化すると同じ案件が二重登録される。またこのRSSは募集専用ではなく、確認時点の30件には中国・四国地区宗教法人実務研修会や四国知事会も含まれる。末尾スラッシュを正規化して比較すると募集一覧12件のうち10件と重複し、独自20件は募集以外が中心だった。再確認条件は、duplicate判定が末尾スラッシュを正規化するようになった場合、またはcategory_includesで募集だけを追う必要が出た場合である
     last_verified_at: "2026-08-20"
     verification_status: verified
