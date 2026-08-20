@@ -384,6 +384,23 @@ organizations:
     enabled: true
     notes: 企画提案、DX推進課、教育ICTのRFIを継続収集する対象都道府県。公式CMSの一覧はリンクと同じliにspan.article_dateを持ち、年を含む掲載日を取得できる。個別ページの本文は#main_bodyに入り、確認した18件で本文抽出に成功した。教育委員会のHTML新着は日付を持たないため、100件すべてにdc:dateがある公式RSSを採る。一般競争入札情報（その他委託役務）は、同一URLを年度の異なる新規案件へ上書き再利用する実例があり、URL単位duplicate-firstでは将来の案件を取りこぼすため台帳へ登録するが継続巡回は行わない
 
+  - id: yamaguchi-prefecture
+    name: 山口県
+    organization_type: prefecture
+    prefecture: 山口県
+    official_domain: pref.yamaguchi.lg.jp
+    enabled: true
+    notes: デジタル政策、行政DX、課題提示型実証、全庁のデジタル調達を収集する対象都道府県。県公式CMSは個別ページの本文が#main_bodyに入る。課の新着一覧はdiv.section_information_list内のliにリンク・更新日・所属がまとまり、年を含む更新日を取得できる。所属別RSSはRSS 1.0（RDF）でdc:dateを全件に持つ。シビックテック チャレンジ YAMAGUCHIは県公式ページから事業公式サイトとして案内される別ドメインのため、親子関係を持つ外部組織へ分ける
+
+  - id: yamaguchi-civic-tech
+    name: シビックテック チャレンジ YAMAGUCHI
+    organization_type: external_organization
+    prefecture: 山口県
+    parent_organization_id: yamaguchi-prefecture
+    official_domain: cc-yamaguchi.jp
+    enabled: true
+    notes: 山口県が地域・行政課題とデジタル技術を結び付ける共創事業の公式サイト。山口県公式の事業告知からリンクされているが独自ドメインなので、取得先をcc-yamaguchi.jpだけに制限するため別組織として管理する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -3821,5 +3838,110 @@ sources:
       - 業務委託
       - 役務
     notes: 全庁一覧より委託役務へ絞った一覧で、確認時点はraw 21件・構造上有効21件、掲載日は全件取得できる。保持範囲は2025年1月8日から2026年8月20日でページャは無い。「入札結果」1件を除いたfilter後は20件、共通開始日2026-07-01以降は8件である。**ただし継続巡回には使用しない。**同じr7-kasengomityosa.htmlが2025年には令和7年度河川等の散乱ごみ状況調査、現在は令和8年度の別調達へ本文・添付を差し替えて使われている実例を確認した。令和7年度をNotion登録済みの場合、翌年度はURL単位duplicate-firstでHTML取得前にスキップされ、将来の新規案件を取りこぼす。URL単位のSource固有除外機能がなく、この1件だけを理由にテーマ語で除外するのも安全ではないため、台帳には残すがdisabledとする。必要なcurrent案件はnotion:register等で個別に扱い、URL再利用を安全に識別する設計が整った場合のみ再有効化を検討する
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: yamaguchi-civic-tech-projects
+    organization_id: yamaguchi-civic-tech
+    name: シビックテック チャレンジ YAMAGUCHI 募集テーマ一覧
+    url: https://cc-yamaguchi.jp/
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: ".recruiting .project_list_title a[href]"
+    content_selector: "article.container"
+    document_type_hints:
+      - 課題提示
+      - 実証
+      - 官民共創
+    notes: 山口県・市町が地域課題や行政課題を1テーマ1ページで提示し、デジタル技術を持つ企業との実証を募集する事業公式サイト。県公式告知は年度8課題を1ページへまとめるため候補粒度が粗いが、この一覧は確認時点の令和8年度8課題を案件固有URL8件として取得できる。PROJECT欄は募集終了後も現行年度の8件を保持し、ページャとRSSは無い。リンク周辺には掲載日が無く、各ページの2026年7月12日は共通の応募締切なのでpublishedAtには使わない。したがって8件はすべて日付不明として初回期間対象になり、既定limitで後続処理へ進む最大件数は5件である。個別ページの本文はarticle.containerに入り、8件すべて4,554文字から5,928文字を取得でき、関連テーマのカルーセルを含めない。年度・テーマごとに意味のあるslugの個別URLが発行されており、固定URLへ課題を上書きする構造は確認していない。**既存のタイトル抽出器はページ先頭のロゴ用h1を優先するため、個別ページのdocument.titleがロゴ画像の遅延読込文字列になる。実案件名は本文冒頭とCollector候補タイトルに含まれる。**1件の関連資料PDFは山口市公式ドメインにあり、cc-yamaguchi.jpと親組織のpref.yamaguchi.lg.jpの許可範囲外なのでPDF取得は警告になるが、案件本文はHTMLだけで十分に取得できる
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: yamaguchi-digital-policy-rss
+    organization_id: yamaguchi-prefecture
+    name: デジタル政策課 新着情報 RSS
+    url: https://www.pref.yamaguchi.lg.jp/rss/10/soshiki-2-32.xml
+    collector_type: rss
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    content_selector: "#main_body"
+    title_excludes:
+      - 取組課題及び企業等の募集
+    document_type_hints:
+      - デジタル実装
+      - AI
+      - XR
+      - 自動運転
+    notes: デジタル政策課の新着情報を配信する公式RSS。RSS 1.0（RDF）で確認時点は100件すべてにdc:dateがあり、保持範囲は2024年2月21日から2026年8月7日。HTML新着30件をURL単位ですべて含み、さらに過去70件を保持するためHTMLではなくRSSを採る。課題別8URLを別Sourceで収集するシビックテックの年度一括告知1件だけを、固有の「取組課題及び企業等の募集」で除外する。filter後は99件で、共通開始日2026-07-01以降の初回期間対象は4件、既定limitで後続処理へ進む最大件数も4件である。政策・施策の実施状況も行政ニーズの前段シグナルとして残すため、採択や結果という一般語では除外しない
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: yamaguchi-digital-government-news
+    organization_id: yamaguchi-prefecture
+    name: デジタル・ガバメント推進課 新着情報
+    url: https://www.pref.yamaguchi.lg.jp/soshiki/33/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title > a[href]:first-child"
+    content_selector: "#main_body"
+    title_excludes:
+      - 広告掲載
+      - 入札結果
+    document_type_hints:
+      - 情報システム最適化
+      - 生成AI実証
+      - 行政手続オンライン化
+      - 情報システム調達
+    notes: 庁内情報システム、生成AI実証、書かない窓口、電子契約、オンライン手続等を所管する課の新着情報。確認時点はraw 17件・構造上有効17件で、17件すべてに年を含む更新日があり、保持範囲は2022年3月31日から2026年8月1日。公式RSSも17件のURL・タイトル・日付がHTMLと完全一致するため、人が確認しやすいHTMLを採る。行政ニーズではない職員ポータルの広告掲載1件と、募集後の入札結果1件だけをSource固有のtitle_excludesで除き、filter後は15件。共通開始日2026-07-01以降の初回期間対象はネットワークパソコン一般競争入札1件で、既定limitの最大件数も1件である。本文は#main_bodyから1,499文字、添付PDF2件のうち公告文は4,720文字を取得できた。ネットワークパソコンの調達は全庁調達Sourceと重複するが、情報システム最適化や生成AI等の独自記事を持つため主力Sourceとする
+    last_verified_at: "2026-08-20"
+    verification_status: verified
+
+  - id: yamaguchi-procurement-list
+    organization_id: yamaguchi-prefecture
+    name: 入札・調達・売却
+    url: https://www.pref.yamaguchi.lg.jp/soshiki/list8-1.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "#main_body div.info_list.info_list_date ul li span.article_title > a[href]:first-child"
+    content_selector: "#main_body"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - システム
+      - デジタル
+      - DX
+      - AI
+      - データ
+      - Web
+      - ウェブ
+      - アプリ
+      - ネットワーク
+      - ソフトウェア
+      - クラウド
+      - オンライン
+      - ICT
+      - IoT
+      - 端末
+      - 通信
+      - 実証
+    title_excludes:
+      - 受付終了
+      - 審査結果
+      - 入札結果
+      - 選定結果
+      - 結果の公表
+      - 契約締結の公表
+    document_type_hints:
+      - 情報提供依頼
+      - システム調達
+      - デジタル実証
+    notes: 全庁の入札・調達・売却を横断する一覧。公式画面は3ページ77件を保持するが、現行list_page Collectorはページャを辿らないため、継続巡回で取得するraw候補は先頭ページの最新30件だけである。確認時点の先頭30件は2026年4月17日から8月20日で、全30件に年を含む更新日がある。一般的な「委託」「プロポーザル」は物理案件まで広く当たるため使わず、IT・データ・RFI・実証をタイトルで明示する案件だけをtitle_includesで残す。さらに終了・結果段階だけをtitle_excludesで除外する。3ページ77件を監査するとincludes一致4件のうち受付終了のモビリティデータ連携基盤と審査結果のドローン実証を除き2件が残る。実際の取得範囲である先頭30件もfilter後2件で、女性の健康管理アプリ無償提供とネットワークパソコン一般競争入札である。どちらも共通開始日2026-07-01以降なので初回期間対象2件、既定limitの最大件数も2件。本文は各1,444文字・1,499文字を#main_bodyから取得できる。健康管理アプリの添付PDF2件は画像PDFで本文抽出できないがHTML本文は取得でき、ネットワークパソコンの公告PDFは4,720文字を取得できる。固定URLの公告掲示板とKintone中間ページは強い技術語へ一致せず候補にならず、残る記事は/soshiki/{課ID}/{記事ID}.htmlの固有URLで固定上書き型ではない。通常巡回の間隔で30件分が入れ替わると取りこぼし得るため、長期間停止後は2ページ目以降を手動確認する
     last_verified_at: "2026-08-20"
     verification_status: verified
