@@ -473,6 +473,14 @@ organizations:
     enabled: true
     notes: 情報システム関連の調達と、CSO・企業提案型の協働創出事業を収集する対象都道府県。**一覧はdiv.kijiArea.kanrenKijiArea配下のul.KijiListType0 > li.loadboxで、liはspan.upddateとdiv.title > aを持つ。**表記は「2026年7月30日更新」で年を含むが、現行のcandidate生成ではpublishedAtとして取得できない。**span.upddateはdiv.titleの外にあり、list-page-checkerはアンカーのclosestで.sec_01・li・article・section・tr・divのいずれかを探すため、親のdiv.titleで止まってliまで上がらない。div.titleには日付が入らないので配置はB型に相当し、情報関連の一覧は22件すべてが掲載日不明になった。香川県は日付が別tdでtdがセレクタ対象外だったためtrまで上がって取得できたが、佐賀県はdivが対象に含まれるため取得できない。**タイトルに日付があるページでは誤取得が起きる。**CSOの提案募集はタイトルへ「募集期間令和8年4月1日～令和8年6月30日」が入るため、div.titleのテキストから募集期間の開始日2026-04-01が掲載日として取得された。li内のアンカーは1本だけなので候補汚染は無い。**取得できないのは一覧側の候補生成だけである。**個別ページにはtime要素があり、content:checkではRFIが2026-07-30、CSOの提案募集が2026-04-03と正しい更新日を取得できた。したがってNotionへ登録される公開日は正しく、影響は候補段階の期間フィルタが効かない点に限られる。**個別ページのHTMLは壊れており、bodyとhtmlの表示テキストが37〜78文字しか取れない。**本文はarticle（実体はdiv#mainShosai）に入り、確認2ページで403文字と2,440文字だった。#mainはcheerioのパース結果に現れず、main要素も存在しない。**したがってcontent_selectorにarticleを指定する。**共通のfallback順ではmainの次がarticleなので未設定でも同じ結果になるが、articleで200文字を割るページが出た場合は後続のfallbackがすべて200文字未満になりErrorになる。bodyへ逃げられない構造である点に注意する。**一覧のページャは無い。**両一覧とも「全22件」「全3件」と全件数が表示され、その件数がそのままli.loadboxの数と一致した。RSSはどちらの一覧にも無い
 
+  - id: nagasaki-prefecture
+    name: 長崎県
+    organization_type: prefecture
+    prefecture: 長崎県
+    official_domain: pref.nagasaki.jp
+    enabled: true
+    notes: 全庁の業務委託・賃貸借公告、デジタル戦略課の施策、全庁コンテンツ情報からのRFI取りこぼし防止を収集する対象都道府県。**一覧はどれもol.news-list配下のliだが、liの中でアンカーを包む要素が3種類あり掲載日の取得可否が変わる。**デジタル戦略課の新着はli直下にtimeとaが並ぶため10/10件で掲載日を取得できる。コンテンツ情報はaがspanに包まれspanはセレクタ対象外なのでliまで上がれて195/195件取得できる。**業務委託・賃貸借公告はaがdivに包まれるため取得できない。**list-page-checkerはアンカーのclosestで.sec_01・li・article・section・tr・divを探し、divが対象に含まれるのでdivで止まりtimeを含むliまで上がらず、75件すべてが掲載日不明になった。佐賀県と同じ理由である。**title_selectorにmain h1が必要である。**個別ページのh1は2つあり1つ目が全ページ共通の「災害等に関する緊急情報」なので、未設定だと汎用抽出がそれを実タイトルとして取ってしまう。main h1は確認3ページすべてで実タイトルを返した。**本文セレクタはmainを使う。**#contents-bodyは質問書回答ページで122文字と200文字の下限を割るが、mainは313〜1,968文字で確認3ページとも下限を超える。articleは189文字になるページがあり使えない。[role=main]は存在しない。**RSSは3つの一覧とも確認できなかった。**質問回答は独立ページで、セキュリティクラウドの質問書への回答は本文122文字・添付が回答PDF 1件だけだった。募集本体は次世代校務DXのRFIが本文1,794文字で仕様書・要件一覧・帳票一覧・概算見積様式を持ち、統合原子力防災ネットワーク機器賃貸借が告示・公告・入札説明書・様式・仕様書を持つ
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4681,5 +4689,78 @@ sources:
       - 提案募集
       - 官民協働
     notes: CSO・企業提案型協働創出事業の一覧。**正式調達より前の民間提案を拾う低負荷のセンサーとして登録する。**県・市町の既存業務だけでなく企業提案で新たに取り組む行政サービスも対象で、提案前に関係課と意見交換ができる制度である。**確認時点は3件で、公式表示も「全3件」だった。**span.upddateの日付は2018年3月31日から2026年4月3日と8年で3件なので回転が極端に遅い。内訳は令和8年度の提案募集1件と、令和7年度・平成29年度の実施報告2件である。**掲載日は取得できず、提案募集の1件だけタイトル内の募集期間開始日が誤取得される。**タイトルに「募集期間令和8年4月1日～令和8年6月30日」が入るため2026-04-01が掲載日として取れてしまい、共通開始日2026-07-01より前なので期間外として落ちる。実施報告2件は掲載日不明なので期間フィルタを通る。**title_excludesに実施しましたを置く。**実施報告2件だけに一致し提案募集には当たらないので、この状態では初回の処理対象が0件になる。募集は年1回で、確認時点の募集期間は令和8年4月1日から6月30日までと既に終了していた。次年度の募集記事は誤取得される日付が令和9年4月1日になり共通開始日より後になるため、記事IDが新しくなれば拾える見込みである。実施報告が令和7年度と平成29年度で別記事IDになっていることから、募集記事も年度ごとに別IDになる可能性が高い。**同じURLが年度ごとに更新される可能性がある。**募集記事のタイトルには「募集期間令和8年4月1日～令和8年6月30日」が入っており、次年度の募集が同じ記事IDで書き換えられると登録済みURLとしてduplicate-firstでスキップされる。次年度の募集で新しい記事IDになるかは確認できていないため将来再確認とする。個別ページは本文2,440文字で実施要領・提案書・記入例・再協議申入書が添付されていた
+    last_verified_at: "2026-08-21"
+    verification_status: verified
+
+  - id: nagasaki-digital-senryaku
+    organization_id: nagasaki-prefecture
+    name: デジタル戦略課 新着情報
+    url: https://www.pref.nagasaki.jp/organization/kikakubu/jyouhou-suishin/news/
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "ol.news-list li a[href]"
+    title_selector: "main h1"
+    content_selector: "main"
+    document_type_hints:
+      - DX推進プラン
+      - データ連携基盤
+      - 公募型プロポーザル
+    notes: デジタル戦略課の新着情報。**確認時点は1ページ目10件で掲載日は10件すべて取得でき、保持は2025年4月3日から2026年7月15日である。**index.p2.htmlへのページャがあり全体では19件だが、現行collectorは1ページ目だけを見る。共通開始日2026-07-01の期間内は2件になる。**期間内2件はどちらも案件ではない。**ロボット・航空宇宙フェスタとドローンサミットの出展案内、小型無人機等飛行禁止法の改正のお知らせで、自社領域と重なる調達案件はデータ連携基盤API開発等業務委託、2Dメタバースサービス提供業務委託の公募型プロポーザル、県市町デジタル人材共同利用事業の公募型プロポーザルだがいずれも2025年で期間外である。**そのためpriorityはmediumとする。**ながさきDX推進プラン、ながさきSociety5.0推進プラン、データ連携基盤「つながる長崎」といった施策ページが独自価値で、調達案件そのものは業務委託・賃貸借契約等公告でも拾える。title_excludesとtitle_includesは設定しない。10件しかなく段階マーカーも質問回答1件だけである。ながさきDX推進プランは同名で別URLの候補が2件あり、どちらも重複URLとしては除外されない
+    last_verified_at: "2026-08-21"
+    verification_status: verified
+
+  - id: nagasaki-gyomu-itaku
+    organization_id: nagasaki-prefecture
+    name: 業務委託・賃貸借契約等公告
+    url: https://www.pref.nagasaki.jp/nyusatsu-chotatsu/gyomuitaku-kokoku/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "ol.news-list.nyusatsu li div a[href]"
+    title_selector: "main h1"
+    content_selector: "main"
+    title_includes:
+      - システム
+      - デジタル
+      - DX
+      - Web
+      - CMS
+      - クラウド
+      - ネットワーク
+      - データ
+      - ICT
+      - 実証
+      - 情報提供依頼
+      - RFI
+    document_type_hints:
+      - 業務委託
+      - 賃貸借
+      - 公募型プロポーザル
+    notes: 全庁の業務委託・賃貸借契約等公告を集約する一覧で、長崎県の主力情報源。**確認時点は75件で、一覧にはtimeで2025年11月6日から2026年8月21日の日付が表示されるが、publishedAtとしては1件も取得できない。**アンカーがdivに包まれ、closestがdivで止まってtimeを含むliまで上がらないためである。したがってinitial_sinceも期間フィルタも効かず、全候補が毎回対象になる。**そのため残す側を列挙するtitle_includesを設定し、75件を12件に絞る。**残る12件は長崎と天草地方の潜伏キリシタン関連遺産デジタルアーカイブウェブサイト構築の公募型プロポーザル、自治体情報セキュリティクラウド構築及び運用保守、ヘリコプターテレビ伝送システム改修、旅費システム構築及び運用保守、県立学校メールシステム外部送受信再構築、公式ウェブサイトCMS操作等サポート、県立学校用添付ファイル送信システムライセンス、アーバンデザインシステム運営、県市町デジタル人材共同利用事業、自治体クラウドサービス用サーバ等保守、統合原子力防災ネットワーク機器賃貸借である。**「プロポーザル」は入れない。**加えると38件になり、追加される26件は農産品PR、就職支援、クルーズパンフレット、移住促進、水産物ブランディング、キャンペーンなど広報・産業振興の委託が中心で対象密度が下がる。**質問回答は除外しない。**確認時点の12件のうち4件が質問書への回答や質問回答で、うち3件は本体が一覧から既に落ちているためこのページが唯一の入口になる。徳島県や福岡県と同じ理由で回答系の除外語は置かない。ICT語を含まない案件は取り逃す可能性があり、2Dメタバースサービス提供業務委託のような案件はデジタル戦略課の新着で補完する
+    last_verified_at: "2026-08-21"
+    verification_status: verified
+
+  - id: nagasaki-doc-rfi
+    organization_id: nagasaki-prefecture
+    name: コンテンツ情報（情報提供依頼の取りこぼし防止）
+    url: https://www.pref.nagasaki.jp/doc/index.html
+    collector_type: list_page
+    source_category: rfi
+    priority: medium
+    enabled: true
+    link_selector: "ol.news-list li span a[href]"
+    title_selector: "main h1"
+    content_selector: "main"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - 意見招請
+    document_type_hints:
+      - 情報提供依頼
+      - 意見招請
+    notes: 全庁のコンテンツ情報を集約する一覧で、**部局分散型のRFIを取りこぼさないための専用フィルタとして登録する。**確認時点は1ページ目195件で掲載日は195件すべて取得でき、保持は2026年7月23日から8月21日の30日分である。ページャがあり5ページ以上あるが現行collectorは1ページ目だけを見る。**195件すべてが共通開始日2026-07-01より後なので、フィルタ無しでは初回に195件が対象になり無条件登録はできない。**そのためtitle_includesを情報提供依頼・RFI・意見招請の3語に限定し、195件を1件へ絞る。**残った1件は【長崎県】次世代校務DX環境整備に関する情報提供依頼（RFI）で、本文1,794文字に仕様書・要件一覧・帳票一覧・概算見積様式・市町基礎情報が添付された本物のRFIだった。**確認時点では意見招請は0件、市場調査とサウンディングも0件だったが、RFIの表記揺れを拾うために意見招請は語として残す。**ICT語やプロポーザルへ広げない。**この一覧は一般広報・制度案内・固定更新ページを大量に含み、プロポーザルで絞っても審査結果2件しか増えないため、RFI専用の入口として最小構成を保つ。デジタル戦略課の新着と業務委託・賃貸借契約等公告を広く包含するが、両方から漏れる部局分散型のRFIを取れることが独自価値である
     last_verified_at: "2026-08-21"
     verification_status: verified
