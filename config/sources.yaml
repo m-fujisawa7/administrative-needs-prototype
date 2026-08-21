@@ -481,6 +481,14 @@ organizations:
     enabled: true
     notes: 全庁の業務委託・賃貸借公告、デジタル戦略課の施策、全庁コンテンツ情報からのRFI取りこぼし防止を収集する対象都道府県。**一覧はどれもol.news-list配下のliだが、liの中でアンカーを包む要素が3種類あり掲載日の取得可否が変わる。**デジタル戦略課の新着はli直下にtimeとaが並ぶため10/10件で掲載日を取得できる。コンテンツ情報はaがspanに包まれspanはセレクタ対象外なのでliまで上がれて195/195件取得できる。**業務委託・賃貸借公告はaがdivに包まれるため取得できない。**list-page-checkerはアンカーのclosestで.sec_01・li・article・section・tr・divを探し、divが対象に含まれるのでdivで止まりtimeを含むliまで上がらず、75件すべてが掲載日不明になった。佐賀県と同じ理由である。**title_selectorにmain h1が必要である。**個別ページのh1は2つあり1つ目が全ページ共通の「災害等に関する緊急情報」なので、未設定だと汎用抽出がそれを実タイトルとして取ってしまう。main h1は確認3ページすべてで実タイトルを返した。**本文セレクタはmainを使う。**#contents-bodyは質問書回答ページで122文字と200文字の下限を割るが、mainは313〜1,968文字で確認3ページとも下限を超える。articleは189文字になるページがあり使えない。[role=main]は存在しない。**RSSは3つの一覧とも確認できなかった。**質問回答は独立ページで、セキュリティクラウドの質問書への回答は本文122文字・添付が回答PDF 1件だけだった。募集本体は次世代校務DXのRFIが本文1,794文字で仕様書・要件一覧・帳票一覧・概算見積様式を持ち、統合原子力防災ネットワーク機器賃貸借が告示・公告・入札説明書・様式・仕様書を持つ
 
+  - id: kumamoto-prefecture
+    name: 熊本県
+    organization_type: prefecture
+    prefecture: 熊本県
+    official_domain: pref.kumamoto.jp
+    enabled: true
+    notes: デジタル戦略推進課の施策と公募、全庁の入札・契約、意見募集、全庁新着RSSからのRFI取りこぼし防止を収集する対象都道府県。**CMSは岡山県・愛媛県と同系統で、課の新着はdiv.section_information_list > ul > li、分野別の一覧はdiv.info_list > ul > liに入る。**liはspan.article_dateとspan.article_title > aの2要素で、article_title内のアンカーは1本だけなので候補汚染は無い。**掲載日はリンクと同じliのspan.article_dateに「2026年6月8日更新」形式で入り、3つの一覧すべてで全件解析できる。**意味は更新日である。**デジタル戦略推進課のページはdiv.section_information_listへスコープする。**同じページの後段にdiv.info_listが6つあり、span.article_titleはページ全体で100件になるため、新着情報ブロックに限定しないとカテゴリ欄の再掲まで候補になる。**本文セレクタは#mainを使う。**#main_bodyは394〜2,058文字、#mainは#main_aと同じ範囲で34〜47文字多いだけである。main・article・[role=main]・#contentsはいずれも存在せず、岡山県・愛媛県と同じ選択に揃えている。h1は1つで実タイトルなのでtitle_selectorは不要である。**課別RSSは登録しない。**デジタル戦略推進課のsoshiki-3-26.xmlはRSS 1.0でdc:dateとcategoryを持つがcategoryは所属課名1種だけで、確認時点でitem 33件のうち30件がHTMLと一致し独自3件は2021年から2022年の期間外の記事だった。全庁新着RSSだけはRFI取りこぼし防止として別途登録する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4763,4 +4771,94 @@ sources:
       - 意見招請
     notes: 全庁のコンテンツ情報を集約する一覧で、**部局分散型のRFIを取りこぼさないための専用フィルタとして登録する。**確認時点は1ページ目195件で掲載日は195件すべて取得でき、保持は2026年7月23日から8月21日の30日分である。ページャがあり5ページ以上あるが現行collectorは1ページ目だけを見る。**195件すべてが共通開始日2026-07-01より後なので、フィルタ無しでは初回に195件が対象になり無条件登録はできない。**そのためtitle_includesを情報提供依頼・RFI・意見招請の3語に限定し、195件を1件へ絞る。**残った1件は【長崎県】次世代校務DX環境整備に関する情報提供依頼（RFI）で、本文1,794文字に仕様書・要件一覧・帳票一覧・概算見積様式・市町基礎情報が添付された本物のRFIだった。**確認時点では意見招請は0件、市場調査とサウンディングも0件だったが、RFIの表記揺れを拾うために意見招請は語として残す。**ICT語やプロポーザルへ広げない。**この一覧は一般広報・制度案内・固定更新ページを大量に含み、プロポーザルで絞っても審査結果2件しか増えないため、RFI専用の入口として最小構成を保つ。デジタル戦略課の新着と業務委託・賃貸借契約等公告を広く包含するが、両方から漏れる部局分散型のRFIを取れることが独自価値である
     last_verified_at: "2026-08-21"
+    verification_status: verified
+
+  - id: kumamoto-digital-senryaku
+    organization_id: kumamoto-prefecture
+    name: デジタル戦略推進課 新着情報
+    url: https://www.pref.kumamoto.jp/soshiki/26/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 【募集終了】
+      - 受託事業者
+      - 公募結果について
+      - 採択案件について
+    document_type_hints:
+      - 公募型企画コンペ
+      - 公募型プロポーザル
+      - データ連携基盤
+      - DX実証事業
+    notes: デジタル戦略推進課の新着情報で、熊本県で最も自社領域と重なる情報源。**確認時点は30件で掲載日は30件すべて取得でき、保持は2022年6月16日から2026年6月8日と4年で30件なので回転が遅い。**ページャは無い。**共通開始日2026-07-01の期間内は0件で、初回Writeでは1件も処理されない。**最新が2026年6月8日のためだが、対象密度は非常に高い。DX推進リーダー育成事業、データ活用事例創出事業、くまもとDX推進コンソーシアム事務局運営、大学生DX実践プロジェクト、くまもとデータ連携基盤、パーソナルデータ連携基盤基本検討、DX実証事業、web3等先端技術を活用したDX実証事業、九州広域データ連携プラットフォームの公募型企画コンペや公募型プロポーザルが並ぶ。**title_excludesは結果段階の4語に限る。**【募集終了】1件、受託事業者3件、公募結果について1件、採択案件について1件で計6件を除外し24件が残る。期間内には1件も当たらないが、一覧は更新日順なので結果公表で日付が更新されると期間フィルタを通る。**div.section_information_listへスコープする理由は組織notesに記載した通りで、ページ全体では後段カテゴリ欄の再掲を含めてspan.article_titleが100件になる。**個別ページは実施要領・仕様書・質問書様式・参加表明書・会社概要が添付され、本文は2,058文字だった
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: kumamoto-nyusatsu
+    organization_id: kumamoto-prefecture
+    name: 入札・契約・決算
+    url: https://www.pref.kumamoto.jp/life/sub/5/34/34/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "div.info_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - からの随意契約
+      - 自動販売機
+      - 入札監視委員会
+      - 売却結果
+      - 売店等運営者
+      - 発注見通し
+      - 各種規定
+      - 政府調達苦情検討委員会
+      - メールマガジン
+    document_type_hints:
+      - 公募型プロポーザル
+      - 業務委託
+      - BPR
+    notes: 全庁の入札・契約・決算を集約する一覧。**確認時点は29件で掲載日は29件すべて取得でき、保持は2020年8月1日から2026年8月19日である。**ページャは無い。**29件のうち18件が固定・制度・結果ページなので、それらを落とすtitle_excludesを9語置いて11件に絞る。**除外の内訳は障害者支援施設等・シルバー人材センター等からの随意契約7件、県有施設への自動販売機等設置者の募集結果3件、入札監視委員会2件、県有財産の売却結果1件、売店等運営者公募に係る結果一覧1件、発注見通し情報1件、入札・契約に関する各種規定1件、政府調達苦情検討委員会1件、県有地売却のメールマガジン1件である。**残る11件はすべて個別の委託・プロポーザル案件で、募集本体の誤除外は0件だった。**交通資源データベース構築事業、JR肥薩線の新たな観光列車コンセプト検討、くまもと新時代人材育成事業、熊本県BPR推進人材育成研修業務委託、熊本県BPR支援業務委託、時差出勤先進県くまもと推進事業データ検証業務委託、くまもとDX推進データ連携基盤構築事業、パーソナルデータ連携基盤基本検討事業などが並ぶ。共通開始日2026-07-01の期間内は交通資源データベース構築事業とJR肥薩線観光列車コンセプト検討の2件になる。**各1件しか効かない除外語もあるが、いずれも更新のたびに新着へ載る固定の制度ページなので反復ノイズとして落とす。**デジタル戦略推進課の一覧とはデータ連携基盤関連で重複するが、BPRや他部局のプロポーザルはこちらにしか出ない
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: kumamoto-iken-boshu
+    organization_id: kumamoto-prefecture
+    name: 意見募集
+    url: https://www.pref.kumamoto.jp/life/sub/7/
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 募集の結果
+    document_type_hints:
+      - 意見募集
+      - パブリックコメント
+    notes: 全庁の意見募集を集約する一覧で、正式調達より前の政策段階を検知する補助Sourceとして登録する。**確認時点は5件で掲載日は5件すべて取得でき、保持は2025年12月15日から2026年7月28日である。**「一覧へ」から過去分へ遡れるが現行collectorは初期表示だけを見る。**title_excludesは募集の結果1語にする。**意見募集の結果について2件とご意見の募集の結果について1件の計3件がこの1語で落ち、募集本体には当たらないので誤除外は0件だった。除外後は2件で、共通開始日2026-07-01の期間内は熊本県農業振興地域整備基本方針の県政パブリックコメント1件になる。**確認時点で自社領域と重なる案件は無い。**別調査で挙がっていた熊本県デジタル化推進計画（案）に関する意見募集は現在の5件に含まれていない。5件と少なく解析負荷が小さいので、デジタル化計画やDX関連の計画案が意見募集に出た時点で拾えるようenabledで維持する。個別ページは本文394文字でパブリック・コメントの結果PDFが添付されていた
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: kumamoto-shinchaku-rss
+    organization_id: kumamoto-prefecture
+    name: 全庁新着RSS（情報提供依頼の取りこぼし防止）
+    url: https://www.pref.kumamoto.jp/rss/10/list1.xml
+    collector_type: rss
+    source_category: rfi
+    priority: low
+    enabled: false
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - 意見招請
+    document_type_hints:
+      - 情報提供依頼
+      - 意見招請
+    notes: 全庁新着のRSSで、**部局分散型のRFIを取りこぼさないための専用センサーとして登録する。**対応するHTMLの全庁新着は3,945件・132ページなのでHTML側は登録しない。**RSS 1.0でitem 100件すべてにdc:dateがあり、categoryには所属課名が入る。**確認時点のcategoryは広報課、健康福祉政策課、観光振興課、人事課、販路拡大ビジネス課、循環社会推進課など多数で、所属課ではRFIを絞れないためcategory_includesは使わない。**そのためtitle_includesを情報提供依頼・RFI・意見招請の3語に限定する。**確認時点の一致は0件で、100件は熊本地震に関する情報、災害ボランティア、ホテル等避難の案内、選考試験の申込開始、産業展示場の利用再開など一般広報だった。したがって初回の処理対象は0件になる。**保持が10日分しか無い点に注意する。**確認時点の範囲は2026年8月12日から8月22日で1日あたり約10件と回転が非常に速く、巡回間隔が10日を超えるとRFIが載っても取り逃す。別調査では次期庁内情報基盤における端末統合業務に係る情報提供依頼（RFI）の実施実績が挙げられていたが、確認時点のRSSには含まれていなかった。ICT一般語やプロポーザルへ広げず、RFI専用の入口として最小構成を保つ。**この構成は現行仕様では有効化できないため無効にする。**title_includesの適用後に候補が0件になるとlist-page-checkerもrss-checkerもErrorを返し、allow_empty_candidatesでも緩められない仕様なので、RFIが載っていない期間は毎回Errorになり収集状態が進まない。sources:checkでも「台帳のcategory_includes / title_includes / title_excludes 適用後に候補が0件です。」で失敗することを確認した。**再確認条件は2つある。**title_includes適用後0件を正常として扱える仕組みが入った場合、または全庁新着RSSにRFIが継続的に載ることが確認できて0件になりにくくなった場合に有効化を再検討する。設定自体は将来そのまま使えるよう残す
+    last_verified_at: "2026-08-22"
     verification_status: verified
