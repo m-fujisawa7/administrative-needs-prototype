@@ -489,6 +489,14 @@ organizations:
     enabled: true
     notes: デジタル戦略推進課の施策と公募、全庁の入札・契約、意見募集、全庁新着RSSからのRFI取りこぼし防止を収集する対象都道府県。**CMSは岡山県・愛媛県と同系統で、課の新着はdiv.section_information_list > ul > li、分野別の一覧はdiv.info_list > ul > liに入る。**liはspan.article_dateとspan.article_title > aの2要素で、article_title内のアンカーは1本だけなので候補汚染は無い。**掲載日はリンクと同じliのspan.article_dateに「2026年6月8日更新」形式で入り、3つの一覧すべてで全件解析できる。**意味は更新日である。**デジタル戦略推進課のページはdiv.section_information_listへスコープする。**同じページの後段にdiv.info_listが6つあり、span.article_titleはページ全体で100件になるため、新着情報ブロックに限定しないとカテゴリ欄の再掲まで候補になる。**本文セレクタは#mainを使う。**#main_bodyは394〜2,058文字、#mainは#main_aと同じ範囲で34〜47文字多いだけである。main・article・[role=main]・#contentsはいずれも存在せず、岡山県・愛媛県と同じ選択に揃えている。h1は1つで実タイトルなのでtitle_selectorは不要である。**課別RSSは登録しない。**デジタル戦略推進課のsoshiki-3-26.xmlはRSS 1.0でdc:dateとcategoryを持つがcategoryは所属課名1種だけで、確認時点でitem 33件のうち30件がHTMLと一致し独自3件は2021年から2022年の期間外の記事だった。全庁新着RSSだけはRFI取りこぼし防止として別途登録する
 
+  - id: oita-prefecture
+    name: 大分県
+    organization_type: prefecture
+    prefecture: 大分県
+    official_domain: pref.oita.jp
+    enabled: true
+    notes: デジタル政策課の施策と公募、全庁の企画提案（プロポーザル等）、パブリックコメントの募集中一覧を収集する対象都道府県。**CMSは岡山県・愛媛県・福岡県・熊本県と同系統で、課の新着はdiv.section_information_list > ul > li、分野別の一覧はdiv.info_list.info_list_date > ul > liに入る。**liはspan.article_dateとspan.article_title > aの2要素で、article_title内のアンカーは1本だけなので候補汚染は無い。**掲載日はリンクと同じliのspan.article_dateに「2026年8月10日更新」形式で入り、3つの一覧すべてで全件解析できる。**意味は更新日で、一覧は日付の降順である。**課ページには日付を持たないdiv.kanren_list（目的別分類）も並ぶので、link_selectorはdiv.info_listとdiv.section_information_listだけを指す。**kanren_listを含めると掲載日不明候補が期間フィルタを通ってしまう。**本文セレクタは3Sourceとも#mainを使う。**#main_bodyは確認8ページで302〜2,832文字、質問への回答ページが302文字で200文字の下限へ近づく。#mainは#main_aと同じ範囲で17〜67文字多く351〜2,899文字だった。main・article・[role=main]・#contentsはいずれも存在しないため、content_selectorを省略するとfallbackが#mainまで進んでWarningになる。h1は確認8ページすべて1つで実タイトルなのでtitle_selectorは不要である。**個別ページの掲載日はページ本文の「更新日」から取得でき、一覧の日付と一致した。**添付は公告・入札説明書・募集要項・審査基準・回答がPDFである
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4860,5 +4868,65 @@ sources:
       - 情報提供依頼
       - 意見招請
     notes: 全庁新着のRSSで、**部局分散型のRFIを取りこぼさないための専用センサーとして登録する。**対応するHTMLの全庁新着は3,945件・132ページなのでHTML側は登録しない。**RSS 1.0でitem 100件すべてにdc:dateがあり、categoryには所属課名が入る。**確認時点のcategoryは広報課、健康福祉政策課、観光振興課、人事課、販路拡大ビジネス課、循環社会推進課など多数で、所属課ではRFIを絞れないためcategory_includesは使わない。**そのためtitle_includesを情報提供依頼・RFI・意見招請の3語に限定する。**確認時点の一致は0件で、100件は熊本地震に関する情報、災害ボランティア、ホテル等避難の案内、選考試験の申込開始、産業展示場の利用再開など一般広報だった。したがって初回の処理対象は0件になる。**保持が10日分しか無い点に注意する。**確認時点の範囲は2026年8月12日から8月22日で1日あたり約10件と回転が非常に速く、巡回間隔が10日を超えるとRFIが載っても取り逃す。別調査では次期庁内情報基盤における端末統合業務に係る情報提供依頼（RFI）の実施実績が挙げられていたが、確認時点のRSSには含まれていなかった。ICT一般語やプロポーザルへ広げず、RFI専用の入口として最小構成を保つ。**この構成は現行仕様では有効化できないため無効にする。**title_includesの適用後に候補が0件になるとlist-page-checkerもrss-checkerもErrorを返し、allow_empty_candidatesでも緩められない仕様なので、RFIが載っていない期間は毎回Errorになり収集状態が進まない。sources:checkでも「台帳のcategory_includes / title_includes / title_excludes 適用後に候補が0件です。」で失敗することを確認した。**再確認条件は2つある。**title_includes適用後0件を正常として扱える仕組みが入った場合、または全庁新着RSSにRFIが継続的に載ることが確認できて0件になりにくくなった場合に有効化を再検討する。設定自体は将来そのまま使えるよう残す
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: oita-digital-seisaku
+    organization_id: oita-prefecture
+    name: デジタル政策課 新着情報・分野別一覧
+    url: https://www.pref.oita.jp/soshiki/11840/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "div.section_information_list ul li span.article_title a[href], div.info_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    document_type_hints:
+      - DXアドバイザー募集
+      - 一般競争入札公告
+      - 委託業務公募
+      - DX推進戦略
+    notes: デジタル政策課の課ページで、大分県で最も自社領域と重なる情報源。**link_selectorは上段のdiv.section_information_list（新着情報21件）と後段のdiv.info_list（分野別7セクション20件）の両方を指す。**別調査は上段21件だけを対象にする案だったが、実測では後段に上段へ載らない10件があり、うち一般競争入札のお知らせ（庁内無線LAN機器等一式の賃貸借、2026年8月21日更新、/site/nyusatu-koubo/chonaimusenlankiki.html）と一般競争入札のお知らせ（LGWANファイアウォール等一式の賃貸借、2026年7月17日更新、/site/nyusatu-koubo/lgwanfw-r9-01.html）の2件は期間内でありながら新着情報ブロックには現れない。**課自身のICT基盤調達なので上段だけに絞ると構造的に取り逃す。**2件はいずれも公告と入札説明書のPDFを持ち本文も951文字と998文字あった。**重複10件はURL単位で除外され、毎回「重複URLを 10 件除外しました。」のWARNINGが出るが実害は無い。**日付を持たないdiv.kanren_list（目的別分類21件）は意図的に外す。**含めると豊の国ハイパーネットワーク、GビズID、アナログ規制改正条例の3件が掲載日不明候補として期間フィルタを通り、初回から警告付きで処理枠を消費する。**確認時点は重複排除後31件で31件すべて掲載日を取得でき、保持は2019年12月11日から2026年8月21日と回転が遅い。**ページャは無い。**共通開始日2026-07-01の期間内は6件で、DXアドバイザー募集2件（大分市システム改修支援に係る見積金額及び開発工数の妥当性確認、九重町内部情報システム更改に係る現状分析及び仕様書作成支援）、一般競争入札2件、デジタル政策推進会議、施設予約システムである。**title_excludesは設定しない。**31件に結果公表・募集終了などの段階マーカーが1件も無く、他県の除外語を持ち込む理由が無い。**恒久ページが多い点は注意する。**マイナンバー制度、転出・転入予約、なりすましメール注意のような固定ページは更新日が変わると再び期間内へ入るが、URLは変わらないので登録後は重複でスキップされる。**DXアドバイザー募集は案件ごとに別URLである。**oita-dx-r8advisor03とr8advisor04が並び、r8advisor01・02・05はいずれも404なので、年度と連番を含む案件別URLが毎回新規に作られる想定でよい。**RSSは登録しない。**新着情報のRSSは/rss/10/soshiki-10-75080.xmlで、RSS 1.0・item 21件すべてにdc:dateがあるが、上段HTMLの21件と件名・URL・日付が完全一致し独自候補は0件だった。categoryも所属課名1種だけで、後段の分野別一覧を含まないためHTMLより取得範囲が狭い
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: oita-kikaku-teian
+    organization_id: oita-prefecture
+    name: 企画提案（プロポーザル等）
+    url: https://www.pref.oita.jp/site/nyusatu-koubo/list22380-29038.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "div.info_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    title_excludes:
+      - 審査結果
+      - 終了しました
+      - 質問への回答
+    document_type_hints:
+      - 企画提案競技
+      - 公募プロポーザル
+      - 募集要項
+      - 仕様書
+    notes: 入札・公募情報のうち企画提案（プロポーザル等）を集約する一覧で、全庁のプロポーザルが情報密度の高い形で並ぶ。**確認時点は34件で34件すべて掲載日を取得でき、保持は2025年5月9日から2026年8月21日の約15か月分、ページャは無い。**1か月あたり2件から3件の低速回転なので巡回間隔による取りこぼしは起きにくい。**共通開始日2026-07-01の期間内は17件、title_excludes適用後は13件で、既定--limit 5では3回に分かれる。**title_excludesは結果・終了段階の3語に絞る。**審査結果9件（期間内3件）、終了しました2件（期間内0件）、質問への回答3件（期間内1件）の計14件を除外して20件が残り、募集本体の誤除外は0件だった。**質問への回答は本体とは別URLの独立ページである。**令和8年度大分県建設型応急住宅基本計画策定業務委託は本体（2026年8月5日、r8-oukyuujutaku.html）と回答（2026年8月20日、r8-oukyuujutaku-qa.html）が別々に並び、回答ページは本文351文字と回答PDF 1件だけなので、本体を取得できる限り除外して二重登録を避ける。**ただし本体の掲載日が期間外で回答だけ期間内に入る境界ケースでは案件を取り逃す。**福岡県のように本体タイトルへ質問回答が前置される運用ではないことを実データで確認した。**優先交渉権者は除外語へ入れない。**該当が産業用地開発事業者募集の1件だけで、単発への過剰適合になるためAI判定に任せる。**年度をまたいだURL再利用が実在する。**令和8年度「グリーンアップおおいたデイ」企画運営等業務委託は/site/nyusatu-koubo/kankyoevent2025.htmlで公開され、h1も本文も令和8年度の内容に差し替わっている。年度や年を含まないURL（fukudokuhon.html、smartmove-oita-kouhou.html、health-digitalpromotion.htmlなど）は翌年度に再利用される可能性があり、URL単位duplicateでは2回目以降を検知できない。**多くの案件はr8-、r7、2026のように年度・年を含む別URLで、要介護認定業務等のデジタル化アドバイザー派遣は結果ページだけkaigodxadviser2026-resultという別URLだった。**自社領域の実績は令和8年度大分県地震津波被害想定AIシミュレーター構築委託業務（2026年7月2日、本文1,094文字、募集要項・審査基準・回答のPDF 3件）である。**全庁の入札情報一覧に大部分が包含されるが、企画提案に絞られていて対象密度が高いため本一覧を優先する。デジタル政策課自身の一般競争入札はこの一覧に載らず、課ページ側で取得する。**全庁の一般競争入札一覧は今回登録しない。**課ページ経由でデジタル政策課のICT調達2件は取れるが、他部局のICT調達はカバーできないため今後の追加候補として残す
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: oita-public-comment
+    organization_id: oita-prefecture
+    name: パブリックコメント 募集中一覧
+    url: https://www.pref.oita.jp/site/public-comment/list21971-27248.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: low
+    enabled: true
+    link_selector: "div.info_list ul li span.article_title a[href]"
+    content_selector: "#main"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 県民意見募集
+      - 審査基準案
+    notes: パブリックコメントの募集中一覧で、政策・制度の策定前段階を早期に把握するための補助Source。**確認時点は1件で、特定漁港施設の運営事業の認定に係る審査基準及び標準処理期間（案）に対する県民意見の募集（2026年7月27日更新、本文1,421文字、別紙PDF 5件）だった。**掲載日は取得でき、共通開始日2026-07-01の期間内は1件である。**allow_empty_candidatesをtrueにする。**募集中の案件だけを載せる変動型で、終了案件は実施結果一覧（list21972-27249.html）と年度実施結果一覧（list22323-28839.html）へ移る。div.info_listは1つ、#main_body内のアンカーも1本だけ、ページャも無いことを確認しており、この1件が終われば0件になるため0件をErrorにすると収集状態が進まない。**priorityはlowにする。**実施結果一覧12件（2024年11月8日から2026年8月7日）は港湾脱炭素化推進計画、交通安全計画、暴力団排除条例施行規則、宿泊税、私立高等学校認可基準などでデジタル・DX関連は0件だった。**別調査が挙げた新たな大分県DX推進戦略（案）の県民意見募集（2025年12月19日から2026年1月23日）は確認できなかった。**募集中一覧、実施結果一覧、年度実施結果一覧のいずれにも該当項目が無く、DX推進戦略の改定ページ（/soshiki/11840/dx-strategy.html）にも意見募集の記載が無い。実施結果一覧は2025年2月から2026年3月の間が空いており、令和7年度分はR07年度パブコメ実施実績のPDFへ集約されている可能性があるため、実績の有無はそのPDFを読んで再確認する。**入口URLはlist21971-27248.htmlを使う。**親ページのlist21971.html（県民意見募集中）も同じ1件を同じ構造で載せるが、募集中一覧そのものを指すこちらを正とする
     last_verified_at: "2026-08-22"
     verification_status: verified
