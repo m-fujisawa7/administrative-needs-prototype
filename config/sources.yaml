@@ -497,6 +497,14 @@ organizations:
     enabled: true
     notes: デジタル政策課の施策と公募、全庁の企画提案（プロポーザル等）、パブリックコメントの募集中一覧を収集する対象都道府県。**CMSは岡山県・愛媛県・福岡県・熊本県と同系統で、課の新着はdiv.section_information_list > ul > li、分野別の一覧はdiv.info_list.info_list_date > ul > liに入る。**liはspan.article_dateとspan.article_title > aの2要素で、article_title内のアンカーは1本だけなので候補汚染は無い。**掲載日はリンクと同じliのspan.article_dateに「2026年8月10日更新」形式で入り、3つの一覧すべてで全件解析できる。**意味は更新日で、一覧は日付の降順である。**課ページには日付を持たないdiv.kanren_list（目的別分類）も並ぶので、link_selectorはdiv.info_listとdiv.section_information_listだけを指す。**kanren_listを含めると掲載日不明候補が期間フィルタを通ってしまう。**本文セレクタは3Sourceとも#mainを使う。**#main_bodyは確認8ページで302〜2,832文字、質問への回答ページが302文字で200文字の下限へ近づく。#mainは#main_aと同じ範囲で17〜67文字多く351〜2,899文字だった。main・article・[role=main]・#contentsはいずれも存在しないため、content_selectorを省略するとfallbackが#mainまで進んでWarningになる。h1は確認8ページすべて1つで実タイトルなのでtitle_selectorは不要である。**個別ページの掲載日はページ本文の「更新日」から取得でき、一覧の日付と一致した。**添付は公告・入札説明書・募集要項・審査基準・回答がPDFである
 
+  - id: miyazaki-prefecture
+    name: 宮崎県
+    organization_type: prefecture
+    prefecture: 宮崎県
+    official_domain: pref.miyazaki.lg.jp
+    enabled: true
+    notes: デジタル推進課の新着、全庁の委託業務と入札情報一覧、生活・協働・男女参画課の協働案件を収集する対象都道府県。**CMSはこれまでの県と別系統で、IDがtmp_で始まる。一覧は2種類ある。**課の新着はdiv#tmp_contents > ul > liで、日付はアンカーテキストの末尾に「（8月21日）」と年なしで入る。委託業務・入札情報一覧・その他はtable.list_table > tbody > trで、td.dateとtd > p > aが同じtrに並ぶ。**後者はアンカーのclosestがp・tdを対象外として通過しtrへ届くので、「2026年8月21日」を全件解析できる。**別調査は3つの表形式一覧をB型・取得不可と判定していたが、実測では入札情報一覧200件、委託業務481件、その他6件すべてでpublishedAtを取得できた。佐賀県・長崎県のようにdivでclosestが止まる構造ではない。**課の新着は逆に年が無いためpublishedAtを取得できず、全件が掲載日不明として期間フィルタを通る。**本文セレクタは4Sourceとも#tmp_contentsを使う。**確認6ページで972〜3,227文字だった。.col_mainは243〜255文字多いだけだが、#tmp_mainはナビを含んで2,204〜24,433文字に膨らみ、main・article・[role=main]・#contentsは存在しない。**content_selectorを省略するとfallbackがbodyまで進み、RFIページで22,614文字、企画提案競技ページで24,850文字になるため必ず設定する。**h1は確認6ページすべて1つで実タイトルなのでtitle_selectorは不要である。添付は/documents/配下のPDFで、募集要項・仕様書・機能要件一覧・様式が4〜12件付く。**一覧のリンクテキストと個別ページの内容が食い違う実例がある。**/digital-suishin/kense/chotatsu/20260817150012.htmlは新着と委託業務の両方で「宮崎県電子申請システムに係る情報提供依頼（RFI）の実施について」と表示されるが、実ページのh1と本文は「宮崎県クラウドサービス型生成AIサービスの共同調達・共同利用に関する情報提供依頼(RFI)」で更新日は2026年8月21日、電子申請の語は本文に無い。リダイレクトは無く、同じURLの内容が差し替えられている。登録内容は個別ページ側になるが、同一URLへ次の案件が載るとduplicate-firstで検知できない。**入札情報一覧のRSSは登録しない。**/shinchaku/nyusatsu/nyusatsu.xmlはRSS 1.0で全件にdc:dateがあるが、確認時点のitemは10件・2026年8月20日から21日の2日分しか保持せず、HTMLの200件・72日分より大幅に狭い。categoryも県政情報と入札・調達・売却の2種固定で絞り込みに使えない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -4928,5 +4936,166 @@ sources:
       - 県民意見募集
       - 審査基準案
     notes: パブリックコメントの募集中一覧で、政策・制度の策定前段階を早期に把握するための補助Source。**確認時点は1件で、特定漁港施設の運営事業の認定に係る審査基準及び標準処理期間（案）に対する県民意見の募集（2026年7月27日更新、本文1,421文字、別紙PDF 5件）だった。**掲載日は取得でき、共通開始日2026-07-01の期間内は1件である。**allow_empty_candidatesをtrueにする。**募集中の案件だけを載せる変動型で、終了案件は実施結果一覧（list21972-27249.html）と年度実施結果一覧（list22323-28839.html）へ移る。div.info_listは1つ、#main_body内のアンカーも1本だけ、ページャも無いことを確認しており、この1件が終われば0件になるため0件をErrorにすると収集状態が進まない。**priorityはlowにする。**実施結果一覧12件（2024年11月8日から2026年8月7日）は港湾脱炭素化推進計画、交通安全計画、暴力団排除条例施行規則、宿泊税、私立高等学校認可基準などでデジタル・DX関連は0件だった。**別調査が挙げた新たな大分県DX推進戦略（案）の県民意見募集（2025年12月19日から2026年1月23日）は確認できなかった。**募集中一覧、実施結果一覧、年度実施結果一覧のいずれにも該当項目が無く、DX推進戦略の改定ページ（/soshiki/11840/dx-strategy.html）にも意見募集の記載が無い。実施結果一覧は2025年2月から2026年3月の間が空いており、令和7年度分はR07年度パブコメ実施実績のPDFへ集約されている可能性があるため、実績の有無はそのPDFを読んで再確認する。**入口URLはlist21971-27248.htmlを使う。**親ページのlist21971.html（県民意見募集中）も同じ1件を同じ構造で載せるが、募集中一覧そのものを指すこちらを正とする
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: miyazaki-digital-news
+    organization_id: miyazaki-prefecture
+    name: 新着情報-デジタル推進課
+    url: https://www.pref.miyazaki.lg.jp/digital-suishin/shinchaku/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents ul li a[href]"
+    content_selector: "#tmp_contents"
+    title_excludes:
+      - 結果
+    document_type_hints:
+      - 情報提供依頼
+      - 企画提案競技
+      - 一般競争入札公告
+      - デジタル化推進計画
+    notes: デジタル推進課の新着情報で、宮崎県で最も自社領域と重なる情報源。**確認時点は41件で、対象密度が非常に高い。**電子申請システムのRFI、生成AIチャットボット、RPA等ライセンス、ノーコードツール（kintone）、パーソナルコンピュータ賃貸借、サーバ統合基盤設計、県庁LANバックアップ回線、無線LAN環境構築、情報セキュリティ対策強化、庁内DX推進サポートヘルプデスク、IT調達支援、デジタル人材育成研修、ひなたGIS、デジタル化推進計画のパブコメ結果が並ぶ。**掲載日は取得できない。**日付はアンカーテキスト末尾の「（8月21日）」形式で年が無く、41件すべてが掲載日不明になる。日付不明候補は期間フィルタで除外されないため、共通開始日2026-07-01やinitial_sinceは効かず、初回はfilter後の全件が処理対象になる。**URLには/digital-suishin/kense/chotatsu/20260817150012.htmlのように作成時刻が入るが、現行collectorはURLから日付を取らないので取得可否は変わらない。**保持は2023年4月3日から2026年8月21日の41件で回転が非常に遅く、巡回間隔による取りこぼしは起きにくい。ページャは無い。**title_excludesは結果の1語だけにする。**企画提案競技の結果2件、一般競争入札の結果公表2件、業務刷新支援の結果2件、デジタル化推進計画素案のパブコメ結果1件の計7件が終了段階で、除外後は34件が初回対象になる。既定--limit 5では7回に分かれる。**募集本体の誤除外は0件である。**個別ページの結果ページは/kekka/配下に置かれることが多いが、パブコメ結果のように別階層のものもあるためタイトル側で除外する。**title_includesは設定しない。**一覧そのものがICT案件で占められており、includesを付けると計画・実証・広報系の政策シグナルを落とす
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: miyazaki-outsourcing
+    organization_id: miyazaki-prefecture
+    name: 委託業務
+    url: https://www.pref.miyazaki.lg.jp/kense/chotatsu/itaku/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - サウンディング
+      - 市場調査
+      - システム
+      - デジタル
+      - DX
+      - AI
+      - ICT
+      - データ
+      - クラウド
+      - ネットワーク
+      - ソフトウェア
+      - ライセンス
+      - Web
+      - ホームページ
+      - 電子申請
+      - オンライン
+      - アプリ
+      - 実証
+      - 共同調達
+      - セキュリティ
+      - GIS
+      - RPA
+      - パーソナルコンピュータ
+      - パソコン
+      - 端末
+      - プラットフォーム
+    document_type_hints:
+      - 情報提供依頼
+      - 企画提案競技
+      - プロポーザル
+      - 仕様書
+    notes: 全庁の業務委託を集約する一覧で、**入札情報一覧に載らない案件を拾えることが独自価値である。**確認時点は主表473件と関連するページ15件でraw 488件、重複7件を除いて481件になり、481件すべて掲載日を取得できた。保持は2015年1月5日から2026年8月21日で、11年分の蓄積がある。ページャは無い。**入札情報一覧の保持期間（2026年6月10日以降）に重なる78件のうち7件は入札情報一覧に載っていない。**その中に宮崎県電子申請システムに係る情報提供依頼（RFI）と宮崎県指定難病等医療費助成システム構築・導入業務の企画提案競技が含まれるため、横断一覧では代替できない。**title_includesで28語に絞る。**481件のうち71件が一致し、共通開始日2026-07-01の期間内60件のうち8件が残る。既定--limit 5では2回で消化できる。**残った8件は電子申請システムRFI、指定難病等医療費助成システム、対面式セミセルフレジシステムの公告と入札結果、OTAプラットフォーム活用、次世代校務支援システム共同調達・構築支援、訪日外国人向け実証事業、福祉保健業務相談対応支援システムである。**落ちている期間内52件は複合機の複写サービス、警備業務、印字・封入封緘、鳥獣捕獲、輸出コーディネート、広報・イベント・研修系の委託が中心で、自社領域の案件は無い。**境界的に落ちる例は2件ある。**ソーシャルメディア活用研修業務とふるさと宮崎人材バンク等のインターネット広告委託業務で、SNS運用研修とネット広告運用を対象に含めたい場合はソーシャルメディアやインターネットの追加を検討する。単発への過剰適合を避けるため今回は追加しない。**関連するページの表も対象に含める。**15件のうち8件は主表に無く、障害児入所給付費管理システム構築業務委託や畜産試験場施設整備の基本設計が含まれる。重複7件はURL単位で除外され、毎回「重複URLを 7 件除外しました。」のWARNINGが出るが実害は無い
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: miyazaki-procurement-news
+    organization_id: miyazaki-prefecture
+    name: 入札情報一覧
+    url: https://www.pref.miyazaki.lg.jp/shinchaku/nyusatsu/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - サウンディング
+      - 市場調査
+      - システム
+      - デジタル
+      - DX
+      - AI
+      - ICT
+      - データ
+      - クラウド
+      - ネットワーク
+      - ソフトウェア
+      - ライセンス
+      - Web
+      - ホームページ
+      - 電子申請
+      - オンライン
+      - アプリ
+      - 実証
+      - 共同調達
+      - セキュリティ
+      - GIS
+      - RPA
+      - パーソナルコンピュータ
+      - パソコン
+      - 端末
+      - プラットフォーム
+    document_type_hints:
+      - 情報提供依頼
+      - サウンディング型市場調査
+      - 企画提案競技
+      - 一般競争入札公告
+    notes: 全庁の入札・調達・売却を横断する新着一覧で、**デジタル推進課以外の部局から出る早期ニーズを取りこぼさないためのセンサーとして登録する。**確認時点は200件で200件すべて掲載日を取得でき、重複や外部ドメインは0件だった。ページャは無い。**保持が2026年6月10日から8月21日の72日分しかなく、1日あたり約2.8件で回転が速い。**巡回が2か月以上空くと取りこぼすため、委託業務一覧（11年分保持）と併用する前提にする。**title_includesで28語に絞る。**200件のうち26件が一致し、期間内167件のうち25件が残る。既定--limit 5では5回に分かれる。**部局横断で拾えた実例が価値を示している。**畜産試験場の県有種雄牛活用・交配シミレーションシステム構築に関するRFI、高校教育課の産業イノベーション人材育成に資する施設整備サウンディング型市場調査、次世代校務支援システム共同調達・構築支援、家屋評価システム導入、福祉保健業務相談対応支援システム、県立学校教育用ソフトウェアライセンス、産業技術専門校の校内情報ネットワーク設備、スマートフォン端末賃貸借がいずれもデジタル推進課の新着には現れない。**落ちている142件はフルカラー複合機の複写サービスが最多で、コピー用紙、A重油、フォークリフト、テーブル、冷凍庫修繕、警備、印字・封入封緘、広報・イベント委託が続き、自社領域の案件は無い。**企画提案とプロポーザルは除外語にも含有語にも入れない。**この一覧は広報誌制作や研修運営の企画提案競技が大量に流れるため、語として入れると絞り込みが崩れる。**委託業務一覧との重複は大きい。**200件のうち70件が委託業務にも載るが、URL単位duplicateで2回目以降はスキップされる
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: miyazaki-collaboration-news
+    organization_id: miyazaki-prefecture
+    name: 新着情報-生活・協働・男女参画課
+    url: https://www.pref.miyazaki.lg.jp/seikatsu-kyodo-danjo/shinchaku/index.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: low
+    enabled: true
+    link_selector: "#tmp_contents ul li a[href]"
+    content_selector: "#tmp_contents"
+    title_includes:
+      - 協働
+      - 地域課題
+      - 官民
+      - 連携
+      - 公募型事業
+      - 企画募集
+      - 包括連携
+      - NPO
+    document_type_hints:
+      - 公募型事業
+      - 企画募集
+      - 包括連携協定
+    notes: 生活・協働・男女参画課の新着情報で、**協働・官民連携の案件だけを拾う補助Sourceとして登録する。**確認時点は50件で、消費生活の注意喚起、交通安全、防犯、ボランティア募集が大半を占めるためtitle_includesで8語に絞る。**8語で50件のうち8件が残り、初回対象も8件である。**残るのは令和8年度「協働による地域課題解決公募型事業」の企画募集と同事業の補助金交付先決定、みやざきNPO・協働支援センター事業の業務委託企画提案競技、ソフトバンクとの包括連携協定、官民連携フォーラムの開催案内と開催報告、災害中間支援ネットワークとの連携協定、NPO活動関連のセミナー・講座情報である。**実際に提案を募集しているのは企画募集と支援センター事業委託の2件で、残りは連携協定や報告の広報である。**そのためpriorityはlowにする。**掲載日は取得できない。**日付はアンカーテキスト末尾の「（8月20日）」形式で年が無い。**ただし50件中7件だけ、タイトルに実施日を含む交通事故死ゼロ市町村表彰が「（2026年8月3日・高千穂町）」のような表記のため日付として解析され、意味は掲載日ではなく事業実施日になる。**この7件はすべてtitle_includesで除外されるので、残る8件は全件が掲載日不明として扱われ、誤った日付で期間外に落ちる候補は発生しない。**includesを外すと表彰7件が誤った掲載日で処理され、うち5件は期間外として静かに落ちるため、この一覧でincludesを外さない。**保持は2026年1月8日から8月20日の50件でページャは無い。**入札情報一覧との重複は1件、委託業務との重複は2件だけで、協働・包括連携は独自である
+    last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: miyazaki-procurement-other
+    organization_id: miyazaki-prefecture
+    name: その他（入札・公募）
+    url: https://www.pref.miyazaki.lg.jp/kense/chotatsu/sonota/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: low
+    enabled: false
+    link_selector: "table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - サウンディング型市場調査
+      - 公募
+    notes: 入札・公募情報の「その他」区分で、**入札情報一覧と完全に重複するため無効にする。**確認時点は6件で6件すべて掲載日を取得でき、内訳は宮崎県体操場の自動販売機設置者公募（2026年7月17日）、県有施設の自動販売機設置者公募の結果と再公募結果（2026年3月）、宮崎港みなと緑地のサウンディング型市場調査・トライアル・サウンディング・活用検討の3件（いずれも2025年6月6日）である。**入札情報一覧の保持期間（2026年6月10日以降）に入る1件は入札情報一覧にも載っており、この区分だけに現れる新規案件は確認できなかった。**サウンディングも横断側で拾える。産業イノベーション人材育成等に資する高等学校等教育改革促進事業に係る施設整備サウンディング型市場調査は入札情報一覧のtitle_includesに一致して残る。**共通開始日2026-07-01の期間内は自動販売機設置者公募の1件だけで、自社領域ではない。**みなと緑地のサウンディングは公募型で価値があるが、掲載が2025年6月で更新も止まっており、次回募集時は入札情報一覧にも載る想定である。**再確認条件は、入札情報一覧に現れない「その他」区分の案件を確認できた場合、または入札情報一覧の72日保持を越える巡回間隔を許容する運用に変えた場合である。**設定はそのまま使えるよう残す。link_selectorとcontent_selectorは実測済みで、有効化すればそのまま動作する
     last_verified_at: "2026-08-22"
     verification_status: verified
