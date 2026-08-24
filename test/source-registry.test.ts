@@ -213,6 +213,8 @@ describe('allow_empty_candidatesの検証', () => {
       'kobe-sounding',
       'oita-public-comment',
       'okayama-bid-ict',
+      'okayama-open-bids-2026',
+      'okayama-proposal-other-2026',
       'sapporo-smartcity-procurement',
       'sendai-cross-lab-partnership',
       'sendai-smart-frontier',

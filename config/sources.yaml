@@ -376,6 +376,14 @@ organizations:
     enabled: true
     notes: 全庁の入札公告・公募の公告と、デジタル推進課の政策シグナルを収集する対象都道府県。**CMSは他県と別系統で、入札系の一覧はdiv.info_list_wrap配下のdiv.info_list > ul > li、課ページの新着はdiv.section_information_list > ul > liに入る。**掲載日はどの一覧もリンクと同じliのspan.article_dateに「（2026年8月14日更新）」形式で入り、年を含むためparseDateCandidateが解釈できる。日付の意味は更新日で、入札日や締切日ではない。実測では賃貸型応急住宅の企画提案が更新日7月2日・参加申請期限7月3日と別の日付だった。**本文セレクタは#mainを使う。**#main_bodyは本文だけの入れ物で最も綺麗だが、公示1行と添付リンクだけのページでは実測174文字と200文字の下限を割る。#mainはscript除去後398〜929文字で、先頭に「2026年8月10日更新／長寿社会課」という更新日と所属課が入る。**main要素は存在せず、article・[role=main]・#mol_contentsも無い**ため、content_selectorを省略するとfallbackは#mainまで進みWarningになる。個別ページのURLは/site/321/1050676.htmlや/page/1045356.htmlのような記事別ファイルである。表示上の「ページ番号」とURLの数字は一致しないことがあり、確認した5件のうち主任介護支援専門員研修だけがURL 708558・ページ番号0799293だった。/page/799293.htmlと/site/321/799293.htmlはどちらも404で別名URLは存在しないため、重複判定への影響は無い。**ただし令和8年度の案件に102万番台の新しいIDと70万〜96万番台の古いIDが混在するので、年度ごとに同じURLを更新している案件がある可能性は残る。**同一事業でも潜在的有資格者等再就業促進事業は令和7年度が992793、令和8年度が1038137と別URLだった。添付は公告と仕様書がPDF、様式がWordで、Wordは取得対象外である
 
+  - id: okayama-city
+    name: 岡山市
+    organization_type: designated_city
+    prefecture: 岡山県
+    official_domain: city.okayama.jp
+    enabled: true
+    notes: 全庁の企画競争・RFI、一般競争入札、事業者向け官民連携情報、ごみ処理分野の計画・サウンディングを収集する対象政令指定都市。岡山県（pref.okayama.jp）とは別組織として登録する。**4一覧はすべてul.category_end > liに掲載・更新日と個別記事リンクが入り、日付は「2026年8月21日」のように年を含むためpublishedAtを取得できる。**個別ページの本文は#mol_contentsに入り、確認4ページで451〜1,698文字、fallbackなしで抽出できる。h1は実タイトルなのでtitle_selectorは不要である。個別記事は/0000084864.htmlのような数字のIDを持つ。企画競争と一般競争の公式RSSは取得できるが、前者はHTMLと完全一致、後者はHTMLの直近30件だけで独自候補が無いため登録しない
+
   - id: hiroshima-prefecture
     name: 広島県
     organization_type: prefecture
@@ -5261,5 +5269,85 @@ sources:
       - 企画提案
       - 実証
     notes: 公式の全庁最新情報RSS。**HTTPSでRSS 1.0（RDF）を正常取得でき、確認時点はitem 10件すべてにdc:dateと個別URLがある。**保持は2026年8月19日から8月24日の約5日分しかなく、主要な3新着一覧よりさらに短い。現在の10件は労働統計、採用試験、防疫情報、建設工事資格審査等で、行政ニーズとしての独自候補を確認できず、主要Sourceとの重複も大きい。通常の手動巡回間隔では取りこぼしやすく代替価値も確認できないため、調査済みSourceとして登録するが無効にする。毎日程度の巡回が可能になった場合、または主要一覧に無い有用案件がRSSで継続的に確認できた場合に再有効化を検討する
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: okayama-proposal-other-2026
+    organization_id: okayama-city
+    name: 企画競争・その他（令和8年度）
+    url: https://www.city.okayama.jp/jigyosha/category/5-3-13-1-18-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "ul.category_end > li > a[href]"
+    content_selector: "#mol_contents"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 企画競争
+      - 公示
+      - 予告
+    notes: 全庁の企画競争・RFI・公示前の予告を年度単位で集約し、岡山市で最優先の早期ニーズSourceとする。**確認時点はraw 17件・構造上有効17件・filter後17件で、17件すべてpublishedAtを取得できる。**保持は2026年5月1日から8月21日で、共通開始日2026-07-01以降の初回期間対象は13件、既定--limit 5で後続処理へ進む最大件数は5件である。ページャは無い。**title filterは設定しない。**現在は結果の公表1件、受付終了3件、質問及び回答5件も含むが、新規Sourceの実Write前に段階マーカーを除外しない。質問回答は募集本体へ追記される案件があり、学校保護者連絡システム更改も質問回答中の本体ページとして本文・仕様書を保持する。過去には共通基盤システム、ホームページリニューアル、後期高齢者医療システムのRFIがこの階層へ掲載されたが、確認時点の17件とRSSには残っていないため短期保持であり、日次から数日おきの巡回が必要である。**共通基盤システムRFIの個別URL（0000081996）も確認時点で404であり、一覧から落ちた記事を個別URLで後から回収できるとは限らない。** **公式RSSはRSS 2.0でitem 17件・pubDate全件だが、HTML 17件とURLが完全一致し終了済みRFIの追加保持は0件だったため登録しない。**個別記事は数字の案件別IDで、予告と本公示も別URLになる。令和7年度のカテゴリURLは確認時点で404で、過年度の個別記事は一部残るが保持は保証されない。年度切替時は親一覧から新年度のカテゴリURLを確認し、年次Sourceの追加または設定更新が必要である。年度ページが作られ候補0件となる期間を正常に扱うためallow_empty_candidatesを設定する
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: okayama-business-notices
+    organization_id: okayama-city
+    name: 事業を営んでいる方 お知らせ
+    url: https://www.city.okayama.jp/jigyosha/category/5-7-23-0-0-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "ul.category_end > li > a[href]"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - サウンディング型市場調査
+      - PPP/PFI
+      - 民間活力導入
+      - 実施方針
+      - 実証
+    notes: 複数分野の官民連携・民間活力導入を横断する事業者向けお知らせ。**確認時点はraw 83件・構造上有効83件・filter後83件で、83件すべてpublishedAtを取得できる。**保持は2021年5月12日から2026年8月4日でページャは無く、共通開始日2026-07-01以降の初回期間対象は4件、既定--limit 5では最大4件が後続処理へ進む。現在の期間内4件は事業承継、テレワーク、企業説明会、ハラスメント対策で対象密度は低いが、過去にはたけべの森公園民間活力導入、ウォーターPPP、Park-PFI、アリーナ整備運営事業の実施方針が掲載され、調達一覧と異なる前段ニーズを確認できるため有効化する。**title filterは設定しない。**サウンディング、PPP/PFI、民間活力、実証等の表現が一定せず、共通開始日による初回負荷も4件なので、実Write前の内容トピックfilterは偽陰性の方が大きい。4Source間の現在URL完全一致重複は0件である。一般案内の固定ページは同じURLを更新するためduplicate-firstで再更新を拾えないが、ウォーターPPPの第1回・第2回は別記事ID、年度別のデジタル支援も別記事IDで公開されており、新しい公募・調査は案件別URLになる傾向を確認した。専用RSSは確認できない
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: okayama-open-bids-2026
+    organization_id: okayama-city
+    name: 一般競争入札情報（各課発注・令和8年度）
+    url: https://www.city.okayama.jp/jigyosha/category/5-3-13-3-15-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "ul.category_end > li > a[href]"
+    content_selector: "#mol_contents"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 一般競争入札
+      - システム提供
+      - システム改修
+      - DX推進
+    notes: 各課発注の一般競争入札から、企画競争に載らない正式調達段階のシステム・DX案件を補完するSource。**確認時点はraw 46件・構造上有効46件・filter後46件で、46件すべてpublishedAtを取得できる。**保持は2026年6月17日から8月24日でページャは無く、共通開始日2026-07-01以降の初回期間対象は45件、既定--limit 5で後続処理へ進む最大件数は5件である。初回は複数セッションへ分割する。**title filterとinitial_sinceは設定しない。**学習管理システム、特別支援教育サポートDX、道路管理システム改修の実例がある一方、タイトルだけではIT性を判断しにくい案件を落とす可能性があるため、実WriteのAI判定と人間分類を確認する前に絞らない。質問及び回答は別記事IDになる場合があるが、元の公告が一覧から先に落ちると回答ページが唯一の候補になるため除外しない。**公式RSSはRSS 2.0でitem 30件・pubDate全件、保持は2026年8月12日から24日だが、30件すべてHTML 46件の部分集合で独自候補は0件なので登録しない。**個別記事は数字の案件別IDで、道路占用物件・境界等管理システム入力業務は令和7年度0000075950と令和8年度0000084233が別URLであり、年度をまたぐ案件上書きの実例は確認していない。年度切替時は親一覧から新年度のカテゴリURLを確認し、年次Sourceの追加または設定更新が必要である。年度ページが作られ候補0件となる期間を正常に扱うためallow_empty_candidatesを設定する
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: okayama-waste-plans-sounding
+    organization_id: okayama-city
+    name: 各種計画・調査・報告
+    url: https://www.city.okayama.jp/kurashi/category/1-12-7-9-0-0-0-0-0-0.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: low
+    enabled: true
+    link_selector: "ul.category_end > li > a[href]"
+    content_selector: "#mol_contents"
+    document_type_hints:
+      - サウンディング型市場調査
+      - 実施方針
+      - 基本計画
+      - 調査報告
+    notes: ごみ処理・資源循環分野の計画策定前サウンディング等を低負荷で補完するSource。**確認時点はraw 14件・構造上有効14件・filter後14件で、14件すべてpublishedAtを取得できる。**保持は2010年3月4日から2026年6月1日でページャは無く、共通開始日2026-07-01以降の初回期間対象は0件、既定--limit 5で後続処理へ進む件数も0件である。更新頻度は低いが、プラスチック回収等ごみ処理施策に関するサウンディング型市場調査は事業者向けお知らせに現存せず、この一覧だけで確認できる。現在のページは実施結果公表まで更新済みだが、民間12者から資源化手法・再商品化・持続可能なごみ処理システムの提案を収集した前段ニーズの実績である。**title filterは設定しない。**14件かつ期間フィルタが機能するため負荷が小さく、将来の表現を限定しない。処理基本計画等の固定ページは同じURLが更新されるためduplicate-firstで再更新を拾えないが、新規サウンディングは数字の案件別IDで追加される。専用RSSは確認できない
     last_verified_at: "2026-08-24"
     verification_status: verified
