@@ -505,6 +505,14 @@ organizations:
     enabled: true
     notes: デジタル推進課の新着、全庁の委託業務と入札情報一覧、生活・協働・男女参画課の協働案件を収集する対象都道府県。**CMSはこれまでの県と別系統で、IDがtmp_で始まる。一覧は2種類ある。**課の新着はdiv#tmp_contents > ul > liで、日付はアンカーテキストの末尾に「（8月21日）」と年なしで入る。委託業務・入札情報一覧・その他はtable.list_table > tbody > trで、td.dateとtd > p > aが同じtrに並ぶ。**後者はアンカーのclosestがp・tdを対象外として通過しtrへ届くので、「2026年8月21日」を全件解析できる。**別調査は3つの表形式一覧をB型・取得不可と判定していたが、実測では入札情報一覧200件、委託業務481件、その他6件すべてでpublishedAtを取得できた。佐賀県・長崎県のようにdivでclosestが止まる構造ではない。**課の新着は逆に年が無いためpublishedAtを取得できず、全件が掲載日不明として期間フィルタを通る。**本文セレクタは4Sourceとも#tmp_contentsを使う。**確認6ページで972〜3,227文字だった。.col_mainは243〜255文字多いだけだが、#tmp_mainはナビを含んで2,204〜24,433文字に膨らみ、main・article・[role=main]・#contentsは存在しない。**content_selectorを省略するとfallbackがbodyまで進み、RFIページで22,614文字、企画提案競技ページで24,850文字になるため必ず設定する。**h1は確認6ページすべて1つで実タイトルなのでtitle_selectorは不要である。添付は/documents/配下のPDFで、募集要項・仕様書・機能要件一覧・様式が4〜12件付く。**一覧のリンクテキストと個別ページの内容が食い違う実例がある。**/digital-suishin/kense/chotatsu/20260817150012.htmlは新着と委託業務の両方で「宮崎県電子申請システムに係る情報提供依頼（RFI）の実施について」と表示されるが、実ページのh1と本文は「宮崎県クラウドサービス型生成AIサービスの共同調達・共同利用に関する情報提供依頼(RFI)」で更新日は2026年8月21日、電子申請の語は本文に無い。リダイレクトは無く、同じURLの内容が差し替えられている。登録内容は個別ページ側になるが、同一URLへ次の案件が載るとduplicate-firstで検知できない。**入札情報一覧のRSSは登録しない。**/shinchaku/nyusatsu/nyusatsu.xmlはRSS 1.0で全件にdc:dateがあるが、確認時点のitemは10件・2026年8月20日から21日の2日分しか保持せず、HTMLの200件・72日分より大幅に狭い。categoryも県政情報と入札・調達・売却の2種固定で絞り込みに使えない
 
+  - id: kagoshima-prefecture
+    name: 鹿児島県
+    organization_type: prefecture
+    prefecture: 鹿児島県
+    official_domain: pref.kagoshima.jp
+    enabled: true
+    notes: 県政情報・事業者向け・社会基盤の短期新着と、長期保持される入札情報から行政ニーズを収集する対象都道府県。宮崎県などと同じ#tmp_接頭辞のCMSで、一覧・個別ページとも本文は#tmp_contentsに入る。3つの新着一覧はtable.list_table > tbody > trで、表示される日付は「8月21日」のように年を含まないため、候補のpublishedAtは取得できず期間フィルタが効かない。入札情報の入口にも案件日付が無い。公式の全庁最新RSSはRSS 1.0で取得できるが、item 10件・約5日分しか保持しない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -5106,4 +5114,152 @@ sources:
       - 公募
     notes: 入札・公募情報の「その他」区分で、**入札情報一覧と完全に重複するため無効にする。**確認時点は6件で6件すべて掲載日を取得でき、内訳は宮崎県体操場の自動販売機設置者公募（2026年7月17日）、県有施設の自動販売機設置者公募の結果と再公募結果（2026年3月）、宮崎港みなと緑地のサウンディング型市場調査・トライアル・サウンディング・活用検討の3件（いずれも2025年6月6日）である。**入札情報一覧の保持期間（2026年6月10日以降）に入る1件は入札情報一覧にも載っており、この区分だけに現れる新規案件は確認できなかった。**サウンディングも横断側で拾える。産業イノベーション人材育成等に資する高等学校等教育改革促進事業に係る施設整備サウンディング型市場調査は入札情報一覧のtitle_includesに一致して残る。**共通開始日2026-07-01の期間内は自動販売機設置者公募の1件だけで、自社領域ではない。**みなと緑地のサウンディングは公募型で価値があるが、掲載が2025年6月で更新も止まっており、次回募集時は入札情報一覧にも載る想定である。**再確認条件は、入札情報一覧に現れない「その他」区分の案件を確認できた場合、または入札情報一覧の72日保持を越える巡回間隔を許容する運用に変えた場合である。**設定はそのまま使えるよう残す。link_selectorとcontent_selectorは実測済みで、有効化すればそのまま動作する
     last_verified_at: "2026-08-22"
+    verification_status: verified
+
+  - id: kagoshima-kensei-news
+    organization_id: kagoshima-prefecture
+    name: 県政情報 新着情報
+    url: https://www.pref.kagoshima.jp/kensei/shinchaku/index.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 予算・財政
+      - 行政計画
+    notes: 県政情報の全般的な新着で、デジタル部門以外の財政・行政部門から出るRFI等を早期に拾う補助Source。**確認時点は個別HTML 20件で、PDF直リンク・外部リンク・アンカーは0件、ページャも無い。**表示される日付は「8月24日」のように年を含まない更新・新着日で、20件すべてpublishedAtを取得できない。そのため期間フィルタは効かず、初回対象は20件になる。保持は2026年8月5日から8月24日の約3週間で短いので、巡回間隔が空くと取りこぼす。**title filterは設定しない。**過去には財政・予算配下で予算編成支援システム再構築業務のRFIが公開されているが、確認時点の20件には残っておらず、この一覧への掲載実績までは確認できない。固定の制度・案内ページは同じURLが更新されるためduplicate-firstで再更新を拾えないが、RFI等の個別案件は案件固有URLで公開される
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: kagoshima-procurement
+    organization_id: kagoshima-prefecture
+    name: 入札情報
+    url: https://www.pref.kagoshima.jp/kensei/nyusatu/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents .col2L:has(ul.box_btn a[href='/kensei/nyusatu/nyusatujoho/index.html']) > ul:not(.box_btn) li a[href]"
+    content_selector: "#tmp_contents"
+    title_includes:
+      - RFI
+      - 情報提供依頼
+      - 意見招請
+      - サウンディング
+      - システム
+      - DX
+      - デジタル
+      - AI
+      - ICT
+      - データ
+      - クラウド
+      - Web
+      - WEB
+      - ウェブ
+      - ホームページ
+      - CMS
+      - 電子申請
+      - 電子契約
+      - オンライン
+      - アプリ
+      - LINE
+      - ノーコード
+      - 要件定義
+      - 実証
+      - プラットフォーム
+      - ネットワーク
+      - ソフトウェア
+      - セキュリティ
+      - GIS
+      - RPA
+      - 端末
+    document_type_hints:
+      - 情報提供依頼
+      - 一般競争入札
+      - 企画提案
+      - サウンディング
+      - 実証
+    notes: 入札情報の長期保持一覧で、全庁のIT・RFI・実証関連案件を拾うSource。**link_selectorは「入札情報」の欄だけに限定し、同じページにある資格審査・電子入札・売却等のナビゲーションを候補化しない。**確認時点は個別HTML 190件で、一覧に案件日付が無いため190件すべてpublishedAtを取得できない。令和6年度から8年度の案件を保持し、ページャは無い。**Source固有title_includes適用後は16件が初回対象になる。**ノーコードツール、電子申請・電子契約、デジタル人材、AI、データ、システム要件定義、トライアル・サウンディング等を残す。「システム」はスタートアップエコシステム海外研修旅行手配の1件にも一致するが、誤爆1件を落とす固有の除外語は追加せずAI判定へ任せる。現在の16件に結果・終了段階のタイトルは無く、他自治体のtitle_excludesは持ち込まない。**予算編成支援システムRFIはこの一覧に無く、RFI網羅性はないため短期新着Sourceと併用する。**URLは案件固有のものが中心だが、年度更新型の共通案内ページが混ざる可能性があり、同一URL更新はduplicate-firstで再取得できない
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: kagoshima-business-news
+    organization_id: kagoshima-prefecture
+    name: 事業者の方々 最新情報
+    url: https://www.pref.kagoshima.jp/jigyosha/saishin/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    title_includes:
+      - 情報提供
+      - RFI
+      - 意見招請
+      - サウンディング
+      - 企画提案
+      - プロポーザル
+      - 実証
+      - トライアル
+      - 官民連携
+      - 包括連携
+      - 共同調達
+      - システム
+      - デジタル
+      - DX
+      - AI
+      - データ
+    title_excludes:
+      - 募集は終了
+      - 募集終了
+    document_type_hints:
+      - 情報提供依頼
+      - 企画提案
+      - 公募
+      - サウンディング
+      - 実証
+    notes: 複数部局の事業者向け情報を横断する短期新着で、県政新着・社会基盤新着・入札情報と一部重複する。**確認時点は個別HTML 50件で、PDF直リンク・外部リンク・アンカーは0件、ページャも無い。**表示日付は年なしの更新・新着日なのでfilter後の候補はすべてpublishedAtを取得できない。保持は2026年7月31日から8月24日の約3週間で短い。**一般的な公募や連携を広く拾わないよう、RFI・実証・企画提案とデジタル性がタイトルで明示される語へSource固有filterを限定する。**確認時点は50件から4件になり、スポーツ合宿セミナーの企画提案、おおすみ・お茶ったもんせプロジェクトの企画提案、リモートセンシング（衛星データ利活用）研修、鹿児島港本港区トライアル事業を残す。募集終了を明示する2語だけは段階マーカーとして除外する。リモートセンシングは2024を含む固定URL、トライアルも固定のtrialtop.htmlを更新しており、次年度の更新はduplicate-firstで再取得できない点に注意する
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: kagoshima-infra-news
+    organization_id: kagoshima-prefecture
+    name: 社会基盤 新着情報
+    url: https://www.pref.kagoshima.jp/infra/shinchaku/index.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - ガイドライン
+      - サウンディング
+      - 官民連携
+      - 実証
+    notes: 社会基盤分野の新着を、デジタル・情報通信、港湾の民間活力・サウンディング等の政策シグナルとして拾うSource。**確認時点は個別HTML 20件で、PDF直リンク・外部リンク・アンカーは0件、ページャも無い。**表示される日付は年なしの更新・新着日なので20件すべてpublishedAtを取得できず、初回対象は20件になる。保持は2026年7月29日から8月21日の約3週間で短い。20件なのでtitle filterは設定せずAI側で選別する。生成AI利用ガイドラインと鹿児島港本港区の事業発案・事業化検討・トライアルの各サウンディングを確認した。ガイドラインやtrialtop.htmlは固定URL更新型なので、登録後の更新はduplicate-firstで再取得できない点に注意する
+    last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: kagoshima-all-rss
+    organization_id: kagoshima-prefecture
+    name: 鹿児島県 最新情報RSS
+    url: https://www.pref.kagoshima.jp/saishin/saishin.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: low
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 企画提案
+      - 実証
+    notes: 公式の全庁最新情報RSS。**HTTPSでRSS 1.0（RDF）を正常取得でき、確認時点はitem 10件すべてにdc:dateと個別URLがある。**保持は2026年8月19日から8月24日の約5日分しかなく、主要な3新着一覧よりさらに短い。現在の10件は労働統計、採用試験、防疫情報、建設工事資格審査等で、行政ニーズとしての独自候補を確認できず、主要Sourceとの重複も大きい。通常の手動巡回間隔では取りこぼしやすく代替価値も確認できないため、調査済みSourceとして登録するが無効にする。毎日程度の巡回が可能になった場合、または主要一覧に無い有用案件がRSSで継続的に確認できた場合に再有効化を検討する
+    last_verified_at: "2026-08-24"
     verification_status: verified
