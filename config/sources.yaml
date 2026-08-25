@@ -5251,7 +5251,7 @@ sources:
     url: https://www.pref.kagoshima.jp/infra/shinchaku/index.html
     collector_type: list_page
     source_category: policy_signal
-    priority: medium
+    priority: low
     enabled: true
     link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
     content_selector: "#tmp_contents"
@@ -5260,7 +5260,7 @@ sources:
       - サウンディング
       - 官民連携
       - 実証
-    notes: 社会基盤分野の新着を、デジタル・情報通信、港湾の民間活力・サウンディング等の政策シグナルとして拾うSource。**確認時点は個別HTML 20件で、PDF直リンク・外部リンク・アンカーは0件、ページャも無い。**表示される日付は年なしの更新・新着日なので20件すべてpublishedAtを取得できず、初回対象は20件になる。保持は2026年7月29日から8月21日の約3週間で短い。20件なのでtitle filterは設定せずAI側で選別する。生成AI利用ガイドラインと鹿児島港本港区の事業発案・事業化検討・トライアルの各サウンディングを確認した。ガイドラインやtrialtop.htmlは固定URL更新型なので、登録後の更新はduplicate-firstで再取得できない点に注意する
+    notes: 社会基盤分野の新着を、デジタル・情報通信、港湾の民間活力・サウンディング等の政策シグナルとして拾うSource。**確認時点は個別HTML 20件で、PDF直リンク・外部リンク・アンカーは0件、ページャも無い。**表示される日付は年なしの更新・新着日なので20件すべてpublishedAtを取得できず、初回対象は20件になる。保持は2026年7月29日から8月21日の約3週間で短い。20件なのでtitle filterは設定せずAI側で選別する。生成AI利用ガイドラインと鹿児島港本港区の事業発案・事業化検討・トライアルの各サウンディングを確認した。ガイドラインやtrialtop.htmlは固定URL更新型なので、登録後の更新はduplicate-firstで再取得できない点に注意する。**初回Writeを全20候補まで確認し、priorityをmediumからlowへ下げた。**State Advanced、Failed 0、Remaining 0で完了したが、社会基盤・建設の制度案内、防災情報、講習会、施設案内のような周辺情報が多く情報密度は低かった。**追加のtitle_includesとtitle_excludesは設定しない。**経営事項審査、入札参加資格、パブリックビューイングなどのノイズは複数確認できたが種類が分散しており、filterを積み重ねてもSource全体の低密度さは変わらない。研修・講習・登録・情報のような広い語で除外すると将来の有用案件を巻き込む。有用だった輸出入促進トライアルは別Sourceでも取得できていた。**Sourceは無効化せず、インフラ分野のサウンディング・実証・官民連携を拾う可能性のある低頻度の補完Sourceとして残す。**再評価の条件は、インフラ分野のサウンディング・実証・官民連携などで他Sourceにないuniqueな案件を継続的に拾えることが確認された場合である
     last_verified_at: "2026-08-24"
     verification_status: verified
 
