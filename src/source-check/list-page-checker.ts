@@ -97,7 +97,11 @@ export function analyzeListPage(
       title,
       url: resolvedUrl.href,
       canonicalUrl,
-      publishedAt: parseDateCandidate(context),
+      // 一覧の日付が募集期間や開札日で掲載日ではない情報源は、解析できても掲載日不明として扱う。
+      // 掲載日不明の候補は期間filterで除外されないため、誤った日付で静かに落ちることを防ぐ。
+      publishedAt: source.ignore_list_published_at === true
+        ? null
+        : parseDateCandidate(context),
     });
   });
 

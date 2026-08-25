@@ -1098,3 +1098,83 @@ describe('allow_empty_candidates', () => {
       .toEqual(['ICT活用プラットフォーム運用保守業務']);
   });
 });
+
+describe('ignore_list_published_at', () => {
+  // 沖縄県の年度別発注情報と同じ形。案件名のアンカーと日付が同じtrにあるため日付は解析できるが、
+  // その値は掲載日ではなく募集期間の開始日である。
+  const HTML = [
+    '<main id="main"><table><tbody>',
+    '<tr><td><a href="/keiyaku/1.html">情報セキュリティ外部監査業務の一般競争入札</a></td>',
+    '<td>2026年8月19日（水曜日）～2026年9月1日（火曜日）</td></tr>',
+    '<tr><td><a href="/keiyaku/2.html">生成AI活用支援員派遣業務の企画プロポーザル</a></td>',
+    '<td>2026年2月25日（水曜日）～2026年3月10日（火曜日）</td></tr>',
+    '</tbody></table></main>',
+  ].join('');
+  const selector = '#main table tbody tr td a[href]';
+
+  it('未設定なら従来どおり同じtrの日付をpublishedAtとして取得する', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ link_selector: selector }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.samples.map(({ publishedAt }) => publishedAt))
+      .toEqual(['2026-08-19', '2026-02-25']);
+    expect(result.latestPublishedAt).toBe('2026-08-19');
+  });
+
+  it('falseを明示した場合も従来どおり取得する', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ link_selector: selector, ignore_list_published_at: false }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.samples.map(({ publishedAt }) => publishedAt))
+      .toEqual(['2026-08-19', '2026-02-25']);
+  });
+
+  it('trueなら候補を残したままpublishedAtだけをnullにする', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ link_selector: selector, ignore_list_published_at: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.rawItemCount).toBe(2);
+    expect(result.structurallyValidItemCount).toBe(2);
+    expect(result.usableItemCount).toBe(2);
+    expect(result.samples.map(({ title }) => title)).toEqual([
+      '情報セキュリティ外部監査業務の一般競争入札',
+      '生成AI活用支援員派遣業務の企画プロポーザル',
+    ]);
+    expect(result.samples.every(({ publishedAt }) => publishedAt === null)).toBe(true);
+  });
+
+  it('trueなら最新公開日候補も取得できない状態にする', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({ link_selector: selector, ignore_list_published_at: true }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.latestPublishedAt).toBeNull();
+  });
+
+  it('trueでも除外判定とWarningの挙動は変わらない', () => {
+    const result = analyzeListPage(
+      HTML,
+      makeSource({
+        link_selector: selector,
+        ignore_list_published_at: true,
+        title_excludes: ['生成AI活用支援員'],
+      }),
+      OFFICIAL_DOMAIN,
+      10,
+    );
+    expect(result.usableItemCount).toBe(1);
+    expect(result.exclusions).toEqual([{ reason: 'title_excludesで除外', count: 1 }]);
+    expect(result.samples[0]?.publishedAt).toBeNull();
+  });
+});

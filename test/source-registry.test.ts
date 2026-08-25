@@ -255,6 +255,85 @@ function registryWithAllowEmpty(allowEmpty: unknown): unknown {
   };
 }
 
+function registryWithIgnoreListPublishedAt(ignoreListPublishedAt: unknown): unknown {
+  return {
+    version: 1,
+    organizations: [{
+      id: 'okinawa-prefecture',
+      name: '沖縄県',
+      organization_type: 'prefecture',
+      official_domain: 'pref.okinawa.jp',
+      enabled: true,
+    }],
+    sources: [{
+      id: 'okinawa-information-procurement-2026',
+      organization_id: 'okinawa-prefecture',
+      name: '令和8年度実施業務（情報関連・機器保守点検）',
+      url: 'https://www.pref.okinawa.jp/shigoto/nyusatsukeiyaku/1015342/1025066/1037591/index.html',
+      collector_type: 'list_page',
+      source_category: 'procurement',
+      priority: 'high',
+      enabled: true,
+      link_selector: 'table tbody tr td a[href]',
+      ...(ignoreListPublishedAt === undefined
+        ? {}
+        : { ignore_list_published_at: ignoreListPublishedAt }),
+    }],
+  };
+}
+
+describe('ignore_list_published_atの検証', () => {
+  it('真偽値を受理し、未指定はundefinedのままにする', () => {
+    expect(
+      validateSourceRegistry(registryWithIgnoreListPublishedAt(true))
+        .sources[0]?.ignore_list_published_at,
+    ).toBe(true);
+    expect(
+      validateSourceRegistry(registryWithIgnoreListPublishedAt(false))
+        .sources[0]?.ignore_list_published_at,
+    ).toBe(false);
+    expect(
+      validateSourceRegistry(registryWithIgnoreListPublishedAt(undefined))
+        .sources[0]?.ignore_list_published_at,
+    ).toBeUndefined();
+  });
+
+  it.each(['true', 1, null, 'yes'])('真偽値以外の %s を拒否する', (value) => {
+    expect(() => validateSourceRegistry(registryWithIgnoreListPublishedAt(value))).toThrow();
+  });
+
+  it('実台帳では一覧の日付が掲載日でない情報源だけに設定されている', async () => {
+    const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
+    const registry = await loadSourceRegistry();
+    const configured = registry.sources
+      .filter((source) => source.ignore_list_published_at === true)
+      .map((source) => source.id)
+      .sort();
+    // 沖縄県の年度別発注情報は同じtrに日付があるが、募集期間の開始日・開札日・
+    // プロポーザル実施日であり掲載日ではない。
+    expect(configured).toEqual([
+      'okinawa-consulting-procurement-2026',
+      'okinawa-industry-digital-procurement-2026',
+      'okinawa-information-procurement-2026',
+    ]);
+    // 一覧ページ解析だけが読み取る設定なので、他のcollector_typeへは付けない。
+    for (const source of registry.sources) {
+      if (source.ignore_list_published_at === undefined) continue;
+      expect(source.collector_type).toBe('list_page');
+      expect(source.link_selector).toBeDefined();
+    }
+  });
+
+  it('新着・更新日を持つ沖縄県の全庁新着には設定しない', async () => {
+    const { loadSourceRegistry } = await import('../src/source-registry/index.ts');
+    const registry = await loadSourceRegistry();
+    const source = registry.sources.find(({ id }) => id === 'okinawa-all-news');
+
+    expect(source?.collector_type).toBe('list_page');
+    expect(source?.ignore_list_published_at).toBeUndefined();
+  });
+});
+
 describe('list_pageのtitle_excludes設定', () => {
   it('kitakyushu-dx-divisionの実台帳がtitle_excludesを持ち検証を通る', async () => {
     const { loadSourceRegistry } = await import('../src/source-registry/index.ts');

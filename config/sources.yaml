@@ -521,6 +521,14 @@ organizations:
     enabled: true
     notes: 県政情報・事業者向け・社会基盤の短期新着と、長期保持される入札情報から行政ニーズを収集する対象都道府県。宮崎県などと同じ#tmp_接頭辞のCMSで、一覧・個別ページとも本文は#tmp_contentsに入る。3つの新着一覧はtable.list_table > tbody > trで、表示される日付は「8月21日」のように年を含まないため、候補のpublishedAtは取得できず期間フィルタが効かない。入札情報の入口にも案件日付が無い。公式の全庁最新RSSはRSS 1.0で取得できるが、item 10件・約5日分しか保持しない
 
+  - id: okinawa-prefecture
+    name: 沖縄県
+    organization_type: prefecture
+    prefecture: 沖縄県
+    official_domain: pref.okinawa.jp
+    enabled: true
+    notes: 年度別の公募・入札発注情報3区分と全庁新着更新情報を収集する対象都道府県。**公式サイトはwww.pref.okinawa.jpとwww.pref.okinawa.lg.jpの2ドメインが並行して生きている。**同じパスがどちらも200で返りリダイレクトも無い。official_domainは候補URLと一覧内リンクの解決先に合わせてpref.okinawa.jpとする。一覧のアンカーは相対URLなので候補は常にpref.okinawa.jp側へ解決され、Source間で表現は揺れない。**全庁新着のRSSは登録できない。**/news.rssはRSS 2.0でpubDateを持つが、itemのlinkがwww.pref.okinawa.lg.jpの絶対URLなので、現行の公式ドメイン判定では全itemが外部ドメイン扱いになり「タイトルと公式ドメイン内URLを持つitemがありません。」で解析が止まる。仮にofficial_domainを.lg.jp側にすると3つの年度別一覧が全滅するので、HTMLの新着更新情報を使う。RSSを使う場合は同一案件が2ドメインで別URLになりURL単位duplicateが効かなくなる点も残る。**一覧は2種類の構造がある。**年度別の発注情報はtable > tbody > trで、案件名のtdと募集期間または開札日のtd、担当課のtdが並ぶ。全庁新着はul.newslist > li.boxで、span.dateとspan.newsli > aが同じliに入る。**本文セレクタは4Sourceともmainを使う。**確認5ページでmain・article#content・[role=main]・#voice・#contentがすべて同じ本文を返し714〜1,605文字だった。#pagebodyだけ10文字多い。content_selectorを省略してもfallbackがmainで止まるので実害は小さいが、毎回fallback警告が出るためmainを明示する。h1は確認5ページすべて1つで実タイトルなのでtitle_selectorは不要である。個別ページには「ページ番号1041079 更新日 2026年8月19日」と更新履歴が入り、募集終了案件には「この案件は募集を終了しています。」が本文に出る。添付は実施要領・仕様書・質問回答書のPDFが0〜6件付く。**年度別一覧は毎年度URLが変わる。**親ページは年度リンクだけを並べる索引で案件一覧を持たないため、Sourceには年度ページを登録し、年度替わりに新年度URLへ差し替える運用にする。索引は情報関連が/shigoto/nyusatsukeiyaku/1015342/1025066/index.html、コンサルが同1025074、産業支援が同1025075で、公募・入札発注情報のトップは/shigoto/nyusatsukeiyaku/1015342/index.htmlである。**未登録の区分がある。**賃貸借・リース（1025069）、広報・広告・イベント（1025064）、調査・検査・収集・運送（1025068）、調達（1025082）にもICT案件が入るため、全庁新着で拾えなかった場合の追加候補として残す
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -5352,4 +5360,128 @@ sources:
       - 調査報告
     notes: ごみ処理・資源循環分野の計画策定前サウンディング等を低負荷で補完するSource。**確認時点はraw 14件・構造上有効14件・filter後14件で、14件すべてpublishedAtを取得できる。**保持は2010年3月4日から2026年6月1日でページャは無く、共通開始日2026-07-01以降の初回期間対象は0件、既定--limit 5で後続処理へ進む件数も0件である。更新頻度は低いが、プラスチック回収等ごみ処理施策に関するサウンディング型市場調査は事業者向けお知らせに現存せず、この一覧だけで確認できる。現在のページは実施結果公表まで更新済みだが、民間12者から資源化手法・再商品化・持続可能なごみ処理システムの提案を収集した前段ニーズの実績である。**title filterは設定しない。**14件かつ期間フィルタが機能するため負荷が小さく、将来の表現を限定しない。処理基本計画等の固定ページは同じURLが更新されるためduplicate-firstで再更新を拾えないが、新規サウンディングは数字の案件別IDで追加される。専用RSSは確認できない
     last_verified_at: "2026-08-24"
+    verification_status: verified
+
+  - id: okinawa-information-procurement-2026
+    organization_id: okinawa-prefecture
+    name: 令和8年度実施業務（情報関連・機器保守点検）
+    url: https://www.pref.okinawa.jp/shigoto/nyusatsukeiyaku/1015342/1025066/1037591/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "table tbody tr td a[href]"
+    content_selector: "main"
+    ignore_list_published_at: true
+    document_type_hints:
+      - 一般競争入札公告
+      - 企画プロポーザル
+      - 企画提案募集
+      - 仕様書
+    notes: 情報関連・機器保守点検の区分に入る令和8年度の発注案件で、沖縄県で最も自社領域と重なる情報源。**確認時点は14件で、生成AI活用支援員派遣、ガバメントクラウド運用管理補助、情報セキュリティ外部監査・研修、盛土等情報管理システム構築、GIGAスクール第2期学習者用端末、Microsoft 365 Education A3ライセンス、校務支援システム構築、次世代ネットワーク演習システム、県立学校校内LAN保守、CAD教育システム、無線アクセスポイント、入出力支援装置、Jアラート衛星アンテナが並ぶ対象密度の高い一覧である。**5つの表に分かれ、募集中は募集期間、終了分は開札日またはプロポーザル実施日を持つ。**ページャは無い。**一覧の日付はpublishedAtとして使わない。**案件名のアンカーと日付は同じtr内の別tdにあり、アンカーのclosestはp・tdで止まらずtrへ届くので14件すべてで日付を解析できてしまうが、取れる値は募集期間の開始日か開札日・プロポーザル実施日で掲載日・更新日ではない。そのためignore_list_published_atをtrueにし、14件すべてを掲載日不明として扱う。**掲載日不明は期間フィルタで除外されないため、初回対象はfilter適用後の全14件になる。**既定--limit 5では3回に分かれる。**フラグを付ける前は10件が静かに落ちていた。**募集期間の開始が2月から6月の案件と結果行が共通開始日2026-07-01より前と判定され、生成AI活用支援員派遣、ガバメントクラウド運用管理補助、県立学校校内LAN保守、盛土等情報管理システム構築、GIGAスクール第2期学習者用端末、Microsoft 365 Education A3ライセンス、校務支援システム構築が初回処理から外れていた。**filterは設定しない。**14件しかなく、区分自体がICT案件で占められているため、includesもexcludesも過剰適合になる。**年度替わりにURLを差し替える。**令和8年度ページは1037591で、索引/shigoto/nyusatsukeiyaku/1015342/1025066/index.htmlから新年度ページのIDを確認する。過年度は令和7年度が1032423、令和6年度が1026031、令和5年度が1025090で、年度ページ内の案件URLは案件ごとに別IDなので使い回しは無い。**新着更新情報とは重複しない。**確認時点でこの14件は全庁新着150件のいずれとも一致しなかった
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: okinawa-consulting-procurement-2026
+    organization_id: okinawa-prefecture
+    name: 令和8年度実施業務（会議運営・計画策定・コンサルティング）
+    url: https://www.pref.okinawa.jp/shigoto/nyusatsukeiyaku/1015342/1025074/1037587/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "table tbody tr td a[href]"
+    content_selector: "main"
+    ignore_list_published_at: true
+    document_type_hints:
+      - 企画提案募集
+      - 企画プロポーザル
+      - 計画策定業務
+      - 導入可能性調査
+    notes: 会議運営・計画策定・コンサルティングの区分に入る令和8年度の発注案件で、**調達そのものではなく導入前の調査・計画・調達支援を拾う役割を持つ。**確認時点は36件で、京都府・沖縄県税務システム共同調達検討支援、市町村DX支援、地域医療構想に係るデータ分析、基幹バスシステム構築に向けた調査検討、管理空港運営制度検討調査、公営住宅等ストック総合活用計画策定、住生活基本計画策定などが並ぶ。**5つの表に分かれ、募集中は募集期間、終了分は開札日を持つ。**ページャは無い。**一覧の日付はpublishedAtとして使わない。**情報関連と同じくtr内の別tdから取るため、解析はできるが値の意味は募集期間の開始日か開札日で掲載日ではない。結果表の開札日が「-」の3件はもともと解析できない。ignore_list_published_atをtrueにして36件すべてを掲載日不明として扱う。**初回対象はfilter適用後の全36件で、既定--limit 5では8回に分かれる。****フラグを付ける前は22件が静かに落ちていた。**消防防災ヘリコプター整備推進支援、中城御殿跡地整備検討委員会等運営支援、幹線系統機能の維持確保方策調査、バス運転手確保方策検討調査、基幹バスシステム構築に向けた調査検討などが募集期間の開始日で期間外と判定されていた。**filterは設定しない。**計画策定や調査の案件名は自社領域の語を含まないことが多く、京都府・沖縄県税務システム共同調達検討支援のような案件をincludesで落とす危険があるため、AI判定に任せる。**年度替わりにURLを差し替える。**令和8年度ページは1037587で、索引は/shigoto/nyusatsukeiyaku/1015342/1025074/index.htmlである。**情報関連・産業支援の一覧とは重複しない。**3区分の候補URLは確認時点で1件も重なっておらず、全庁新着との重複は4件だった
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: okinawa-industry-digital-procurement-2026
+    organization_id: okinawa-prefecture
+    name: 令和8年度実施業務（観光支援・産業支援・交流）
+    url: https://www.pref.okinawa.jp/shigoto/nyusatsukeiyaku/1015342/1025075/1037593/
+    collector_type: list_page
+    source_category: procurement
+    priority: medium
+    enabled: true
+    link_selector: "table tbody tr td a[href]"
+    content_selector: "main"
+    ignore_list_published_at: true
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - サウンディング
+      - 市場調査
+      - 実証
+      - テストベッド
+      - オープンイノベーション
+      - スタートアップ
+      - DX
+      - デジタル
+      - システム
+      - データ
+      - AI
+      - ICT
+      - オンライン
+      - アプリ
+      - Web
+      - プラットフォーム
+      - 社会課題
+      - 基盤
+    document_type_hints:
+      - 企画提案公募
+      - 実証事業
+      - スタートアップ支援
+    notes: 観光支援・産業支援・交流の区分に入る令和8年度の発注案件で、**テストベッド実証支援やオープンイノベーション創出のような産業振興側のデジタル案件を拾う。**確認時点は52件で、観光プロモーション、海外出展、物流、移住定住などが大半を占めるためtitle_includesで20語に絞る。**20語で52件のうち18件が残る。**テストベッド実証支援、オープンイノベーション創出支援、沖縄DX推進支援、ICTビジネス高度化支援、小規模事業者等デジタル化支援、デジタル人材UIJターン支援、データ活用推進に向けた環境構築、観光情報基盤構築、観光案内DX推進、DX支援機関連携促進事業補助金2件、スタートアップ関連6件、社会課題解決型クラウドファンディング活用が該当する。**一覧の日付はpublishedAtとして使わない。**18件はすべて募集期間の開始が2026年2月17日から5月29日で、この区分は年度当初に一斉公募される。値の意味は募集期間の開始日か開札日なのでignore_list_published_atをtrueにし、18件すべてを掲載日不明として扱う。**フラグを付ける前は共通開始日2026-07-01より前と判定されて18件全部が落ち、初回Writeで1件も処理されない状態だった。**テストベッド実証支援、オープンイノベーション創出支援、沖縄DX推進支援のような最も対象性の高い案件を取り逃すため、フラグで掲載日不明へ寄せる。**初回対象は18件で、既定--limit 5では4回に分かれる。**includesに一致しない日付不明2件はMICEエリア形成推進業務と観光振興戦略会議運営等委託業務である。**priorityはmediumとし、次年度の2月から5月に向けた継続巡回を主目的にする。**一覧が年度当初に集中し、期中の新規は月1件程度しか増えない。**「IT」は除外語ではなく含有語にも入れない。**判定はNFKC正規化と小文字化の後に部分一致するため、visitやdigitalのようなLatin語にも一致してしまう。確認時点の252タイトルでは誤検知は無かったが、観光系の英字名称が入る一覧なので避ける。この結果、海外IT交流促進事業とITアイランド推進事業はデジタルやICTを含まないため落ちる。どちらもIT産業振興の補助・誘致事業で発注内容が自社領域と直結しないため、今回は語を追加しない。**基盤はやや広い語だが、観光情報基盤構築事業を拾うために残す。**年度替わりにURLを差し替える。**令和8年度ページは1037593で、URLはindex.htmlを含まない末尾スラッシュ形式のまま200を返す。索引は/shigoto/nyusatsukeiyaku/1015342/1025075/index.htmlである
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: okinawa-all-news
+    organization_id: okinawa-prefecture
+    name: 新着更新情報
+    url: https://www.pref.okinawa.jp/news/newslist.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "ul.newslist li span.newsli a[href]"
+    content_selector: "main"
+    title_includes:
+      - 情報提供依頼
+      - RFI
+      - 意見招請
+      - サウンディング
+      - 市場調査
+      - 実証
+      - 官民連携
+      - 公民連携
+      - 共創
+      - スタートアップ
+      - DX
+      - デジタル
+      - システム
+      - データ
+      - AI
+      - ICT
+      - オンライン
+      - アプリ
+      - Web
+      - ホームページ
+      - 共同調達
+      - プラットフォーム
+      - テストベッド
+      - オープンイノベーション
+    document_type_hints:
+      - 情報提供依頼
+      - 企画提案公募
+      - 実証事業
+      - 官民連携
+    notes: 全庁の新着・更新情報を集約する一覧で、**年度別3区分では拾えない部局分散型の案件を取りこぼさないための横断センサーとして登録する。**確認時点は150件で、保持は2026年7月27日から8月25日の約4週間、ページャは無い。**掲載日はli内のspan.dateから150件すべて取得でき、年もある。**意味はサイト上の新着日・更新日で、案件の締切や開札日ではない。3つの年度別一覧と違い期間フィルタが正しく機能する唯一のSourceである。**150件すべてが共通開始日2026-07-01より後なので、filter無しでは初回に150件が対象になり無条件登録はできない。**そのためtitle_includesで24語に絞り、11件へ落とす。既定--limit 5では3回に分かれる。**残った11件のうち独自価値が高いのは、交通困難者公共交通利用促進実証事業、データ活用プラットフォーム構築事業、RPAライセンス・AI-OCRサービス及び利用機器等賃貸借、スタートアップイベント企画運営、水の官民連携実施方針への質問回答である。**これらは登録した3区分のいずれにも載っていない。実証は広報・広告・イベント区分、RPAは賃貸借・リース区分、データ活用プラットフォームは商工労働部のページ、水の官民連携は下水道のページに置かれている。**確認時点の重複は年度別3区分に対して4件だけだった。**情報関連14件と産業支援52件とは1件も重複していない。**情報提供依頼・RFI・意見招請・サウンディング・市場調査は確認時点で0件だが語として残す。**この5語がこのSourceを置く目的で、4週間しか保持しないため巡回間隔が空くと取りこぼす。**フォトコンテストや採用ホームページ制作のような対象外も混じるが、AI判定に任せる。**デジタルや実証だけで落とすと交通実証や官民連携の初期シグナルを失うため、トピック除外は追加しない
+    last_verified_at: "2026-08-25"
     verification_status: verified

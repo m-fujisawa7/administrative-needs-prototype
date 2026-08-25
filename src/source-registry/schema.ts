@@ -91,6 +91,8 @@ export const sourceSchema = z.strictObject({
   initial_since: z.iso.date().optional(),
   /** 募集中のものだけを載せる一覧など、候補0件が正常状態になり得る場合に true にする。`list_page` だけが読み取る。 */
   allow_empty_candidates: z.boolean().optional(),
+  /** 一覧の日付が募集期間・開札日・締切・事業実施日などで掲載日ではない場合に true にする。`list_page` だけが読み取る。 */
+  ignore_list_published_at: z.boolean().optional(),
 });
 
 export const sourceRegistrySchema = z
