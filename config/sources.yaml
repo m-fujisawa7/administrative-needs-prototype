@@ -529,6 +529,14 @@ organizations:
     enabled: true
     notes: 年度別の公募・入札発注情報3区分と全庁新着更新情報を収集する対象都道府県。**公式サイトはwww.pref.okinawa.jpとwww.pref.okinawa.lg.jpの2ドメインが並行して生きている。**同じパスがどちらも200で返りリダイレクトも無い。official_domainは候補URLと一覧内リンクの解決先に合わせてpref.okinawa.jpとする。一覧のアンカーは相対URLなので候補は常にpref.okinawa.jp側へ解決され、Source間で表現は揺れない。**全庁新着のRSSは登録できない。**/news.rssはRSS 2.0でpubDateを持つが、itemのlinkがwww.pref.okinawa.lg.jpの絶対URLなので、現行の公式ドメイン判定では全itemが外部ドメイン扱いになり「タイトルと公式ドメイン内URLを持つitemがありません。」で解析が止まる。仮にofficial_domainを.lg.jp側にすると3つの年度別一覧が全滅するので、HTMLの新着更新情報を使う。RSSを使う場合は同一案件が2ドメインで別URLになりURL単位duplicateが効かなくなる点も残る。**一覧は2種類の構造がある。**年度別の発注情報はtable > tbody > trで、案件名のtdと募集期間または開札日のtd、担当課のtdが並ぶ。全庁新着はul.newslist > li.boxで、span.dateとspan.newsli > aが同じliに入る。**本文セレクタは4Sourceともmainを使う。**確認5ページでmain・article#content・[role=main]・#voice・#contentがすべて同じ本文を返し714〜1,605文字だった。#pagebodyだけ10文字多い。content_selectorを省略してもfallbackがmainで止まるので実害は小さいが、毎回fallback警告が出るためmainを明示する。h1は確認5ページすべて1つで実タイトルなのでtitle_selectorは不要である。個別ページには「ページ番号1041079 更新日 2026年8月19日」と更新履歴が入り、募集終了案件には「この案件は募集を終了しています。」が本文に出る。添付は実施要領・仕様書・質問回答書のPDFが0〜6件付く。**年度別一覧は毎年度URLが変わる。**親ページは年度リンクだけを並べる索引で案件一覧を持たないため、Sourceには年度ページを登録し、年度替わりに新年度URLへ差し替える運用にする。索引は情報関連が/shigoto/nyusatsukeiyaku/1015342/1025066/index.html、コンサルが同1025074、産業支援が同1025075で、公募・入札発注情報のトップは/shigoto/nyusatsukeiyaku/1015342/index.htmlである。**未登録の区分がある。**賃貸借・リース（1025069）、広報・広告・イベント（1025064）、調査・検査・収集・運送（1025068）、調達（1025082）にもICT案件が入るため、全庁新着で拾えなかった場合の追加候補として残す
 
+  - id: ibaraki-prefecture
+    name: 茨城県
+    organization_type: prefecture
+    prefecture: 茨城県
+    official_domain: pref.ibaraki.jp
+    enabled: true
+    notes: 教育委員会の入札公告、情報システム課と計画推進課の新着を収集する対象都道府県。**サイトが2系統ある。**本体はwww.pref.ibaraki.jpのCMSでIDがtmp_で始まり、教育委員会はkyoiku.pref.ibaraki.jpのWordPressである。official_domainをpref.ibaraki.jpにすることでサブドメイン判定が両方を許可するため、組織は分割しない。**本体の一覧は2形式ある。**課の新着はdiv#tmp_contents > div.section > ul > liで、日付がアンカー直前のテキストノードとして「2026年8月24日」形式で入る。全庁新着はul.idx_news_list > liでspan.dateとaが並ぶ。どちらもアンカーのclosestがliへ届くため全件解析でき、意味はCMSの新着・更新日である。**教育委員会の一覧はul.linkcard > li > aで、アンカーテキスト内に「公告日：令和8年8月10日」が入る。**同じul.linkcardに発注見通しのPDF直リンク2本が入るので、link_selectorは案件記事のURLパターンで絞る。**本文セレクタは本体が#tmp_contents、教育委員会がmainである。**本体はmain・article・[role=main]・#contentsが無く、#tmp_contentsで844〜4,032文字を取得できたが、選定結果のような薄いページでは200文字の下限を割ってbodyへfallbackする。教育委員会はmainと[role=main]が同じ本文を返し、確認3ページで144〜547文字だった。**教育委員会の薄い案件ページは本文抽出エラーになる。**県立神栖特別支援学校厨房機器調達は本文144文字で、bodyへfallbackしてもナビ除去後に200文字へ届かず、content抽出が失敗する。本体はPDFの公告・仕様書にあるがHTML本文が下限未満のため現行処理では渡せない。**h1は本体が実タイトル、教育委員会はロゴ画像だけで空である。**教育委員会はtitleに「案件名 – 茨城県教育委員会」が入り、main h3が案件名だけを返すのでtitle_selectorにmain h3を設定する。確認3ページすべてh3は1つだった。**全庁新着のRSSは登録しない。**/news.xmlはRSS 1.0でitem 20件・2026年7月24日から8月24日の1か月分に対し、HTMLは39件・4か月分でHTMLの方が広い。categoryは13種類あるが県政情報やしごと・産業のような分野名で、ICT案件を絞る用途には使えない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -5490,5 +5498,81 @@ sources:
       - 実証事業
       - 官民連携
     notes: 全庁の新着・更新情報を集約する一覧で、**年度別3区分では拾えない部局分散型の案件を取りこぼさないための横断センサーとして登録する。**確認時点は150件で、保持は2026年7月27日から8月25日の約4週間、ページャは無い。**掲載日はli内のspan.dateから150件すべて取得でき、年もある。**意味はサイト上の新着日・更新日で、案件の締切や開札日ではない。3つの年度別一覧と違い期間フィルタが正しく機能する唯一のSourceである。**150件すべてが共通開始日2026-07-01より後なので、filter無しでは初回に150件が対象になり無条件登録はできない。**そのためtitle_includesで24語に絞り、11件へ落とす。既定--limit 5では3回に分かれる。**残った11件のうち独自価値が高いのは、交通困難者公共交通利用促進実証事業、データ活用プラットフォーム構築事業、RPAライセンス・AI-OCRサービス及び利用機器等賃貸借、スタートアップイベント企画運営、水の官民連携実施方針への質問回答である。**これらは登録した3区分のいずれにも載っていない。実証は広報・広告・イベント区分、RPAは賃貸借・リース区分、データ活用プラットフォームは商工労働部のページ、水の官民連携は下水道のページに置かれている。**確認時点の重複は年度別3区分に対して4件だけだった。**情報関連14件と産業支援52件とは1件も重複していない。**情報提供依頼・RFI・意見招請・サウンディング・市場調査は確認時点で0件だが語として残す。**この5語がこのSourceを置く目的で、4週間しか保持しないため巡回間隔が空くと取りこぼす。**フォトコンテストや採用ホームページ制作のような対象外も混じるが、AI判定に任せる。**デジタルや実証だけで落とすと交通実証や官民連携の初期シグナルを失うため、トピック除外は追加しない
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: ibaraki-education-procurement
+    organization_id: ibaraki-prefecture
+    name: 茨城県教育委員会 入札
+    url: https://kyoiku.pref.ibaraki.jp/nyusatsu/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: 'ul.linkcard li a[href*="/nyusatsu/nyusatsu-"]'
+    title_selector: "main h3"
+    content_selector: "main"
+    allow_empty_candidates: true
+    document_type_hints:
+      - 情報提供依頼
+      - 公募型プロポーザル
+      - 一般競争入札公告
+      - 仕様書
+    notes: 教育委員会の入札公告等で、県本体の情報システム課では取れない教育庁独自サイトの案件を拾う最優先Source。**確認時点は3件で、県立神栖特別支援学校厨房機器調達（公告日2026年8月10日）、茨城県立学校等WebサイトCMS環境構築業務委託（公募型プロポーザル、2026年7月24日）、指定管理者公募についての掲載（2026年7月15日）である。**掲載日はアンカーテキスト内の「公告日：令和8年7月24日」から3件すべて取得でき、意味は公告日なので期間フィルタが機能する。共通開始日2026-07-01の期間内は3件で、既定--limit 5では1回で消化できる。**進行中案件だけを載せる短期一覧で終了案件は脱落するため、allow_empty_candidatesを設定する。**ページャは無い。**link_selectorは案件記事のURLパターンで絞る。**同じul.linkcardの3つ目のブロックに発注見通しのPDF直リンク2本（公共工事・建設コンサルタント）が入るため、ul.linkcard li a[href]だけにすると現行処理が扱えないdirect PDF candidateを2件混ぜてしまう。**この絞り方により、将来RFIがPDF直リンクで掲載された場合はその案件を取得しない。**RFI掲載時に個別記事として公開されるかを再確認する。**title_selectorにmain h3を設定する。**h1はロゴ画像だけで空、titleは「案件名 – 茨城県教育委員会」になるため、案件名だけを返すmain h3を使う。**本文が200文字未満の案件は抽出エラーでFailedになる。**確認3ページの本文はWebサイトCMS環境構築が547文字、指定管理者公募が233文字、厨房機器調達が144文字で、厨房機器調達はbodyへfallbackしてもナビ除去後に下限へ届かず失敗する。公告・説明書・仕様書・契約書案のPDFは4〜5件付くが、HTML本文が下限未満の案件では現行処理でPDFまで到達しない。**過去には県立学校次世代校務DXのRFIと市町村共同調達型校務DXのRFIが実施され、RFIからRFPへ進む流れを確認できる一覧である。**RSSは確認できない
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: ibaraki-information-systems-news
+    organization_id: ibaraki-prefecture
+    name: 情報システム課 新着情報一覧
+    url: https://www.pref.ibaraki.jp/kikaku/joho/shintyaku/ichiran.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents div.section ul li a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 情報提供依頼
+      - 公募型プロポーザル
+      - 官民データ活用推進計画
+      - 随意契約公表
+    notes: 情報システム課の新着で、県のICT施策と調達を最上流で追うSource。**確認時点は30件で30件すべて掲載日を取得でき、保持は2025年3月31日から2026年8月24日、ページャは無い。**意味はCMSの新着・更新日である。共通開始日2026-07-01の期間内は8件で、既定--limit 5では2回に分かれる。**内容は制度案内と固定ページの再掲が中心である。**期間内8件はいばらき公共施設予約システムのリニューアル移行案内6件、情報システム課トップ、いばらき電子申請・届出サービス案内で、いずれも固定ページの更新である。30件全体ではIBARAKI FREE Wi-Fi、いばらきブロードバンドネットワークの概要・接続仕様・費用、官民データ活用推進計画、オープンデータ、公的個人認証、行政手続等のオンライン化状況が並ぶ。**調達情報もこの一覧に載る。**いばらき公共施設予約サービス提供業務のプロポーザル選定結果、令和7年度空中写真撮影及びデジタルオルソ作成業務の入札結果、地方自治法施行令167条の2第1項第4号に基づく随意契約の公表が実績で、将来のRFIや公募もこの新着へ現れる想定である。**別調査が挙げた次期県域ネットワーク基盤の整備に係る情報提供依頼は確認時点の30件には無い。**掲載から外れているか別階層のため、RFIがこの一覧に載ることの継続確認が必要である。**title filterは設定しない。**30件で期間フィルタも機能するため負荷が小さく、電子申請・データ連携・クラウド・GIS・オンライン化の表現を限定しない。**固定ページはURL再利用型である。**情報システム課トップやIBBN、FREE Wi-Fiは同じURLの更新なので、登録後の再更新はduplicate-firstで拾えない。新しい調達や施策は案件別URLで追加される。専用RSSは確認できない。全庁新着との重複は確認時点で0件だった
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: ibaraki-public-private-news
+    organization_id: ibaraki-prefecture
+    name: 計画推進課 新着情報一覧
+    url: https://www.pref.ibaraki.jp/kikaku/kikaku/shintyaku/ichiran.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents div.section ul li a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 公募型プロポーザル
+      - 参加企業募集
+      - 総合計画
+      - パブリックコメント
+    notes: 計画推進課の新着で、公民連携・地方創生・総合計画の前段シグナルを拾うSource。**確認時点は30件で30件すべて掲載日を取得でき、保持は2025年11月13日から2026年8月24日、ページャは無い。**意味はCMSの新着・更新日である。共通開始日2026-07-01の期間内は8件で、既定--limit 5では2回に分かれる。**年度当初に公募型プロポーザルがまとまって載る。**2026年3月3日に地域おこし協力隊サポート業務、つながる茨城チャレンジフィールドプロジェクト業務、茨城県移住定住ポータルサイト等運用業務、移住フェア・セミナー実施業務の4件が並んでおり、次年度も同時期の掲載が見込まれる。期間内では令和8年度つながる茨城チャレンジフィールドプロジェクト事業「iBARAKICK!」参加企業の募集が企業・人材との協働による地域課題解決を対象にしており、本文4,032文字とPDF 3件を持つ。**残りは総合計画審議会の開催、地方創生交付金の活用状況、移住支援金、地方拠点強化税制など固定ページと制度案内である。**公民連携デスクや総合計画は同じURLの更新なのでduplicate-firstで再取得できない。**title filterは設定しない。**30件で期間フィルタも機能し、公民連携の表現が一定しないため限定しない。情報システム課の一覧とは重複0件、全庁新着との重複も0件だった。専用RSSは確認できない
+    last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: ibaraki-all-news
+    organization_id: ibaraki-prefecture
+    name: 茨城県 新着一覧
+    url: https://www.pref.ibaraki.jp/news.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: low
+    enabled: false
+    link_selector: "ul.idx_news_list li a[href]"
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 企画提案募集
+      - 情報提供依頼
+    notes: 全庁トップページの新着一覧で、**部局横断の保険として検討したが実測で価値を確認できなかったため無効にする。**確認時点は39件で39件すべて掲載日を取得でき、保持は2026年4月27日から8月24日、ページャは無い。意味は全庁サイト上の新着・更新日で、共通開始日2026-07-01の期間内は23件になる。**無効にする理由は2つある。**第1に対象密度が極端に低い。情報提供依頼・RFI・サウンディング・実証・公民連携・官民連携・スタートアップ・DX・デジタル・システム・データ・AI・ICT・電子申請・オンライン・アプリ・Web・クラウド・ネットワーク・企画提案・プロポーザル・公募などを含む26語で照合すると、39件のうち一致は令和8年度介護職PRパンフレット作成等業務委託企画提案募集の1件だけだった。残りは病害虫防除部、いばらき推し、栗ブランドアップ事業、危険度判定士養成講習会のような広報・制度案内である。第2に取りこぼし防止として機能していない。**情報システム課の新着30件と計画推進課の新着30件のいずれとも、確認時点でURLの重複が0件だった。**トップページの新着は全更新を網羅せず、両課の更新も次期県域ネットワーク基盤のRFIも載っていない。**filterで絞る案も採らない。**26語で1件しか残らないため、その1件が一覧から落ちるとfilter適用後0件でsources:checkがErrorになり、allow_empty_candidatesでも許容されない。**再確認条件は、両課の一覧やRFIがこの新着にも掲載されることを確認できた場合、または一覧の対象密度が上がった場合である。**設定はそのまま使えるよう残し、link_selectorとcontent_selectorは実測済みなので有効化すればそのまま動作する。RSSも登録しない
     last_verified_at: "2026-08-25"
     verification_status: verified
