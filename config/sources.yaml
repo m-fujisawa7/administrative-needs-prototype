@@ -537,6 +537,14 @@ organizations:
     enabled: true
     notes: 教育委員会の入札公告、情報システム課と計画推進課の新着を収集する対象都道府県。**サイトが2系統ある。**本体はwww.pref.ibaraki.jpのCMSでIDがtmp_で始まり、教育委員会はkyoiku.pref.ibaraki.jpのWordPressである。official_domainをpref.ibaraki.jpにすることでサブドメイン判定が両方を許可するため、組織は分割しない。**本体の一覧は2形式ある。**課の新着はdiv#tmp_contents > div.section > ul > liで、日付がアンカー直前のテキストノードとして「2026年8月24日」形式で入る。全庁新着はul.idx_news_list > liでspan.dateとaが並ぶ。どちらもアンカーのclosestがliへ届くため全件解析でき、意味はCMSの新着・更新日である。**教育委員会の一覧はul.linkcard > li > aで、アンカーテキスト内に「公告日：令和8年8月10日」が入る。**同じul.linkcardに発注見通しのPDF直リンク2本が入るので、link_selectorは案件記事のURLパターンで絞る。**本文セレクタは本体が#tmp_contents、教育委員会がmainである。**本体はmain・article・[role=main]・#contentsが無く、#tmp_contentsで844〜4,032文字を取得できたが、選定結果のような薄いページでは200文字の下限を割ってbodyへfallbackする。教育委員会はmainと[role=main]が同じ本文を返し、確認3ページで144〜547文字だった。**教育委員会の薄い案件ページは本文抽出エラーになる。**県立神栖特別支援学校厨房機器調達は本文144文字で、bodyへfallbackしてもナビ除去後に200文字へ届かず、content抽出が失敗する。本体はPDFの公告・仕様書にあるがHTML本文が下限未満のため現行処理では渡せない。**h1は本体が実タイトル、教育委員会はロゴ画像だけで空である。**教育委員会はtitleに「案件名 – 茨城県教育委員会」が入り、main h3が案件名だけを返すのでtitle_selectorにmain h3を設定する。確認3ページすべてh3は1つだった。**全庁新着のRSSは登録しない。**/news.xmlはRSS 1.0でitem 20件・2026年7月24日から8月24日の1か月分に対し、HTMLは39件・4か月分でHTMLの方が広い。categoryは13種類あるが県政情報やしごと・産業のような分野名で、ICT案件を絞る用途には使えない
 
+  - id: tochigi-prefecture
+    name: 栃木県
+    organization_type: prefecture
+    prefecture: 栃木県
+    official_domain: pref.tochigi.lg.jp
+    enabled: true
+    notes: 物品調達のRFI、業務委託、事業者向け新着、全庁RSSから行政DX・情報システム・実証・官民共創の行政ニーズを収集する対象都道府県。HTML一覧と個別ページは同じCMSで、本文は#tmp_contentsに入る。物品調達と業務委託の一覧には掲載日が無く、事業者向け新着の日付は年なしなので、3つのHTML SourceはpublishedAt不明として扱う。全庁RSSはRSS 1.0でdc:dateを持ち、100件・約16日分を保持する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -5575,4 +5583,196 @@ sources:
       - 情報提供依頼
     notes: 全庁トップページの新着一覧で、**部局横断の保険として検討したが実測で価値を確認できなかったため無効にする。**確認時点は39件で39件すべて掲載日を取得でき、保持は2026年4月27日から8月24日、ページャは無い。意味は全庁サイト上の新着・更新日で、共通開始日2026-07-01の期間内は23件になる。**無効にする理由は2つある。**第1に対象密度が極端に低い。情報提供依頼・RFI・サウンディング・実証・公民連携・官民連携・スタートアップ・DX・デジタル・システム・データ・AI・ICT・電子申請・オンライン・アプリ・Web・クラウド・ネットワーク・企画提案・プロポーザル・公募などを含む26語で照合すると、39件のうち一致は令和8年度介護職PRパンフレット作成等業務委託企画提案募集の1件だけだった。残りは病害虫防除部、いばらき推し、栗ブランドアップ事業、危険度判定士養成講習会のような広報・制度案内である。第2に取りこぼし防止として機能していない。**情報システム課の新着30件と計画推進課の新着30件のいずれとも、確認時点でURLの重複が0件だった。**トップページの新着は全更新を網羅せず、両課の更新も次期県域ネットワーク基盤のRFIも載っていない。**filterで絞る案も採らない。**26語で1件しか残らないため、その1件が一覧から落ちるとfilter適用後0件でsources:checkがErrorになり、allow_empty_candidatesでも許容されない。**再確認条件は、両課の一覧やRFIがこの新着にも掲載されることを確認できた場合、または一覧の対象密度が上がった場合である。**設定はそのまま使えるよう残し、link_selectorとcontent_selectorは実測済みなので有効化すればそのまま動作する。RSSも登録しない
     last_verified_at: "2026-08-25"
+    verification_status: verified
+
+  - id: tochigi-goods-rfi
+    organization_id: tochigi-prefecture
+    name: 入札・公募（物品調達）
+    url: https://www.pref.tochigi.lg.jp/kensei/nyuusatsu/koubo-buppin/index.html
+    collector_type: list_page
+    source_category: rfi
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    allow_empty_candidates: true
+    ignore_list_published_at: true
+    title_excludes:
+      - オープンカウンターによる調達公告
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 入札公告
+    notes: 物品調達とRFIを同じ一覧に掲載するSource。確認時点のraw・構造上有効は9件で、固定URLの共通案内「オープンカウンターによる調達公告」1件をSource固有filterで除外し、利用可能は8件となる。掲載日は一覧に無いためA0・B0・C9、publishedAtはfilter後8件すべて不明となる。共通開始日2026-07-01を適用しても初回対象は8件で、既定--limit 5では2回に分かれる。タイトル中の年度や対象月を掲載日と誤認しないようignore_list_published_atを設定する。短期一覧で終了案件は脱落し、直近に掲載されていた県立学校間ネットワーク更新の情報提供依頼も確認時点では一覧から消えているため、日次から数日おきの巡回を前提とする。案件が無い期間は0件が正常なのでallow_empty_candidatesで許容する。現行の案件固有8ページは#tmp_contentsで7件を200文字以上抽出でき、県立学校AEDの1件だけ本文143文字のためbodyへfallbackして1,048文字を取得する。PDFは同ページでも1件検出できる。ページャと専用RSSは確認できない
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: tochigi-outsourcing
+    organization_id: tochigi-prefecture
+    name: 入札・公募（業務委託）
+    url: https://www.pref.tochigi.lg.jp/kensei/nyuusatsu/koubo-itaku/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    title_includes:
+      - RFI
+      - 情報提供
+      - システム
+      - DX
+      - デジタル
+      - AI
+      - 生成AI
+      - BPR
+      - ICT
+      - データ
+      - クラウド
+      - Web
+      - ウェブ
+      - ホームページ
+      - CMS
+      - 電子
+      - オンライン
+      - アプリ
+      - LINE
+      - プラットフォーム
+      - 基盤
+      - 実証
+      - 共創
+      - 官民
+      - スタートアップ
+      - ネットワーク
+      - セキュリティ
+      - RPA
+      - GIS
+      - 端末
+    title_excludes:
+      - 審査結果
+      - 選定結果
+      - 実施結果
+      - 入札の結果
+      - 中止
+      - 取消
+    document_type_hints:
+      - 情報提供依頼
+      - 公募型プロポーザル
+      - 業務委託
+      - 実証
+    notes: 全庁の業務委託を長く保持する一覧で、確認時点のraw・構造上有効は311件だった。掲載日は一覧に無いためA0・B0・C311で、タイトル中の年度や日付を掲載日と誤認しないようignore_list_published_atを設定する。ICT・DX・AI・Web・データ・実証・共創等のSource固有title_includesと、募集終了後の段階だけを示す結果・中止・取消マーカーを適用して36件へ絞る。共通開始日2026-07-01を適用しても全件publishedAt不明のため初回対象は36件、既定--limit 5では8回に分かれる。質問・回答は募集中案件の本文や別ページへ追記される更新を落とさないため除外しない。生成AI児童相談所業務支援、BPR伴走、第3期共同利用型基盤、市町DX、ケアプランデータ連携、Web・CMS、とちぎ官民共創等を含む。令和7年度案件も末尾に残りページャは無い。事業者向け新着と直近案件は重複するが、こちらの保持範囲が長い。代表ページは#tmp_contentsで1,068〜16,763文字をfallbackなしで取得し、PDFも検出できた
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: tochigi-business-news
+    organization_id: tochigi-prefecture
+    name: 新着情報一覧 事業者の方へ
+    url: https://www.pref.tochigi.lg.jp/jigyosha/shinchaku.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    title_includes:
+      - RFI
+      - 情報提供
+      - DX
+      - デジタル
+      - AI
+      - システム
+      - Web
+      - ウェブ
+      - ホームページ
+      - データ
+      - 実証
+      - 課題
+      - ニーズ
+      - リバースピッチ
+      - 共創
+      - 官民
+      - スタートアップ
+      - オープンイノベーション
+      - プラットフォーム
+      - BPR
+      - ICT
+      - クラウド
+      - 電子
+      - オンライン
+      - アプリ
+      - ネットワーク
+      - セキュリティ
+    title_excludes:
+      - 審査結果
+      - 選定結果
+      - 実施結果
+      - 入札の結果
+      - 中止
+      - 取消
+      - 安足健康福祉センターのホームページ
+    document_type_hints:
+      - 情報提供依頼
+      - 実証
+      - リバースピッチ
+      - 官民共創
+      - 公募型プロポーザル
+    notes: 事業者向けの全分野新着100件を約7週間保持する一覧。日付は案件リンクと同じtrのtd.dateにある更新・新着日だが「8月26日」のように年を含まないため、A100・B0・C0でもpublishedAtは取得できない。タイトルに含まれる締切日や開催日を誤って掲載日へ使わないようignore_list_published_atを設定する。RFI・DX・AI・実証・課題提示・リバースピッチ・共創・スタートアップ等の明示語、終了段階マーカー、固定ナビゲーションページ「安足健康福祉センターのホームページ」の固有タイトルを適用し、確認時点はraw100件から14件へ絞る。共通開始日2026-07-01を適用しても全件publishedAt不明のため初回対象は14件、既定--limit 5では3回に分かれる。業務委託一覧と重複する正式調達に加え、企業の課題やニーズを発表するリバースピッチ、インフラDX、スタートアップ交流など独自候補を含む。質問・回答は募集中案件を落とさないため除外しない。専用RSSとページャは確認できない
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: tochigi-all-news-rss
+    organization_id: tochigi-prefecture
+    name: すべての新着情報RSS
+    url: https://www.pref.tochigi.lg.jp/c05/kensei/kouhou/hp/shinchaku.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    content_selector: "#tmp_contents"
+    title_includes:
+      - RFI
+      - 情報提供
+      - DX
+      - デジタル
+      - AI
+      - システム
+      - Web
+      - ウェブ
+      - ホームページ
+      - データ
+      - 実証
+      - 課題
+      - ニーズ
+      - リバースピッチ
+      - 共創
+      - 官民
+      - スタートアップ
+      - オープンイノベーション
+      - プラットフォーム
+      - BPR
+      - ICT
+      - クラウド
+      - 電子
+      - オンライン
+      - アプリ
+      - ネットワーク
+      - セキュリティ
+    title_excludes:
+      - 審査結果
+      - 選定結果
+      - 実施結果
+      - 入札の結果
+      - 中止
+      - 取消
+      - 安足健康福祉センターのホームページ
+    document_type_hints:
+      - 情報提供依頼
+      - 実証
+      - リバースピッチ
+      - 官民共創
+      - スタートアップ
+    notes: 県公式のRSS 1.0で、HTTP URLはHTTPSへリダイレクトされるため最終URLを登録する。確認時点はitem100件、全件にdc:dateがあり、2026-08-10から2026-08-25の約16日分を保持する。事業者向け新着と同じSource固有filterに加え、固定ナビゲーションページ「安足健康福祉センターのホームページ」だけを固有タイトルで除外して10件となる。すべて共通開始日2026-07-01以降なので初回対象も10件、既定--limit 5では2回に分かれる。3つのHTML SourceとのURL完全一致は物品0件・業務委託7件・事業者向け18件で、filter後10件のうち7件はHTML側のfilter後候補に無い。社会課題解決スタートアップ支援、地域課題と社会課題の交流、官民共創ワークショップ、多業種共創等を補完できるため有効化する。保持期間が短いので日次から数日おきの巡回を前提とし、専用HTML一覧の代替にはしない
+    last_verified_at: "2026-08-26"
     verification_status: verified

@@ -220,6 +220,7 @@ describe('allow_empty_candidatesの検証', () => {
       'sendai-cross-lab-partnership',
       'sendai-smart-frontier',
       'shizuoka-kikaku-procurement',
+      'tochigi-goods-rfi',
       'yamanashi-dx-news',
     ]);
     // 一覧ページ解析だけが読み取る設定なので、他のcollector_typeへは付けない。
@@ -311,11 +312,15 @@ describe('ignore_list_published_atの検証', () => {
       .map((source) => source.id)
       .sort();
     // 沖縄県の年度別発注情報は同じtrに日付があるが、募集期間の開始日・開札日・
-    // プロポーザル実施日であり掲載日ではない。
+    // プロポーザル実施日であり掲載日ではない。栃木県のHTML一覧は有効な年付き
+    // 掲載日を持たず、タイトル中の年度・対象日を誤ってpublishedAtにしないために使う。
     expect(configured).toEqual([
       'okinawa-consulting-procurement-2026',
       'okinawa-industry-digital-procurement-2026',
       'okinawa-information-procurement-2026',
+      'tochigi-business-news',
+      'tochigi-goods-rfi',
+      'tochigi-outsourcing',
     ]);
     // 一覧ページ解析だけが読み取る設定なので、他のcollector_typeへは付けない。
     for (const source of registry.sources) {
