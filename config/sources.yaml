@@ -545,6 +545,14 @@ organizations:
     enabled: true
     notes: 物品調達のRFI、業務委託、事業者向け新着、全庁RSSから行政DX・情報システム・実証・官民共創の行政ニーズを収集する対象都道府県。HTML一覧と個別ページは同じCMSで、本文は#tmp_contentsに入る。物品調達と業務委託の一覧には掲載日が無く、事業者向け新着の日付は年なしなので、3つのHTML SourceはpublishedAt不明として扱う。全庁RSSはRSS 1.0でdc:dateを持ち、100件・約16日分を保持する
 
+  - id: gunma-prefecture
+    name: 群馬県
+    organization_type: prefecture
+    prefecture: 群馬県
+    official_domain: pref.gunma.jp
+    enabled: true
+    notes: プロポーザル・RFI、未来投資・デジタル産業課、デジタルトランスフォーメーション課、全庁RSSから行政DX・情報システム・実証・官民共創の行政ニーズを収集する対象都道府県。公式CMSの一覧はli内に年付きの更新日と案件リンクがあり、個別ページの本文は#main_bodyに入る。全庁HTMLは97ページあるが現行collectorはページャを追従しないため、100件を保持する公式RSSを補助Sourceに使う
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -5608,6 +5616,123 @@ sources:
       - RFI
       - 入札公告
     notes: 物品調達とRFIを同じ一覧に掲載するSource。確認時点のraw・構造上有効は9件で、固定URLの共通案内「オープンカウンターによる調達公告」1件をSource固有filterで除外し、利用可能は8件となる。掲載日は一覧に無いためA0・B0・C9、publishedAtはfilter後8件すべて不明となる。共通開始日2026-07-01を適用しても初回対象は8件で、既定--limit 5では2回に分かれる。タイトル中の年度や対象月を掲載日と誤認しないようignore_list_published_atを設定する。短期一覧で終了案件は脱落し、直近に掲載されていた県立学校間ネットワーク更新の情報提供依頼も確認時点では一覧から消えているため、日次から数日おきの巡回を前提とする。案件が無い期間は0件が正常なのでallow_empty_candidatesで許容する。現行の案件固有8ページは#tmp_contentsで7件を200文字以上抽出でき、県立学校AEDの1件だけ本文143文字のためbodyへfallbackして1,048文字を取得する。PDFは同ページでも1件検出できる。ページャと専用RSSは確認できない
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: gunma-proposal-rfi
+    organization_id: gunma-prefecture
+    name: 【公募】プロポーザル等
+    url: https://www.pref.gunma.jp/site/nyuusatsu/list135-773.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: ".info_list_wrap .info_list li a[href]"
+    content_selector: "#main_body"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 公募型プロポーザル
+      - 企画提案
+    notes: プロポーザルとRFIを集約する最優先Source。確認時点はraw・構造上有効・利用可能が各34件で、34件すべて候補リンクと同じliから「2026年8月21日」形式の年付きCMS更新日を取得できる。保持は2025年7月15日から2026年8月21日、共通開始日2026-07-01以降の初回期間対象は22件で、既定--limit 5では最大5件ずつ5回に分かれる。質問回答の追加でも更新日が動くため差分巡回に利用できる。群馬県立学校次期ネットワーク環境整備RFIは#main_bodyで2,006文字、RFI依頼書・要件定義書等のPDF7件を検出した。案件記事は数値IDの固有URLで、年度違い・結果公表も別URLになる。一方、現一覧はRFIを完全網羅せず、過去の県立図書館システムRFIは残っていない。filterは設定せず、日次から数日おきの巡回を前提とする
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: gunma-digital-industry-news
+    organization_id: gunma-prefecture
+    name: 未来投資・デジタル産業課 新着・分野別情報
+    url: https://www.pref.gunma.jp/soshiki/148/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: ".section_information_list_wrap li a[href], #main_body .midashi_ka_detail .info_list li a[href]"
+    content_selector: "#main_body"
+    document_type_hints:
+      - ガバメントピッチ
+      - 実証
+      - 官民共創
+      - オープンイノベーション
+      - 公募型プロポーザル
+    notes: 行政課題を企業へ提示するガバメントピッチ、未来共創トライアル、オープンイノベーション等を拾うSource。自動生成の新着欄50件だけでは現行の令和8年度ぐんまガバメントピッチが候補から漏れるため、同ページ内の分野別リストも併用する。確認時点はraw177件・構造上有効177件、URL重複36件を除く利用可能141件で全件に年付き更新日がある。共通開始日2026-07-01以降の初回期間対象は7件で、既定--limit 5では最大5件ずつ2回に分かれる。ガバメントピッチ本文は#main_bodyで2,722文字、PDF3件を検出した。新着・分野別には固定案内URLも含まれ、登録後の同一URL更新はduplicate-firstで再解析できないが、年度別の募集・開催記事は数値IDの固有URLで公開される。filterは設定せずAI判定で選別する
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: gunma-dx-news
+    organization_id: gunma-prefecture
+    name: デジタルトランスフォーメーション課 新着・分野別情報
+    url: https://www.pref.gunma.jp/soshiki/5/index-2.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: ".section_information_list_wrap li a[href], #main_body .midashi_ka_detail .info_list li a[href]"
+    content_selector: "#main_body"
+    document_type_hints:
+      - 行政DX
+      - 官民共創
+      - 電子申請
+      - BPR
+      - 生成AI
+      - GIS
+    notes: 行政内部DX、電子申請、行財政改革、官民共創スペースNETSUGEN等を拾うSource。自動生成の新着欄40件だけでは最新のNETSUGEN官民共創記事等が候補から漏れるため、同ページ内の分野別リストも併用する。確認時点はraw133件、外部リンク3件を除く構造上有効130件、URL重複25件を除く利用可能105件で、利用可能候補はすべて年付き更新日を持つ。共通開始日2026-07-01以降の初回期間対象は8件で、既定--limit 5では最大5件ずつ2回に分かれる。NETSUGEN官民共創DAY本文は#main_bodyで1,471文字、PDF1件を検出した。固定制度ページはduplicate-firstで更新を再解析できないが、募集・イベント記事は数値IDの固有URLで公開される。初回候補には採用案内や固定施策も含むためpriorityはmediumとし、実Write前にfilterは追加しない
+    last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: gunma-all-news
+    organization_id: gunma-prefecture
+    name: 群馬県 新着情報RSS
+    url: https://www.pref.gunma.jp/rss/10/list1.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: low
+    enabled: true
+    content_selector: "#main_body"
+    title_includes:
+      - RFI
+      - 情報提供依頼
+      - 意見招請
+      - サウンディング
+      - DX
+      - デジタル
+      - 生成AI
+      - AI
+      - システム
+      - Web
+      - ウェブ
+      - ホームページ
+      - CMS
+      - データ
+      - クラウド
+      - 電子申請
+      - 電子契約
+      - オンライン
+      - アプリ
+      - ネットワーク
+      - セキュリティ
+      - RPA
+      - ICT
+      - BPR
+      - 実証
+      - 課題
+      - ニーズ
+      - ガバメントピッチ
+      - 共創
+      - 官民
+      - オープンイノベーション
+      - プラットフォーム
+      - GIS
+      - 端末
+    title_excludes:
+      - プロポーザル結果の公表
+      - 落札公告
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 実証
+      - 官民共創
+      - 行政DX
+    notes: 部局横断の取りこぼしを補うSource。HTML新着は30件・約6日分で全97ページあるが現行collectorはページャを追従しないため、正常取得できる公式RSS 1.0を採用する。確認時点はitem100件、全件にdc:dateがあり2026年8月7日から8月26日の約20日分を保持する。RFI・DX・システム・データ・実証・官民共創等のSource固有title_includesと、募集終了後の段階を示す「プロポーザル結果の公表」「落札公告」を適用して8件となり、初回期間対象も8件、既定--limit 5では最大5件ずつ2回に分かれる。専用3SourceとのURL完全一致はプロポーザル1件・未来投資1件・DX0件で、県立図書館デジタルデータ作成、Agri×NETSUGEN共創、官民共創コミュニティプラットフォーム等6件を補完する。保持期間が短いので日次から数日おきに巡回し、専用Sourceの代替にはしない
     last_verified_at: "2026-08-26"
     verification_status: verified
 
