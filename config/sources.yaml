@@ -569,6 +569,14 @@ organizations:
     enabled: true
     notes: 各種手続・入札、全庁新着、DXポータルから行政DX・情報システム・RFI・実証の行政ニーズを収集する対象都道府県。公式CMSの一覧・個別ページ本文は#tmp_contentsに入る。新着HTMLの日付は年なしで、RSS 1.0は年付きdc:dateを持つがHTMLより保持件数が少ない
 
+  - id: chiba-prefecture
+    name: 千葉県
+    organization_type: prefecture
+    prefecture: 千葉県
+    official_domain: pref.chiba.lg.jp
+    enabled: true
+    notes: DXポータルの報道発表、現在公告中の案件、デジタル推進課と資産経営課の新着を収集する対象都道府県。**Source IDはchiba-pref-*にする。**千葉市（chiba-city）が既にchiba-*を使っているため、福岡市と福岡県で採った方式に合わせる。**一覧の掲載日はparseDateCandidateで解析できない。**表記が「令和8(2026)年8月27日」で、西暦の正規表現は20\d\dの直後に年や区切り文字を要求し、令和の正規表現は令和\d+年を要求するため、括弧が挟まる千葉県の表記はどちらにも一致しない。全角括弧の「令和8（2026）年」でも同じである。**そのため4Sourceとも掲載日不明として扱い、ignore_list_published_atをtrueにする。**フラグが無いと一覧の日付ではなくタイトル内の「（令和8年8月26日）」形式が拾われる。実測では全庁新着100件中14件、資産経営課33件中3件がタイトル由来の日付を取得し、資産経営課の3件は開札実施日で令和5年と6年の分まで含むため期間外として静かに落ちる。DXポータル・現在公告中・デジタル推進課は現時点で誤取得0件だが、同じタイトル慣習が全庁で使われるため予防的に設定する。**CMSは#tmp_contents配下で一覧が3形式ある。**課の新着はtable.list_table（td.dateとtd > a）、現在公告中はul > li、DXポータルは年度別のtable.datatableである。**本文セレクタは4Sourceとも#tmp_contentsを使う。**確認4ページで950〜1,741文字をfallbackなしで取得でき、div.col_mainと#tmp_rcntは101〜166文字多いだけ、main・article・[role=main]・#contentsは存在しない。h1は確認4ページすべて1つで実タイトルなのでtitle_selectorは不要である。添付はRFI参加表明兼秘密保持誓約書、募集要項、仕様書、ガイドラインのPDFが1〜7件付く。**RSSは課別2本が部分集合で、全庁新着だけが日付を持つ。**デジタル推進課のshinchaku.xmlは7件でHTML 16件の部分集合、資産経営課も7件でHTML 33件の部分集合であり、生成AI県専用環境やPPP/PFIサウンディングなどHTMLにしかない記事が9件と26件あるためHTMLを使う。全庁新着のshinchaku.xmlはHTMLと同じ100件だがpubDateがRFC822（Thu, 27 Aug 2026 17:49:00 JST）で100件すべて解析できる。有効化する場合はRSS側を使えば期間フィルタとinitial_sinceが機能する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6215,4 +6223,103 @@ sources:
       - 課題解決
     notes: 県が提示する具体的な課題・テーマに対して民間提案を募集するページで、行政ニーズの早期把握価値は高い。個別テーマは個別HTMLではなく、固定親ページからWord（.docx）へ直接リンクする構造であり、現行CollectorはWordのContent-TypeをHTML本文として処理できないため後続取得に失敗する。親ページをsingle_pageで取得しても固定URL更新型のため、URL完全一致duplicate-firstでは本文更新を検知できない。新規テーマに新しいWord URLが付与されればURL差分で検知できる可能性はあるが、既存Wordの上書きや募集期間変更は追えない。2026年8月27日の確認時点は表上4テーマで、期間上有効なのは通年2テーマであり、官民連携募集一覧Sourceとの候補URL完全一致は0件だった。現時点ではmanualかつdisabledで保持し、将来Word本文取得または固定URL本文差分監視に対応した際に再有効化を検討する
     last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: chiba-pref-dx-release
+    organization_id: chiba-prefecture
+    name: DXポータル 報道発表・お知らせ一覧
+    url: https://www.pref.chiba.lg.jp/dejisen/dxportal/torikumi/houdouichiran.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - DX推進戦略
+      - オープンデータ
+    notes: デジタル改革推進局の報道発表・お知らせを年度別の表にまとめた一覧で、千葉県で最優先のSource。**確認時点はraw 36件・構造上有効36件で、同一記事が年度表をまたいで重複するため4件を除外して利用可能32件になる。**毎回「重複URLを 4 件除外しました。」のWARNINGが出るがURL単位の重複除外が働いた結果で実害は無い。**掲載日は取得できないため初回対象は32件で、既定--limit 5では7回に分かれる。**保持は2022年6月30日から2026年4月8日で、年度見出しごとに表が分かれる。ページャは無い。**情報システム課のRFIをこの一覧だけが載せる。**次期配付パソコン及びネットワーク構築に係る基本設計 情報提供依頼（RFI）は/jousei/rfi/pcnwrfi2025.htmlで、本文1,741文字とRFI参加表明兼秘密保持誓約書のPDFを持ち、デジタル推進課の新着にも全庁新着にも載っていない。**内容はDXアドバイザリー会議、DX推進戦略と施策集、オープンデータサイト開設、意見募集、オフィス改革などで対象密度が高い。**デジタル推進課の新着とは7件重複するが、そちらに無い記事が25件ある。**filterは設定しない。**32件で密度が高く、includesもexcludesも実Write前は過剰適合になる。専用RSSは確認できない
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: chiba-pref-proposal-current
+    organization_id: chiba-prefecture
+    name: 現在公告中の案件
+    url: https://www.pref.chiba.lg.jp/nyuu-kei/buppin-itaku/nyuusatsukoukoku/koukoku/
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents ul li a[href]"
+    content_selector: "#tmp_contents"
+    allow_empty_candidates: true
+    ignore_list_published_at: true
+    document_type_hints:
+      - 企画提案募集
+      - プロポーザル
+      - 情報提供依頼
+      - 仕様書
+    notes: 物品・委託の公告のうち現在進行中の案件だけを載せる一覧で、企画提案の密度が最も高いSource。**確認時点はraw・構造上有効・利用可能とも17件で、一覧に日付欄が無いため全件掲載日不明、初回対象も17件で既定--limit 5では4回に分かれる。**終了案件は別一覧へ移るためページャは無く、案件が途切れる期間に0件があり得るのでallow_empty_candidatesを設定する。**確認時点の17件は観光地域調査、温泉郷ガイド育成、ブース設置・運営、県立病院経営改善、コンプライアンス特別研修、婚活支援モデル、空間デザイン設計、防災研修、ペロブスカイト太陽電池社会実装モデル構築などで、ICT案件は含まれていない。**それでも登録するのは、過去に企業局共通基盤サーバ及び情報システム用パソコン更新のRFIをこの一覧が載せた実績があり、現在公告中だけを短期で入れ替える構造上、巡回間隔を空けると取り逃すためである。**代表ページはペロブスカイト太陽電池で本文1,346文字、企画提案募集要項と仕様書のPDFを持つ。**filterは設定しない。17件と少なく、企画提案の表現も一定しないため実Write後に判断する。全庁新着との重複は確認時点で0件だった。専用RSSは確認できない
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: chiba-pref-digital-promotion-news
+    organization_id: chiba-prefecture
+    name: デジタル推進課 新着情報
+    url: https://www.pref.chiba.lg.jp/dejisui/shinchaku/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    document_type_hints:
+      - 情報提供依頼
+      - 生成AI
+      - 電子契約
+      - 統合型GIS
+    notes: デジタル推進課の新着で、庁内DXとBPRの運用側シグナルを拾うSource。**確認時点はraw・構造上有効・利用可能とも16件で、掲載日は取得できないため初回対象も16件、既定--limit 5では4回に分かれる。**保持は2023年10月20日から2026年7月30日でページャは無い。**内容は県専用環境の生成AI利用拡大、ちば情報マップ、ちば電子調達システムと電子契約サービスの連携、情報セキュリティポリシー、ちば施設予約サービス、ICTツール活用、オフィス改革、公的個人認証、規則改正の意見募集などである。**代表ページの生成AI利用拡大は本文950文字で、ガイドライン概要・ガイドライン第2.0版・プロンプト集のPDF 3件を持つ。**固定ハブページを含む点に注意する。**ちば情報マップや情報セキュリティポリシーは同じURLを更新するため、登録後の内容更新はduplicate-firstで再取得できない。**RSSは登録しない。**/dejisui/shinchaku/shinchaku.xmlは7件でHTML 16件の部分集合であり、生成AI県専用環境、ICTツール活用、オフィス改革、電子契約説明会など9件がRSSに無い。**filterは設定しない。**16件で密度が高く、実Write前にトピックで絞ると運用寄りの案件を落とす。DXポータルとは7件重複するが、そちらに無い記事が9件ある
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: chiba-pref-asset-ppp-news
+    organization_id: chiba-prefecture
+    name: 資産経営課 新着情報
+    url: https://www.pref.chiba.lg.jp/shisan/shinchaku/index.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    document_type_hints:
+      - サウンディング型市場調査
+      - PPP/PFI
+      - 指定管理者公募
+      - 公有財産
+    notes: 資産経営課の新着で、PPP/PFIとサウンディングを約3年保持する点が独自のSource。**確認時点はraw・構造上有効・利用可能とも33件で、掲載日は取得できないため初回対象も33件、既定--limit 5では7回に分かれる。**保持は2023年9月7日から2026年8月6日でページャは無い。**タイトル由来の日付を3件取得してしまうためignore_list_published_atが必要である。**県有財産の一般競争入札開札結果の令和5年・6年・7年分が「（令和7年12月15日・16日実施分）」のような開札実施日を持ち、フラグが無いと令和5年と6年の2件が期間外として静かに落ちる。**内容は千葉県PPP/PFI地域プラットフォームのサウンディング型市場調査とセミナー、館山総合高等学校水産校舎グラウンド利活用サウンディングの募集と実施結果、PPP/PFI手法活用ガイドラインに基づくPFI導入検討結果、未利用県有財産の売却処分、指定管理者公募情報、貸付等検討物件、県庁舎等再整備基本構想・基本計画検討会議である。**代表ページのPPP/PFIサウンディングは本文1,317文字で、チラシ・案件概要書・添付資料のPDF 7件を持つ。**RSSは登録しない。**/shisan/shinchaku/shinchaku.xmlは7件でHTML 33件の部分集合であり、サウンディング型市場調査やPPP/PFIセミナーなど26件がRSSに無い。**filterは設定しない。**指定管理者公募情報(令和X年度)、合同庁舎の供用開始、固定資産台帳のような周辺情報も含むが、反復が確認できてから除外語を判断する。全庁新着との重複は確認時点で0件だった
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: chiba-pref-all-news
+    organization_id: chiba-prefecture
+    name: 千葉県 全庁新着情報
+    url: https://www.pref.chiba.lg.jp/homepage/shinchaku/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: low
+    enabled: false
+    link_selector: "#tmp_contents table.list_table tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    document_type_hints:
+      - 情報提供依頼
+      - 企画提案募集
+    notes: 全庁の新着情報で、**部局横断の補助線として検討したが実測で価値を確認できなかったため無効にする。**確認時点はraw・構造上有効・利用可能とも100件、保持は2026年8月12日から27日の約2週間でページャは無い。**無効にする理由は2つある。**第1に対象密度が極端に低い。情報提供依頼・RFI・意見招請・サウンディング・市場調査・企画提案・プロポーザル・公募・入札・委託・システム・デジタル・DX・AI・ICT・データ・クラウド・ネットワーク・Web・アプリ・電子・オンライン・実証・官民・PPP・PFI・スタートアップ・共創の28語で照合すると100件中4件しか一致せず、その4件は病床整備計画の公募、保留地分譲の開札結果、デジタルスタンプラリー、企業局保有土地の一般競争入札で、**情報提供依頼・RFI・サウンディング・プロポーザル・企画提案は0件だった。**第2に取りこぼし防止として機能していない。**DXポータル32件、現在公告中17件、デジタル推進課16件、資産経営課33件のいずれとも、確認時点でURLの重複が0件だった。**全庁新着は各課の更新を網羅せず、次期配付パソコンのRFIも載っていない。**有効化する場合はRSSを使う。**/homepage/shinchaku/shinchaku.xmlはHTMLと同じ100件だがpubDateがRFC822形式で100件すべて解析でき、期間フィルタとinitial_sinceが機能する。HTML側は令和8(2026)年表記のため日付が取れず、100件全部が毎回初回対象になる。**再確認条件は、各課の一覧やRFIが全庁新着にも掲載されることを確認できた場合、または28語での一致が継続的に増えた場合である。**設定はそのまま使えるよう残す
+    last_verified_at: "2026-08-28"
     verification_status: verified

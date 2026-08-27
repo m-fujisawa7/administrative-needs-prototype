@@ -201,6 +201,7 @@ describe('allow_empty_candidatesの検証', () => {
     expect(configured).toEqual([
       'aichi-digital-strategy',
       'aichi-toshi-somu',
+      'chiba-pref-proposal-current',
       'ehime-iken-shosei',
       'fukui-dx-kobo',
       'fukuoka-ppp-pfi',
@@ -316,6 +317,11 @@ describe('ignore_list_published_atの検証', () => {
     // 有効な年付き掲載日を持たず、タイトル中の年度・対象日や共通の掲載日を誤って
     // publishedAtにしないために使う。
     expect(configured).toEqual([
+      'chiba-pref-all-news',
+      'chiba-pref-asset-ppp-news',
+      'chiba-pref-digital-promotion-news',
+      'chiba-pref-dx-release',
+      'chiba-pref-proposal-current',
       'okinawa-consulting-procurement-2026',
       'okinawa-industry-digital-procurement-2026',
       'okinawa-information-procurement-2026',
