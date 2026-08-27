@@ -553,6 +553,14 @@ organizations:
     enabled: true
     notes: プロポーザル・RFI、未来投資・デジタル産業課、デジタルトランスフォーメーション課、全庁RSSから行政DX・情報システム・実証・官民共創の行政ニーズを収集する対象都道府県。公式CMSの一覧はli内に年付きの更新日と案件リンクがあり、個別ページの本文は#main_bodyに入る。全庁HTMLは97ページあるが現行collectorはページャを追従しないため、100件を保持する公式RSSを補助Sourceに使う
 
+  - id: sagamihara-city
+    name: 相模原市
+    organization_type: designated_city
+    prefecture: 神奈川県
+    official_domain: city.sagamihara.kanagawa.jp
+    enabled: true
+    notes: サウンディング型市場調査、全庁更新RSS、入札等新着情報から行政課題、RFI、システム・DX、実証、官民連携の行政ニーズを収集する政令指定都市。公式CMSの候補ページにはarticle#contentとarticle#content2の2テンプレートが混在するため、本文は両selectorを明示して取得する。全庁HTMLは50件・約2日分、公式RSSは255件・約10日分を保持し、HTML50件はすべてRSSにも含まれるため、部局横断SourceにはRSSを使う
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -5911,4 +5919,141 @@ sources:
       - スタートアップ
     notes: 県公式のRSS 1.0で、HTTP URLはHTTPSへリダイレクトされるため最終URLを登録する。確認時点はitem100件、全件にdc:dateがあり、2026-08-10から2026-08-25の約16日分を保持する。事業者向け新着と同じSource固有filterに加え、固定ナビゲーションページ「安足健康福祉センターのホームページ」だけを固有タイトルで除外して10件となる。すべて共通開始日2026-07-01以降なので初回対象も10件、既定--limit 5では2回に分かれる。3つのHTML SourceとのURL完全一致は物品0件・業務委託7件・事業者向け18件で、filter後10件のうち7件はHTML側のfilter後候補に無い。社会課題解決スタートアップ支援、地域課題と社会課題の交流、官民共創ワークショップ、多業種共創等を補完できるため有効化する。保持期間が短いので日次から数日おきの巡回を前提とし、専用HTML一覧の代替にはしない
     last_verified_at: "2026-08-26"
+    verification_status: verified
+
+  - id: sagamihara-sounding
+    organization_id: sagamihara-city
+    name: サウンディング型市場調査
+    url: https://www.city.sagamihara.kanagawa.jp/shisei/1026766/seido/1026770/1026024/index.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: "#content ul.listlink li a[href]"
+    content_selector: "#content, #content2"
+    ignore_list_published_at: true
+    document_type_hints:
+      - サウンディング型市場調査
+      - 官民連携
+      - 民間提案
+      - 指定管理者
+    notes: 公民連携の事業手法や市場性、民間の運営・収益化案を事業化前に聴取する最優先Source。確認時点はraw・構造上有効・利用可能が各19件で、実施中5件、令和8年度終了1件、令和7年度終了6件、令和6年度終了7件を保持する。案件ごとの日付は一覧に無く年度見出しは案件日付ではないためA0・B0・C19、publishedAtは全件不明で、共通開始日2026-07-01を適用しても初回対象は19件、既定--limit 5では4回に分かれる。タイトル内の年度等を掲載日と誤認しないようignore_list_published_atを設定する。終了案件も過去の行政課題・民間提案ニーズの検証に使うため初回はfilterを設定せず、実Write後に終了段階を除外するか判断する。個別案件は年度をまたいで数値IDの固有URLが発行され、確認範囲では同一URL上書き型ではない。代表ページはcontent:checkで2,308文字、実施要項等のPDF2件をfallbackなしで検出した。ページャと専用RSSは確認できない
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: sagamihara-all-news
+    organization_id: sagamihara-city
+    name: 相模原市 更新情報RSS
+    url: https://www.city.sagamihara.kanagawa.jp/rss.rss
+    collector_type: rss
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    content_selector: "#content, #content2"
+    title_includes:
+      - RFI
+      - 情報提供依頼
+      - 情報提供
+      - 意見招請
+      - サウンディング
+      - システム
+      - DX
+      - デジタル
+      - AI
+      - 生成AI
+      - データ
+      - クラウド
+      - Web
+      - ウェブ
+      - ホームページ
+      - CMS
+      - 電子
+      - オンライン
+      - アプリ
+      - LINE
+      - LAN
+      - ネットワーク
+      - ロボット
+      - 実証
+      - プロポーザル
+      - 企画提案
+      - BPR
+      - RPA
+      - GIS
+      - ICT
+      - プラットフォーム
+      - 官民
+      - 共創
+      - 課題
+      - ニーズ
+      - 端末
+      - ソフトウェア
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 実証
+      - 公募型プロポーザル
+      - 官民連携
+      - 行政DX
+    notes: 部局分散型のRFI・DX・実証・官民連携を補完する横断Source。提示されたHTML更新一覧は50件・2026年8月26日から27日の約2日分で全件に年付き更新日があるが、公式RSS 2.0はitem255件、全件にpubDateがあり2026年8月18日から27日の約10日分を保持し、HTML50件をすべて含むためRSSへ置き換える。確認時点はraw・構造上有効255件で、RFI・システム・DX・デジタル・AI・データ・実証・プロポーザル・官民共創等のSource固有title_includesを適用して利用可能7件、初回期間対象も7件、既定--limit 5では2回に分かれる。調達SourceとのURL完全一致3件、サウンディングSourceとの一致1件を含み、残りは電子申請やオンライン案内等である。個別ページはarticle#contentとarticle#content2が混在するが、両テンプレートの代表ページでcontent:checkを実行し、603文字と985文字をfallbackなしで取得した。固定案内URLの更新はduplicate-firstで再解析できず、title_includesに明示語がない行政ニーズは拾えないため専用Sourceの代替にはしない。保持期間が短いので日次から数日おきに巡回する
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: sagamihara-procurement-news
+    organization_id: sagamihara-city
+    name: 入札等新着情報
+    url: https://www.city.sagamihara.kanagawa.jp/sangyo/1026667/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#content ul.listlink li a[href]"
+    content_selector: "#content, #content2"
+    ignore_list_published_at: true
+    title_includes:
+      - RFI
+      - 情報提供依頼
+      - 情報提供
+      - 意見招請
+      - サウンディング
+      - システム
+      - DX
+      - デジタル
+      - AI
+      - 生成AI
+      - データ
+      - クラウド
+      - Web
+      - ウェブ
+      - ホームページ
+      - CMS
+      - 電子
+      - オンライン
+      - アプリ
+      - LINE
+      - LAN
+      - ネットワーク
+      - ロボット
+      - 実証
+      - プロポーザル
+      - 企画提案
+      - BPR
+      - RPA
+      - GIS
+      - ICT
+      - プラットフォーム
+      - 官民
+      - 共創
+      - 課題
+      - ニーズ
+      - 端末
+      - ソフトウェア
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - システム調達
+      - 公募型プロポーザル
+      - 実証
+    notes: 全庁の入札・委託・公募型プロポーザルを保持する一覧から、行政DX・情報システム・実証等をSource固有filterで選別するSource。提示調査時の70件から変動し、確認時点はraw・構造上有効64件、全件が案件固有の市公式HTMLである。一覧に案件日付は無いためA0・B0・C64でpublishedAtは取得できず、タイトル内の年度・契約開始月等を掲載日と誤認しないようignore_list_published_atを設定する。RFI・システム・DX・AI・Web・データ・実証・プロポーザル等のtitle_includesで8件へ絞り、共通開始日2026-07-01を適用しても全件日付不明なので初回対象は8件、既定--limit 5では2回に分かれる。現在の8件には次期児童相談業務支援システム、データ作成装置賃貸借のほか、一般プロポーザル5件と結果公表1件が含まれる。初回Write前に結果・受付終了の除外は追加せず、実案件を確認してからSource固有filterを再検討する。個別案件は数値IDの固有URLで、実施ページと結果ページも別URLになり、確認範囲では年度をまたぐ上書き再利用はない。代表ページはcontent:checkで985文字、実施要領等のPDF2件をfallbackなしで検出した。ページャと専用RSSは確認できない
+    last_verified_at: "2026-08-27"
     verification_status: verified

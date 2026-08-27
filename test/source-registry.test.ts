@@ -312,12 +312,15 @@ describe('ignore_list_published_atの検証', () => {
       .map((source) => source.id)
       .sort();
     // 沖縄県の年度別発注情報は同じtrに日付があるが、募集期間の開始日・開札日・
-    // プロポーザル実施日であり掲載日ではない。栃木県のHTML一覧は有効な年付き
-    // 掲載日を持たず、タイトル中の年度・対象日を誤ってpublishedAtにしないために使う。
+    // プロポーザル実施日であり掲載日ではない。相模原市と栃木県のHTML一覧は
+    // 有効な年付き掲載日を持たず、タイトル中の年度・対象日を誤ってpublishedAtに
+    // しないために使う。
     expect(configured).toEqual([
       'okinawa-consulting-procurement-2026',
       'okinawa-industry-digital-procurement-2026',
       'okinawa-information-procurement-2026',
+      'sagamihara-procurement-news',
+      'sagamihara-sounding',
       'tochigi-business-news',
       'tochigi-goods-rfi',
       'tochigi-outsourcing',
