@@ -5689,6 +5689,10 @@ sources:
     enabled: true
     link_selector: ".section_information_list_wrap li a[href], #main_body .midashi_ka_detail .info_list li a[href]"
     content_selector: "#main_body"
+    title_excludes:
+      - 群馬県職員採用選考試験
+      - ICT職とのオンライン座談会
+      - 感謝祭
     document_type_hints:
       - 行政DX
       - 官民共創
@@ -5696,7 +5700,7 @@ sources:
       - BPR
       - 生成AI
       - GIS
-    notes: 行政内部DX、電子申請、行財政改革、官民共創スペースNETSUGEN等を拾うSource。自動生成の新着欄40件だけでは最新のNETSUGEN官民共創記事等が候補から漏れるため、同ページ内の分野別リストも併用する。確認時点はraw133件、外部リンク3件を除く構造上有効130件、URL重複25件を除く利用可能105件で、利用可能候補はすべて年付き更新日を持つ。共通開始日2026-07-01以降の初回期間対象は8件で、既定--limit 5では最大5件ずつ2回に分かれる。NETSUGEN官民共創DAY本文は#main_bodyで1,471文字、PDF1件を検出した。固定制度ページはduplicate-firstで更新を再解析できないが、募集・イベント記事は数値IDの固有URLで公開される。初回候補には採用案内や固定施策も含むためpriorityはmediumとし、実Write前にfilterは追加しない
+    notes: 行政内部DX、電子申請、行財政改革、官民共創スペースNETSUGEN等を拾うSource。自動生成の新着欄40件だけでは最新のNETSUGEN官民共創記事等が候補から漏れるため、同ページ内の分野別リストも併用する。確認時点はraw133件、外部リンク3件を除く構造上有効130件、URL重複25件を除く利用可能105件で、利用可能候補はすべて年付き更新日を持つ。共通開始日2026-07-01以降の初回期間対象は8件で、既定--limit 5では最大5件ずつ2回に分かれる。NETSUGEN官民共創DAY本文は#main_bodyで1,471文字、PDF1件を検出した。固定制度ページはduplicate-firstで更新を再解析できないが、募集・イベント記事は数値IDの固有URLで公開される。**初回Write5件ではNETSUGEN官民共創DAYが有用だった一方、GINGHAM感謝祭、ICT職とのオンライン座談会、群馬県職員採用選考試験は行政ニーズ把握への優先度が低かった。**raw全体で職員採用選考試験2件、ICT職とのオンライン座談会2件、感謝祭6件が複数年度・URLで反復し、すべて採用または周年イベントだったためSource固有filterで除外する。filter後の利用可能は95件、共通開始日以降は5件で、NETSUGEN官民共創DAYは残る。NETSUGEN夏祭り、祭り、標準処理期間等の単発・広範な語は除外せずAI判定に任せ、priorityはmediumを維持する
     last_verified_at: "2026-08-26"
     verification_status: verified
 
