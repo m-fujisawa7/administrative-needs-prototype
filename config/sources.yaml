@@ -561,6 +561,14 @@ organizations:
     enabled: true
     notes: サウンディング型市場調査、全庁更新RSS、入札等新着情報から行政課題、RFI、システム・DX、実証、官民連携の行政ニーズを収集する政令指定都市。公式CMSの候補ページにはarticle#contentとarticle#content2の2テンプレートが混在するため、本文は両selectorを明示して取得する。全庁HTMLは50件・約2日分、公式RSSは255件・約10日分を保持し、HTML50件はすべてRSSにも含まれるため、部局横断SourceにはRSSを使う
 
+  - id: saitama-prefecture
+    name: 埼玉県
+    organization_type: prefecture
+    prefecture: 埼玉県
+    official_domain: pref.saitama.lg.jp
+    enabled: true
+    notes: 各種手続・入札、全庁新着、DXポータルから行政DX・情報システム・RFI・実証の行政ニーズを収集する対象都道府県。公式CMSの一覧・個別ページ本文は#tmp_contentsに入る。新着HTMLの日付は年なしで、RSS 1.0は年付きdc:dateを持つがHTMLより保持件数が少ない
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6066,5 +6074,124 @@ sources:
       - 公募型プロポーザル
       - 実証
     notes: 全庁の入札・委託・公募型プロポーザルを保持する一覧から、行政DX・情報システム・実証等をSource固有filterで選別するSource。提示調査時の70件から変動し、確認時点はraw・構造上有効64件、全件が案件固有の市公式HTMLである。一覧に案件日付は無いためA0・B0・C64でpublishedAtは取得できず、タイトル内の年度・契約開始月等を掲載日と誤認しないようignore_list_published_atを設定する。RFI・システム・DX・AI・Web・データ・実証・プロポーザル等のtitle_includesで8件へ絞り、初回Writeで明確な結果公表1件を確認した。raw 64件の実測で「結果について」に一致する29件は全て入札・プロポーザルの事後結果で、「受付は終了しました」に一致する1件も個別ページで受付終了を確認した。実施中案件への誤爆はないため両表現をSource固有title_excludesで除外する。filter後は利用可能6件、全件日付不明のため初回期間対象も6件、既定--limit 5では2回に分かれる。個別案件は数値IDの固有URLで、実施ページと結果ページも別URLになり、確認範囲では年度をまたぐ上書き再利用はない。代表ページはcontent:checkで985文字、実施要領等のPDF2件をfallbackなしで検出した。ページャと専用RSSは確認できない
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: saitama-procurement-news
+    organization_id: saitama-prefecture
+    name: 新着情報一覧 - 各種手続・入札
+    url: https://www.pref.saitama.lg.jp/kense/tetsuzuki/shinchaku/index.html
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "#tmp_contents > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    document_type_hints:
+      - RFI
+      - 企画提案競技
+      - 公募型プロポーザル
+      - 情報システム調達
+    notes: 各種手続・入札の直近更新を部局横断で収集する主力Source。確認時点はraw・構造上有効・利用可能とも20件、一覧の「8月26日」等は候補と同一liにある掲載・更新日だが年なしのためA20・publishedAt取得不可である。タイトル内の「令和8年4月1日」等を誤取得しないようignore_list_published_atを設定し、初回期間対象は20件、既定--limit 5では4回に分かれる。公式RSS 1.0は年付きdc:dateを持つが10件・2026年8月10日から26日のみで、HTML20件より保持範囲が狭いためHTMLを使う。AI窓口端末など有用案件の他に結果段階も含むが、初回Write前に追加filterは設けず実案件を確認する。候補は原則として個別HTMLだが、年度を含まないURLの上書き更新はduplicate-firstで再解析できない注意が残る
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: saitama-all-news
+    organization_id: saitama-prefecture
+    name: 新着情報一覧 - 県政情報・統計
+    url: https://www.pref.saitama.lg.jp/kense/shinchaku/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: "#tmp_contents .shinchaku_list > ul > li > a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    title_includes:
+      - RFI
+      - 情報提供依頼
+      - 情報提供
+      - 意見招請
+      - 企画提案
+      - プロポーザル
+      - 公募
+      - システム
+      - DX
+      - デジタル
+      - AI
+      - データ
+      - Web
+      - ウェブ
+      - CMS
+      - 実証
+      - 官民
+      - サウンディング
+      - 端末
+      - 共同調達
+    document_type_hints:
+      - RFI
+      - 情報提供依頼
+      - 意見招請
+      - 実証
+      - 行政DX
+    notes: 調達一覧に集約されない福祉等のRFI、実証、DXを拾う部局横断の補完Source。確認時点はraw・構造上有効50件、年なしの「8月27日」等が候補と同一liにあるためA50だがpublishedAtは取得できず、タイトル内の年月日誤取得防止のためignore_list_published_atを設定する。RFI・企画提案・システム・DX・AI・データ・実証・官民連携・端末・共同調達等のSource固有title_includesで利用可能6件、全件日付不明のため初回期間対象も6件。うち4件は各種手続・入札SourceとURL完全一致し、2件はそちらにない公立学校学習者用端末共同調達である。過去にも福祉部の生活保護システムRFIが分散掲載されたため横断センサーとして維持する。公式RSS 1.0は年付きdc:dateを持つが10件・約2日分のみで現在のfilter後候補は0件、HTML50件・約7日分より狭いためHTMLを使う。日次から数日おきの巡回を前提とする
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: saitama-dx-portal-news
+    organization_id: saitama-prefecture
+    name: DXポータルSaitama 新着情報
+    url: https://www.pref.saitama.lg.jp/dx-portal/news/index.html
+    collector_type: list_page
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    link_selector: '#tmp_contents ul.news_list li p.cnt a[href*="/dx-portal/info/"]'
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 行政DX
+      - デジタルサービス
+      - BPR
+      - AI
+      - GIS
+    notes: 埼玉県自身のDX施策・デジタルサービスの更新を収集するSource。ページ全体の新着欄26件のうち、/dx-portal/lginfo/の市町村記9件と固定案内「埼玉県が目指すDX」1件をURL構造で候補化せず、/dx-portal/info/の県記16件だけをraw・構造上有効・利用可能候補とする。全16件は候補と同一liの年付き掲載・更新日をpublishedAtとして取得でき、確認時点の範囲は2025年12月26日から2026年7月28日、共通開始日2026-07-01以降の初回期間対象は2件である。内容は既存サービスの公開・利用案内も多く、早期行政ニーズの密度は必ずしも高くないためpriority mediumとする。個別ページは代表2件で#tmp_contentsから926文字と1,195文字をfallbackなしで取得した
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: saitama-public-private-list
+    organization_id: saitama-prefecture
+    name: 官民連携募集一覧
+    url: https://www.pref.saitama.lg.jp/a0104/renkeihiroba.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: low
+    enabled: false
+    link_selector: "#tmp_contents table.datatable tbody tr td a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    document_type_hints:
+      - 官民連携
+      - 民間提案
+      - サウンディング
+      - PPP/PFI
+    notes: 官民連携の募集・登録制度を横断する参考Source。確認時点はselector一致33件、公式ドメイン内32件、重複URL1件を除いた利用可能31件である。ページ共通の掲載日2025年2月27日は案件ごとの日付ではなく、各行にも募集期間等が入り得るためignore_list_published_atを設定する。日付不明のため有効化した場合の初回期間対象は31件である。候補の大半は同じ個別URLを継続更新する常設制度で、URL完全一致duplicate-firstでは募集内容の変化を再収集できない。確認時点の行政ニーズ密度も低いためdisabledとし、個別案件の日付付き新着や案件固有URLが安定して提供される場合に再確認する
+    last_verified_at: "2026-08-27"
+    verification_status: verified
+
+  - id: saitama-public-private-proposals
+    organization_id: saitama-prefecture
+    name: 官民連携テーマ型提案募集
+    url: https://www.pref.saitama.lg.jp/a0104/sai-co-lo/saicolo.html
+    collector_type: manual
+    source_category: public_private_partnership
+    priority: high
+    enabled: false
+    document_type_hints:
+      - 官民連携
+      - 民間提案
+      - 行政課題
+      - 課題解決
+    notes: 県が提示する具体的な課題・テーマに対して民間提案を募集するページで、行政ニーズの早期把握価値は高い。個別テーマは個別HTMLではなく、固定親ページからWord（.docx）へ直接リンクする構造であり、現行CollectorはWordのContent-TypeをHTML本文として処理できないため後続取得に失敗する。親ページをsingle_pageで取得しても固定URL更新型のため、URL完全一致duplicate-firstでは本文更新を検知できない。新規テーマに新しいWord URLが付与されればURL差分で検知できる可能性はあるが、既存Wordの上書きや募集期間変更は追えない。2026年8月27日の確認時点は表上4テーマで、期間上有効なのは通年2テーマであり、官民連携募集一覧Sourceとの候補URL完全一致は0件だった。現時点ではmanualかつdisabledで保持し、将来Word本文取得または固定URL本文差分監視に対応した際に再有効化を検討する
     last_verified_at: "2026-08-27"
     verification_status: verified
