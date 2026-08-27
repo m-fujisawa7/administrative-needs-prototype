@@ -15,6 +15,23 @@ export function canonicalUrlWithoutHash(value: string): string {
 export function parseDateCandidate(value: string): string | null {
   const normalized = value.normalize('NFKC');
 
+  // 千葉県の一覧のように和暦へ括弧付き西暦を併記する表記がある。NFKC正規化で全角括弧も
+  // 半角になるため1つのパターンで扱える。西暦だけを見る既存パターンは括弧が挟まると一致しない。
+  // 令和年と括弧内の西暦が一致する場合だけ採用し、一致しない表記は後続のパターンへ委ねる。
+  const reiwaWithWestern = normalized.match(
+    /令和\s*(\d{1,2})\s*\(\s*(20\d{2})\s*\)\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/u,
+  );
+  if (
+    reiwaWithWestern !== null
+    && 2018 + Number(reiwaWithWestern[1]) === Number(reiwaWithWestern[2])
+  ) {
+    return formatDate(
+      Number(reiwaWithWestern[2]),
+      Number(reiwaWithWestern[3]),
+      Number(reiwaWithWestern[4]),
+    );
+  }
+
   const western = normalized.match(/\b(20\d{2})[年/.\-](\d{1,2})[月/.\-](\d{1,2})日?/u);
   if (western !== null) {
     return formatDate(Number(western[1]), Number(western[2]), Number(western[3]));

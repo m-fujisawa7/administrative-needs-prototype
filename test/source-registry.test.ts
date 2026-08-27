@@ -318,9 +318,6 @@ describe('ignore_list_published_atの検証', () => {
     // publishedAtにしないために使う。
     expect(configured).toEqual([
       'chiba-pref-all-news',
-      'chiba-pref-asset-ppp-news',
-      'chiba-pref-digital-promotion-news',
-      'chiba-pref-dx-release',
       'chiba-pref-proposal-current',
       'okinawa-consulting-procurement-2026',
       'okinawa-industry-digital-procurement-2026',

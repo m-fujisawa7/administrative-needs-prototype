@@ -495,6 +495,29 @@ describe('公開日候補の解析', () => {
       expect(parseDateCandidate(value)).toBeNull();
     },
   );
+
+  it.each([
+    ['令和8(2026)年8月27日', '2026-08-27'],
+    ['令和8（2026）年8月27日', '2026-08-27'],
+    ['令和7(2025)年12月10日', '2025-12-10'],
+    ['令和10(2028)年1月9日', '2028-01-09'],
+  ])('和暦へ括弧付き西暦を併記した %s を解析する', (value, expected) => {
+    expect(parseDateCandidate(value)).toBe(expected);
+  });
+
+  it.each([
+    '令和8(2025)年8月27日',
+    '令和8(2026)年度当初予算',
+    '令和8(2026)年8月',
+    '令和8(2026)年8月32日',
+  ])('括弧付き西暦でも %s は解析しない', (value) => {
+    expect(parseDateCandidate(value)).toBeNull();
+  });
+
+  it('行の先頭にある一覧の掲載日を、タイトル内の開札日より優先する', () => {
+    const row = '令和8(2026)年3月14日 県有財産の一般競争入札開札結果（令和7年12月15日・16日実施分） （総務部資産経営課）';
+    expect(parseDateCandidate(row)).toBe('2026-03-14');
+  });
 });
 
 describe('一覧ページのtitle_excludes', () => {
