@@ -105,6 +105,7 @@ sources:
 | 項目 | 内容 |
 | --- | --- |
 | `link_selector` | 一覧ページから個別ページへのリンクを抽出するCSSセレクター候補 |
+| `notion_organization_name` | Notionの「自治体」だけを上書きするSource固有表示名 |
 | `title_selector` | 個別ページのタイトルをSource固有の要素から取得するCSSセレクター |
 | `content_selector` | 個別ページの本文を抽出するCSSセレクター候補 |
 | `trusted_pdf_domains` | 添付PDF取得時だけ追加で許可する完全一致hostの配列 |
@@ -120,6 +121,8 @@ sources:
 | `ignore_list_published_at` | 一覧から取得できる日付を `publishedAt` として使わず、掲載日不明として扱う。`collector_type: list_page` だけに適用 |
 
 `initial_since` は、過去分が非常に多く初回からすべてをAI解析したくない情報源で使います。省略した場合は共通の初回収集開始日（`2026-07-01`）を使います。初回の開始位置になるだけでなく自動収集の下限日でもあり、収集状態ができた後の通常巡回でも、前回成功日時の3日前がこの日より前になる場合はこの日へ丸めます。手動の`--since`だけはこの下限の対象外で、より前を指定できます。詳細は `../src/collection-run/README.md` を参照してください。
+
+`notion_organization_name` は、Sourceを所有する`organization.name`とNotionの「自治体」に表示したい名称が異なる場合だけ設定します。AI入力、AI解析結果、Sourceの所属組織、親組織、公開Source一覧には影響せず、NotionのPreviewとページ作成時の「自治体」だけを上書きします。未設定Sourceは従来どおり`organization.name`を使用します。`external_organization`だからという理由で親組織名を自動採用せず、Sourceごとに明示された場合だけ適用します。
 
 `title_selector` は、ページ先頭の`h1`が共通ロゴなどで、個別ページの実タイトルを別の要素から取得する必要があるSourceだけに設定します。指定要素の表示テキストを空白正規化して使用します。セレクターが不正、一致0件、または表示テキストが空の場合は、汎用の`h1` / `title`へフォールバックせず本文抽出エラーにします。未設定の場合は従来どおり、空でない`h1`、`title`の順で取得します。
 

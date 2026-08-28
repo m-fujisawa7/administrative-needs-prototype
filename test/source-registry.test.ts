@@ -175,6 +175,24 @@ describe('title_selectorの検証', () => {
   });
 });
 
+describe('notion_organization_nameの検証', () => {
+  it('Source固有のNotion自治体表示名を受理して保持し、未指定は従来どおりundefinedにする', () => {
+    const configured = mutableRegistry();
+    configured.sources[0]!.notion_organization_name = '東京都';
+    expect(validateSourceRegistry(configured).sources[0]?.notion_organization_name)
+      .toBe('東京都');
+
+    expect(validateSourceRegistry(mutableRegistry()).sources[0]?.notion_organization_name)
+      .toBeUndefined();
+  });
+
+  it.each(['', '   ', null, 1])('空または文字列以外の値 %s を拒否する', (value) => {
+    const registry = mutableRegistry();
+    registry.sources[0]!.notion_organization_name = value;
+    expect(() => validateSourceRegistry(registry)).toThrow();
+  });
+});
+
 describe('trusted_pdf_domainsの検証', () => {
   it('hostname配列を受理してregistryに保持し、未指定は従来どおりundefinedにする', () => {
     const configured = mutableRegistry();

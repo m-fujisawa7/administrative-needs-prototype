@@ -38,6 +38,7 @@ const NOTION_PAGE_URL = 'https://www.notion.so/example-page';
 describe('Notionプロパティ変換', () => {
   it('対象判定、文書種別、自社関連度、推奨度、確認状態を変換する', () => {
     const values = mapAnalysisToNotionValues(result());
+    expect(values.organizationName).toBe('大阪市');
     expect(values.target).toBe('対象');
     expect(values.documentType).toBe('RFI');
     expect(values.companyRelevance).toBe('B');
@@ -166,6 +167,66 @@ describe('重複確認と作成', () => {
       'same official URL',
     );
     expect(createCalls).toBe(0);
+  });
+
+  it('Source固有表示名をNotion自治体だけへ適用し、AI上の発信主体は保持する', async () => {
+    const registry = validateSourceRegistry({
+      version: 1,
+      organizations: [{
+        id: 'govtech-tokyo',
+        name: 'GovTech東京',
+        organization_type: 'external_organization',
+        prefecture: '東京都',
+        official_domain: 'govtechtokyo.or.jp',
+        enabled: true,
+      }],
+      sources: [{
+        id: 'govtech-tokyo-procurement-news',
+        organization_id: 'govtech-tokyo',
+        name: 'GovTech東京 公募・調達',
+        url: OFFICIAL_URL,
+        collector_type: 'list_page',
+        source_category: 'procurement',
+        priority: 'high',
+        enabled: true,
+        notion_organization_name: '東京都',
+      }],
+    });
+    const analysisResult: AiCheckResult = {
+      ...result(),
+      sourceId: 'govtech-tokyo-procurement-news',
+      sourceName: 'GovTech東京 公募・調達',
+      organizationName: 'GovTech東京',
+    };
+    const checkNeed = vi.fn(async (input: AiCheckInput) => {
+      expect(input.organization.name).toBe('GovTech東京');
+      return analysisResult;
+    });
+
+    const registerResult = await registerOneAdministrativeNeed({
+      source: registry.sources[0]!,
+      organization: registry.organizations[0]!,
+      officialUrl: OFFICIAL_URL,
+      write: false,
+      client: client(),
+      report: report(),
+      limits: { htmlCharacters: 1_000, pdfCharacters: 1_000, maxPdfs: 3 },
+    }, {
+      loadAnalysisContext: async () => ({
+        analyzer: { provider: 'claude_cli', model: null, analyze: async () => ({}) },
+        companyFitCriteria: 'criteria',
+      }) as never,
+      checkNeed,
+    });
+
+    expect(registerResult.status).toBe('previewed');
+    if (registerResult.status !== 'previewed') return;
+    expect(checkNeed).toHaveBeenCalledOnce();
+    expect(registerResult.preview.analysisResult.organizationName).toBe('GovTech東京');
+    expect(registerResult.preview.values.organizationName).toBe('東京都');
+    expect(registerResult.preview.properties.自治体).toEqual({
+      rich_text: [{ type: 'text', text: { content: '東京都' } }],
+    });
   });
 });
 

@@ -6574,6 +6574,7 @@ sources:
     source_category: procurement
     priority: high
     enabled: true
+    notion_organization_name: 東京都
     link_selector: "article.cardNews a.card__link[href]"
     title_selector: "article.article h1"
     content_selector: "article.article"

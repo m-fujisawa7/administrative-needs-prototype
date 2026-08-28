@@ -91,6 +91,8 @@ export const sourceSchema = z.strictObject({
   source_category: z.enum(SOURCE_CATEGORIES),
   priority: z.enum(PRIORITIES),
   enabled: z.boolean(),
+  /** Notionの「自治体」だけをSource固有の表示名へ上書きする。AI入力やorganization.nameは変更しない。 */
+  notion_organization_name: z.string().trim().min(1).optional(),
   link_selector: selectorSchema.optional(),
   title_selector: selectorSchema.optional(),
   content_selector: selectorSchema.optional(),

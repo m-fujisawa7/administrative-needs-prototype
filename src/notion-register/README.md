@@ -66,6 +66,8 @@ Notionは、存在しない`select`または`multi_select`名をページ作成�
 
 作成時に送るのは15プロパティです。`登録日時`は`created_time`のため送信せず、Notionの自動値を使用します。ページ本文ブロックや添付ファイルも作成しません。
 
+通常、「自治体」にはSourceが参照する`organization.name`を送ります。Sourceに`notion_organization_name`が明示されている場合だけ、Previewとページ作成時の「自治体」をその値へ上書きします。AI入力と解析結果には実際の発信主体である`organization.name`を保持し、`external_organization`の親組織名を自動採用することはありません。
+
 非重複時は、解析後にも登録予定URLでもう一度検索します。重複検索とページ作成は別API呼び出しのため、複数プロセスを同時実行した場合の競合を完全には防げません。手動で1件ずつ実行してください。
 
 ## Claude CLIの利用上限

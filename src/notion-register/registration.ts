@@ -37,10 +37,16 @@ export async function prepareNotionRegistration(
   report: NotionConnectionReport,
   analysisResult: AiCheckResult,
   write: boolean,
+  notionOrganizationName?: string,
 ): Promise<NotionRegistrationPreview> {
   const dataSource = selectRegistrationDataSource(report);
   validateRegistrationSchema(dataSource);
-  const values = mapAnalysisToNotionValues(analysisResult);
+  const mappedValues = mapAnalysisToNotionValues(analysisResult);
+  // AI入力・解析結果では実際の発信主体を保持し、Notionの「自治体」表示だけを
+  // Source固有設定で明示的に上書きする。未設定Sourceは従来値をそのまま使う。
+  const values = notionOrganizationName === undefined
+    ? mappedValues
+    : { ...mappedValues, organizationName: notionOrganizationName };
   const properties = buildNotionPageProperties(values);
   const duplicate = await findExistingNotionPage(
     client,
