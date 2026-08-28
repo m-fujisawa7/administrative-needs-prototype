@@ -577,6 +577,14 @@ organizations:
     enabled: true
     notes: DXポータルの報道発表、現在公告中の案件、デジタル推進課と資産経営課の新着を収集する対象都道府県。**Source IDはchiba-pref-*にする。**千葉市（chiba-city）が既にchiba-*を使っているため、福岡市と福岡県で採った方式に合わせる。**一覧の掲載日は「令和8(2026)年8月27日」形式で、parseDateCandidateへ令和N(20XX)年M月D日のパターンを追加して解析できるようにした。**NFKC正規化で全角括弧も半角になるため「令和8（2026）年8月27日」も同じ扱いで、令和年と括弧内の西暦が一致する場合だけ採用する。**新着系3Sourceは一覧trの先頭にある掲載日を取得できるためignore_list_published_atは付けない。**trのテキストは掲載日・タイトル・所管課の順なので、タイトル内に別の日付があっても先頭の掲載日が勝つ。実例として資産経営課の「県有財産の一般競争入札開札結果（令和7年12月15日・16日実施分）」は掲載日2025-12-16を取得し、以前はタイトル内の開札日2025-12-15を誤取得していた。**現在公告中と全庁新着はignore_list_published_atをtrueで維持する。**現在公告中はul > liで日付欄が無く、フラグを外すとタイトル内の日付だけが拾われる。確認時点の17件では該当0件だが、「令和8年4月1日付け契約締結事業者の公募について」のようなタイトルが来れば契約日を掲載日として誤取得する。全庁新着は無効のまま設定を残す。**initial_since相当の共通開始日2026-07-01を適用した初回対象は、DXポータル32件中0件、現在公告中17件中17件、デジタル推進課16件中1件、資産経営課33件中5件で合計23件になる。**DXポータルは保持が2022年6月30日から2026年4月8日で最新が4月8日のため期間内が0件になり、404だった/dejisen/shingikai/advisory/kaisai.htmlも掲載日2026-03-13で自然に期間外へ落ちる。exact excludeは不要である。**CMSは#tmp_contents配下で一覧が3形式ある。**課の新着はtable.list_table（td.dateとtd > a）、現在公告中はul > li、DXポータルは年度別のtable.datatableである。**本文セレクタは4Sourceとも#tmp_contentsを使う。**確認4ページで950〜1,741文字をfallbackなしで取得でき、div.col_mainと#tmp_rcntは101〜166文字多いだけ、main・article・[role=main]・#contentsは存在しない。h1は確認4ページすべて1つで実タイトルなのでtitle_selectorは不要である。添付はRFI参加表明兼秘密保持誓約書、募集要項、仕様書、ガイドラインのPDFが1〜7件付く。**RSSは課別2本が部分集合で、全庁新着だけが日付を持つ。**デジタル推進課のshinchaku.xmlは7件でHTML 16件の部分集合、資産経営課も7件でHTML 33件の部分集合であり、生成AI県専用環境やPPP/PFIサウンディングなどHTMLにしかない記事が9件と26件あるためHTMLを使う。全庁新着のshinchaku.xmlはHTMLと同じ100件だがpubDateがRFC822（Thu, 27 Aug 2026 17:49:00 JST）で100件すべて解析できる。有効化する場合はRSS側を使えば期間フィルタとinitial_sinceが機能する
 
+  - id: kumamoto-city
+    name: 熊本市
+    organization_type: designated_city
+    prefecture: 熊本県
+    official_domain: city.kumamoto.jp
+    enabled: true
+    notes: 入札・企画提案、PFI・マーケットサウンディング、全庁新着RSSから、RFI、行政DX、実証、官民連携の行政ニーズを収集する政令指定都市。公式CMSの一覧はli.loadbox内に年付き更新日と案件リンクがあり、個別ページ本文は#mainShosaiに入る。入札一覧の全135件は「もっと見る」で動的取得する構造だが、現行collectorは初期HTMLの36件だけを取得する。全庁RSSはRSS 1.0でdc:dateを持ち、確認時点で約16か月分を保持する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6318,5 +6326,86 @@ sources:
       - 情報提供依頼
       - 企画提案募集
     notes: 全庁の新着情報で、**部局横断の補助線として検討したが実測で価値を確認できなかったため無効にする。**確認時点はraw・構造上有効・利用可能とも100件、保持は2026年8月12日から27日の約2週間でページャは無い。**無効にする理由は2つある。**第1に対象密度が極端に低い。情報提供依頼・RFI・意見招請・サウンディング・市場調査・企画提案・プロポーザル・公募・入札・委託・システム・デジタル・DX・AI・ICT・データ・クラウド・ネットワーク・Web・アプリ・電子・オンライン・実証・官民・PPP・PFI・スタートアップ・共創の28語で照合すると100件中4件しか一致せず、その4件は病床整備計画の公募、保留地分譲の開札結果、デジタルスタンプラリー、企業局保有土地の一般競争入札で、**情報提供依頼・RFI・サウンディング・プロポーザル・企画提案は0件だった。**第2に取りこぼし防止として機能していない。**DXポータル32件、現在公告中17件、デジタル推進課16件、資産経営課33件のいずれとも、確認時点でURLの重複が0件だった。**全庁新着は各課の更新を網羅せず、次期配付パソコンのRFIも載っていない。**有効化する場合はRSSを使う。**/homepage/shinchaku/shinchaku.xmlはHTMLと同じ100件だがpubDateがRFC822形式で100件すべて解析でき、期間フィルタとinitial_sinceが機能する。HTML側は令和8(2026)年表記のため日付が取れず、100件全部が毎回初回対象になる。**再確認条件は、各課の一覧やRFIが全庁新着にも掲載されることを確認できた場合、または28語での一致が継続的に増えた場合である。**設定はそのまま使えるよう残す
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: kumamoto-procurement-proposal
+    organization_id: kumamoto-city
+    name: 入札・企画提案の公告
+    url: https://www.city.kumamoto.jp/list04401.html
+    collector_type: list_page
+    source_category: proposal
+    priority: high
+    enabled: true
+    link_selector: ".kijiArea ul.kijilist li.loadbox .title a[href]"
+    content_selector: "#mainShosai"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 公募型プロポーザル
+      - 一般競争入札
+    notes: RFI、企画提案、一般競争入札を横断する熊本市の主力Source。**確認時点は初期HTMLのraw 36件、外部ドメイン1件を除く構造上有効・利用可能35件で、35件すべて年付き更新日をpublishedAtとして取得できる。**配置はA、表記例は「2026年8月28日更新」、意味はCMSの更新日で、共通開始日2026-07-01以降の初回期間対象も35件、既定--limit 5では最大5件ずつ7回に分かれる。**ページ上は全135件だが、初期HTMLには36件しかなく、残りは「もっと見る」の動的エンドポイントから取得するため現行collectorは追従しない。**初期表示は約1か月分を保持するため日次から数日おきの巡回を前提とする。候補は数値IDの案件固有URLで、確認した同種・再公告も別IDになっている。外部の熊本市上下水道局サイト1件はofficial_domain外として除外される。個別ページは#mainShosaiで907〜1,526文字を取得でき、RFI参加様式、仕様書等のPDF・Word添付も検出できる。実Write前は件数だけを理由にfilterを追加しない
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: kumamoto-pfi-sounding
+    organization_id: kumamoto-city
+    name: PFI（民間資金等活用事業）
+    url: https://www.city.kumamoto.jp/list04419.html
+    collector_type: list_page
+    source_category: public_private_partnership
+    priority: high
+    enabled: true
+    link_selector: ".kijiArea ul.kijilist li.loadbox .title a[href]"
+    content_selector: "#mainShosai"
+    document_type_hints:
+      - マーケットサウンディング
+      - PPP/PFI
+      - 民間提案
+      - 公民連携
+    notes: PFI、公共施設・公有地活用、マーケットサウンディングを事業形成段階から把握するSource。**確認時点はraw・構造上有効・利用可能とも20件で、20件すべて年付き更新日をpublishedAtとして取得できる。**配置はA、意味はCMSの更新日で、保持は2018年12月28日から2026年8月12日、共通開始日2026-07-01以降の初回期間対象は2件、既定--limit 5では最大2件である。個別案件は数値IDの固有URLで、2025年の新庁舎交流・共創スペース等マーケットサウンディングも独立ページになっている。**一方、期間内2件の「マーケットサウンディングについて」と「熊本市公民連携プラットフォーム」は固定集約URLを更新する形式で、登録後の本文更新はURL完全一致duplicate-firstでは再解析できない。**今後も案件固有URLが追加されるものは継続取得できるが、固定集約ページだけで告知される新規テーマは取りこぼすため、ページ構造変更時に再確認する。個別ページは#mainShosaiで1,180〜1,304文字を取得でき、説明資料等のPDFを検出できる。実Write前はfilterを追加しない
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: kumamoto-all-news-rss
+    organization_id: kumamoto-city
+    name: 熊本市ホームページ 新着情報RSS
+    url: https://www.city.kumamoto.jp/new_list.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: medium
+    enabled: true
+    content_selector: "#mainShosai"
+    title_includes:
+      - RFI
+      - 情報提供依頼
+      - 意見招請
+      - サウンディング
+      - 実証
+      - DX
+      - デジタル
+      - AI
+      - システム
+      - ICT
+      - データ
+      - BPR
+      - RPA
+      - IoT
+      - GIS
+      - クラウド
+      - CMS
+      - 官民
+      - 共創
+      - 民間提案
+      - プロポーザル
+      - 企画提案
+      - 電子契約
+      - 電子入札
+    document_type_hints:
+      - 情報提供依頼
+      - 行政DX
+      - 実証実験
+      - 官民連携
+    notes: 入札・PFI専用一覧に載らない部局横断のRFI、行政DX、実証、官民連携を補完する公式RSS。**確認時点はRSS 1.0のraw 213件で全件にdc:dateがあり、2025年5月1日から2026年8月28日まで約16か月を保持する。**外部ドメイン2件を除く構造上有効211件にSource固有title_includesを適用すると利用可能8件、共通開始日2026-07-01以降の初回期間対象は6件、既定--limit 5では最大5件ずつ2回に分かれる。期間内6件のうち5件は入札・企画提案SourceとURL重複するが、「チョイソコくまもと富合・城南（AIデマンドタクシー）」はRSSだけの独自候補で、期間外にも公園のキッチンカー実証実験2件があるため補完価値を確認できた。外部の熊本市上下水道局サイト等はofficial_domain外として除外される。title_includesはRFI、実証、DX・IT、官民共創の明示語に限定し、一般的な公募・委託・募集だけでは通さない。個別HTMLは#mainShosaiで取得できる
     last_verified_at: "2026-08-28"
     verification_status: verified
