@@ -594,6 +594,14 @@ organizations:
     parent_organization_id: kumamoto-city
     notes: 熊本市上下水道局の独自公式ドメインを安全に取得するため、熊本市を親組織として分離した子組織。自治体名はNotionと公開一覧で熊本市として扱う
 
+  - id: kanagawa-prefecture
+    name: 神奈川県
+    organization_type: prefecture
+    prefecture: 神奈川県
+    official_domain: pref.kanagawa.jp
+    enabled: true
+    notes: 記者発表資料からロボット・ドローン・実証・スタートアップ支援・共同研究の政策シグナルを収集する対象都道府県。横浜市・川崎市・相模原市は別組織で登録済みだが、kanagawa-*というSource IDは未使用なので県側で使う。**一覧の掲載日は2種類の理由で候補ごとに取得できない。**全庁新着はdl直下にdtとddが交互に並び、日付はdt、アンカーはdd内にある。ddとdlはclosestの対象要素ではないためdiv.list_topまで上がってしまい、100件すべてに一覧先頭の日付が付く。実測でも100件が同じ2026-08-28になった。記者発表は日付がh3、候補はdiv.kisya_timeline_listbox配下のdl > dt > aで、closestがlistboxで止まるため日付に届かない。**代わりにタイトル内の日付が拾われる。**記者発表394件のうち36件が「令和8年8月31日に県庁屋上に…」や「ME-BYOサミット神奈川2026秋」から開催日を取得するため、ignore_list_published_atで無効化する。**RSSは候補ごとの日付を持つ。**全庁新着の/news/news.xmlはRSS 1.0でitem 100件がHTMLと一致し、dc:dateを100件すべて解析できてcategoryも53種類ある。記者発表の/prs/list.xmlはitem 200件・2026年6月25日から8月27日の約2か月で、日付46種類を解析できるが年度ページの394件には届かない。**本文セレクタは#tmp_contentsを使う。**確認3ページで591〜1,455文字をfallbackなしで取得でき、main・article・[role=main]・#main・#contentsは存在しない。h1は3ページすべて1つで実タイトルなのでtitle_selectorは不要である。個別ページには発表日が本文に入るためcontent側のpublishedAtは取得できる。**記者発表の一覧は年度と記者クラブごとに分かれる。**URLは/prs/list-<年度>-<クラブ番号>-1.htmlで、県政記者クラブは番号1、2から4に他クラブの一覧がある。親ページは/prs/で、年度替わりにはlist-2027-1-1.htmlへ差し替える
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6451,5 +6459,64 @@ sources:
       - 実証実験
       - 官民連携
     notes: 入札・PFI専用一覧に載らない部局横断のRFI、行政DX、実証、官民連携を補完する公式RSS。**確認時点はRSS 1.0のraw 213件で全件にdc:dateがあり、2025年5月1日から2026年8月28日まで約16か月を保持する。**外部ドメイン2件を除く構造上有効211件にSource固有title_includesを適用すると利用可能8件、共通開始日2026-07-01以降の初回期間対象は6件、既定--limit 5では最大5件ずつ2回に分かれる。期間内6件のうち5件は入札・企画提案SourceとURL重複するが、「チョイソコくまもと富合・城南（AIデマンドタクシー）」はRSSだけの独自候補で、期間外にも公園のキッチンカー実証実験2件があるため補完価値を確認できた。外部の熊本市上下水道局サイト等はofficial_domain外として除外される。title_includesはRFI、実証、DX・IT、官民共創の明示語に限定し、一般的な公募・委託・募集だけでは通さない。個別HTMLは#mainShosaiで取得できる。**このSourceは入札・企画提案の公告を補完する位置づけなので、そちら側で除外している事後段階と質問回答のページがRSS側から再流入し得る。**初回Writeでは6候補のうち【質問と回答】熊本市託麻児童館外9施設防犯カメラシステム構築業務委託が#mainShosai 154文字でcontent抽出に失敗し、【審査結果】【公募型プロポーザル】熊本市広報効果検証及び戦略的活用提案業務委託は入札・企画提案側で先に登録済みだったためDuplicate skippedになった。**同じ角括弧付きの段階マーカー4語をtitle_excludesへ追加する。**RSS全216件のうち一致は3件で、【審査結果】2件と【質問と回答】1件、このうちincludesも通っていた2件が候補から落ちて利用可能8件が6件、期間内6件が4件になる。**結果・質問・回答のような広い語は使わない。**入札・企画提案側と同じ表記だけを対象にし、上下水道局の中継2業務のようなSource固有タイトルは今回追加しない。**Source自体は維持する。**チョイソコくまもと富合・城南（AIデマンドタクシー）のように専用の調達一覧に載らない案件をRSSだけが拾えるためで、期間内に残る4件は同案件、消防局西消防署外7施設防犯カメラシステム構築、西消防署建設基本・実施設計プロポーザル、固定資産税（償却資産）データ入力である
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: kanagawa-press-releases-2026
+    organization_id: kanagawa-prefecture
+    name: 記者発表資料 県政記者クラブ（2026年度）
+    url: https://www.pref.kanagawa.jp/prs/list-2026-1-1.html
+    collector_type: list_page
+    source_category: policy_signal
+    priority: high
+    enabled: true
+    link_selector: ".kisya_timeline_listbox dl dt a[href]"
+    content_selector: "#tmp_contents"
+    ignore_list_published_at: true
+    title_includes:
+      - DX
+      - デジタル
+      - データ
+      - ロボット
+      - ドローン
+      - 衛星
+      - スタートアップ
+      - ベンチャー
+      - 実証
+      - 共同研究
+      - 官民
+      - 公民
+      - サウンディング
+      - オープンイノベーション
+      - 情報提供依頼
+      - RFI
+      - システム
+      - ICT
+      - プロポーザル
+      - 企画提案
+      - 生成AI
+      - AI活用
+    document_type_hints:
+      - 実証事業
+      - 共同研究
+      - 企業募集
+      - プロジェクト採択
+    notes: 県政記者クラブへ配布した資料の年度別一覧で、神奈川県で最も対象密度が高いSource。**確認時点はraw・構造上有効とも394件、2026年4月から8月27日分を保持し、公式説明では発表日が属する年度の翌々年度末まで残る。**ページャは無い。**掲載日は候補ごとに取得できない。**日付はh3にあり、候補はdiv.kisya_timeline_listbox配下のdl > dt > aなのでclosestがlistboxで止まる。タイトル内の開催日を36件が誤取得するためignore_list_published_atを設定し、全候補を掲載日不明として扱う。**title_includesで22語に絞る。**394件が26件になり、共通開始日2026-07-01を適用しても全件日付不明なので初回対象も26件、既定--limit 5では6回に分かれる。**残る26件は自社領域と近い政策シグナルが中心である。**ドローンの開発・実証実験プロジェクトの募集と採択、無線自律型水中ドローンによるブルーカーボン調査実証、介護ロボットの改良企業募集と採択、生活支援ロボットの開発プロジェクト、衛星データ利活用プロジェクトの募集と採択、AIを活用した浄水場薬品注入の共同研究、次世代型太陽電池の実証、技術系ベンチャー・スタートアップ成長支援プログラム、DXスキルのオンライン講座、特殊詐欺被害防止アプリの実証、工事積算システムの入札中止である。**AIは単独では含有語に入れない。**判定はNFKC正規化と小文字化の後に部分一致するため、tvkかながわMIRAIストリートのようなLatin語へ一致してしまう。実測でもAIを入れると27件中1件がこの誤検知だった。AIを活用した浄水場の共同研究は共同研究で拾えるので、生成AIとAI活用だけを残す。**RSSは登録しない。**/prs/list.xmlはitem 200件で日付を全件解析できるが、保持が2026年6月25日から8月27日の約2か月しかなく、年度ページ394件のうち4月から6月の案件を含む17件を取り逃す。日付が取れない代わりに長期保持を取る判断である。**年度替わりにURLを差し替える。**/prs/list-<年度>-<クラブ番号>-1.htmlの形式で県政記者クラブは番号1、次年度はlist-2027-1-1.htmlになる。番号2から4の他記者クラブ一覧は今後の追加候補として残す。個別ページは#tmp_contentsで591〜1,455文字を取得でき、fallbackは起きない
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: kanagawa-all-news
+    organization_id: kanagawa-prefecture
+    name: 神奈川県ホームページ 新着情報RSS
+    url: https://www.pref.kanagawa.jp/news/news.xml
+    collector_type: rss
+    source_category: digital_news
+    priority: low
+    enabled: false
+    content_selector: "#tmp_contents"
+    document_type_hints:
+      - 情報提供依頼
+      - 公募
+    notes: 全庁の新着情報で、**部局横断の保険として検討したが実測で対象密度がほぼ0だったため無効にする。**確認時点はRSS 1.0のitem 100件で、dc:dateを100件すべて解析でき、categoryも53種類ある。保持は2026年8月27日から28日の**わずか2日分**で、1日約50件が流れる高回転である。**無効にする理由は密度である。**情報提供依頼・RFI・意見招請・サウンディング・市場調査・実証・共同研究・官民・公民・オープンイノベーション・スタートアップ・ベンチャー・DX・デジタル・AI・データ・ロボット・ドローン・衛星・システム・ICT・プロポーザル・企画提案・公募・入札の25語で照合すると100件中1件しか一致せず、それも「カナフルTV（tvk 地上デジタル3ch）」でデジタルの誤検知だった。中身は課トップページ、職員採用案内、試験情報、県公報、技能検定、研修案内などの固定ページ更新が大半で、案件公告はほとんど載らない。**HTMLではなくRSSで登録する。**HTML（/news/）はdl直下のdtとddが交互に並ぶ構造で、ddとdlがclosestの対象外のためdiv.list_topまで上がり、100件すべてに一覧先頭の日付が付いてしまう。RSSならdc:dateが候補ごとに解析でき、有効化する場合はこちらが正しい。**categoryは絞り込みに使えない。**最多が電子県庁・県政運営・県勢の31件だが、中身は県公報や個人情報保護で、ICT調達を特定できる分類は無い。**再確認条件は、記者発表に載らないRFIや調達がこの新着経由で確認できた場合、または25語での一致が継続的に増えた場合である。**保持が2日しかないため、有効化する場合は日次より短い巡回間隔が前提になる
     last_verified_at: "2026-08-28"
     verification_status: verified

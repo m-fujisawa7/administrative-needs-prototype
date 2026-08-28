@@ -355,6 +355,7 @@ describe('ignore_list_published_atの検証', () => {
     expect(configured).toEqual([
       'chiba-pref-all-news',
       'chiba-pref-proposal-current',
+      'kanagawa-press-releases-2026',
       'okinawa-consulting-procurement-2026',
       'okinawa-industry-digital-procurement-2026',
       'okinawa-information-procurement-2026',
