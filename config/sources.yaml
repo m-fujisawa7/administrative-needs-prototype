@@ -602,6 +602,14 @@ organizations:
     enabled: true
     notes: 記者発表資料からロボット・ドローン・実証・スタートアップ支援・共同研究の政策シグナルを収集する対象都道府県。横浜市・川崎市・相模原市は別組織で登録済みだが、kanagawa-*というSource IDは未使用なので県側で使う。**一覧の掲載日は2種類の理由で候補ごとに取得できない。**全庁新着はdl直下にdtとddが交互に並び、日付はdt、アンカーはdd内にある。ddとdlはclosestの対象要素ではないためdiv.list_topまで上がってしまい、100件すべてに一覧先頭の日付が付く。実測でも100件が同じ2026-08-28になった。記者発表は日付がh3、候補はdiv.kisya_timeline_listbox配下のdl > dt > aで、closestがlistboxで止まるため日付に届かない。**代わりにタイトル内の日付が拾われる。**記者発表394件のうち36件が「令和8年8月31日に県庁屋上に…」や「ME-BYOサミット神奈川2026秋」から開催日を取得するため、ignore_list_published_atで無効化する。**RSSは候補ごとの日付を持つ。**全庁新着の/news/news.xmlはRSS 1.0でitem 100件がHTMLと一致し、dc:dateを100件すべて解析できてcategoryも53種類ある。記者発表の/prs/list.xmlはitem 200件・2026年6月25日から8月27日の約2か月で、日付46種類を解析できるが年度ページの394件には届かない。**本文セレクタは#tmp_contentsを使う。**確認3ページで591〜1,455文字をfallbackなしで取得でき、main・article・[role=main]・#main・#contentsは存在しない。h1は3ページすべて1つで実タイトルなのでtitle_selectorは不要である。個別ページには発表日が本文に入るためcontent側のpublishedAtは取得できる。**記者発表の一覧は年度と記者クラブごとに分かれる。**URLは/prs/list-<年度>-<クラブ番号>-1.htmlで、県政記者クラブは番号1、2から4に他クラブの一覧がある。親ページは/prs/で、年度替わりにはlist-2027-1-1.htmlへ差し替える
 
+  - id: tokyo-prefecture
+    name: 東京都
+    organization_type: prefecture
+    prefecture: 東京都
+    official_domain: metro.tokyo.lg.jp
+    enabled: true
+    notes: デジタルサービス局のトピックスと教育委員会の契約・入札からRFIと共同調達を収集する対象都道府県。北海道や京都府と同じくIDはtokyo-prefectureに揃える。**official_domainはmetro.tokyo.lg.jpにする。**局ごとにサブドメインが分かれ、デジタルサービス局はwww.digitalservice、教育委員会はwww.kyoiku、主税局はwww.taxで、サブドメイン判定によりすべて許可される。**CMSは局共通のwidget型で、一覧はli.widget-information-content_info-list-date-list-item配下にp > time、ラベル、div > aが並ぶ。**掲載日はli内のtimeにdatetime属性付きで存在するが、**アンカーがdiv.widget-information-content_info-list-link-wrapperに包まれており、closestがこのdivで止まるためliのtimeまで上がれない。**そのため候補ごとの掲載日は取得できず、佐賀県・長崎県と同じdiv停止型である。タイトル側に日付が無いので誤取得は発生せず、ignore_list_published_atは不要である。**本文セレクタはmainを使う。**[role=main]と同じ本文を返し、article・#contents・#tmp_contents・.widget-article-bodyはいずれも存在しない。個別ページはscriptとstyleを除くと教育委員会が451〜1,708文字、トピックスが262〜1,336文字で、いずれもtime要素から更新日を取得できる。**デジタルサービス局の報道発表は中継ページなので登録しない。**/information/press/2026配下の記事はscriptとstyleを除くと81〜119文字しかなく、本文はwww.metro.tokyo.lg.jp/information/press/配下へのリンク1本だけである。200文字の下限を割るため候補にすると全件content抽出エラーになり、collection stateも前進しない。**主税局の更新情報も登録しない。**確認時点の20件は納税通知書の発送、税務統計年報、注意喚起、ダッシュボード更新が中心でRFIは0件、個別ページも104文字で抽出できない。過去の次期税務基幹システムRFIは既に一覧から落ちている
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6519,4 +6527,76 @@ sources:
       - 公募
     notes: 全庁の新着情報で、**部局横断の保険として検討したが実測で対象密度がほぼ0だったため無効にする。**確認時点はRSS 1.0のitem 100件で、dc:dateを100件すべて解析でき、categoryも53種類ある。保持は2026年8月27日から28日の**わずか2日分**で、1日約50件が流れる高回転である。**無効にする理由は密度である。**情報提供依頼・RFI・意見招請・サウンディング・市場調査・実証・共同研究・官民・公民・オープンイノベーション・スタートアップ・ベンチャー・DX・デジタル・AI・データ・ロボット・ドローン・衛星・システム・ICT・プロポーザル・企画提案・公募・入札の25語で照合すると100件中1件しか一致せず、それも「カナフルTV（tvk 地上デジタル3ch）」でデジタルの誤検知だった。中身は課トップページ、職員採用案内、試験情報、県公報、技能検定、研修案内などの固定ページ更新が大半で、案件公告はほとんど載らない。**HTMLではなくRSSで登録する。**HTML（/news/）はdl直下のdtとddが交互に並ぶ構造で、ddとdlがclosestの対象外のためdiv.list_topまで上がり、100件すべてに一覧先頭の日付が付いてしまう。RSSならdc:dateが候補ごとに解析でき、有効化する場合はこちらが正しい。**categoryは絞り込みに使えない。**最多が電子県庁・県政運営・県勢の31件だが、中身は県公報や個人情報保護で、ICT調達を特定できる分類は無い。**再確認条件は、記者発表に載らないRFIや調達がこの新着経由で確認できた場合、または25語での一致が継続的に増えた場合である。**保持が2日しかないため、有効化する場合は日次より短い巡回間隔が前提になる
     last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: tokyo-digital-topics
+    organization_id: tokyo-prefecture
+    name: デジタルサービス局 トピックス
+    url: https://www.digitalservice.metro.tokyo.lg.jp/information/topics
+    collector_type: list_page
+    source_category: digital_news
+    priority: high
+    enabled: true
+    link_selector: "li.widget-information-content_info-list-date-list-item a[href]"
+    content_selector: "main"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 事業者募集
+      - 共同調達
+    notes: デジタルサービス局のトピックスで、東京都で最も自社領域と重なる情報源。**確認時点はraw・構造上有効・利用可能とも20件で、外部ドメインや重複は0件だった。**保持は2024年4月26日から2026年8月19日の20件で回転が遅く、一覧下部に「もっと見る」と年月別アーカイブがあるが現行collectorは初期表示の20件だけを見る。**掲載日は候補ごとに取得できない。**li内にtime[datetime]があるのに、アンカーがdiv.widget-information-content_info-list-link-wrapperに包まれていてclosestがそのdivで止まる。タイトル側に日付が無いため誤取得は0件で、全20件が掲載日不明として期間フィルタを通り初回対象も20件、既定--limit 5では4回に分かれる。**内容は東京デジタルファースト推進計画の進捗、民間アセット開放事業説明会、西新宿スマートシティラボ、東京都公式アプリと連携する決済事業者等の募集（選定結果公表）、東京アプリ最終検証で、過去にはTokyo Tokyo Point（仮称）に関わる情報提供依頼（RFI）が掲載された。**個別ページはscriptとstyleを除いて262〜1,336文字を取得でき、確認6件すべてが200文字の下限を超えた。中継リンクだけのページは無い。**title filterは設定しない。**20件で密度が高く、選定結果公表や終了しましたのような段階マーカーも含むが、実Write結果を見る前に除外しない
+    last_verified_at: "2026-08-29"
+    verification_status: verified
+
+  - id: tokyo-education-contract-rfi
+    organization_id: tokyo-prefecture
+    name: 東京都教育委員会 契約・入札
+    url: https://www.kyoiku.metro.tokyo.lg.jp/about/contract_and_bidding
+    collector_type: list_page
+    source_category: rfi
+    priority: high
+    enabled: true
+    link_selector: 'main .widget-index-text_item a[href]:not([href*="/contract_and_bidding/about"])'
+    content_selector: "main"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 共同調達
+      - 企画提案
+    notes: 教育委員会の契約・入札で、GIGA・校務DX・学校ICTの共同調達とRFIが集まる情報源。**確認時点はraw・構造上有効・利用可能とも6件で、初回対象も6件なので既定--limit 5では2回で消化できる。**内容は令和9年度区市町村における次世代校務DX環境の設計・構築及び運用・保守業務一式に関する情報提供依頼（RFI）、令和8年度東京都公立小中学校の校務周辺ツールに関する共同調達に係る情報提供依頼（RFI）、令和7年度学習者用コンピュータ等の導入業務の共同調達に係る企画提案、令和8年度校務周辺ツールの共同調達に伴う入札、令和6年度学習者用コンピュータ等の調達に伴う入札、発達障害等のある都立高校生の就労支援モデル事業の連携事業者募集である。**link_selectorで固定案内3件を構造除外する。**同じwidget-index-text_itemに工事請負者の方へ、物品等契約に関すること、教育財産に関することが並ぶが、いずれも/contract_and_bidding/about、about_02、about_03という固定URLなのでhrefパターンで外す。タイトルでの除外より安定する。**掲載日は一覧に無い。**案件ごとの日付欄が無くC型で、タイトルの令和6年度から令和9年度は案件年度なのでparseDateCandidateにも一致せず、誤取得は0件である。全件掲載日不明として期間フィルタを通る。**個別ページはscriptとstyleを除いて451〜1,708文字を取得でき、次世代校務DX環境RFIは共通化方針への参照を含む1,708文字だった。**time要素から更新日も取得できる。ページャは無く、案件が増えると同じ一覧へ追記される。**title filterは設定しない。**6件しかなく、RFIと共同調達が中心で除外対象が無い
+    last_verified_at: "2026-08-29"
+    verification_status: verified
+
+  - id: tokyo-digital-press-2026
+    organization_id: tokyo-prefecture
+    name: デジタルサービス局 報道発表（2026年）
+    url: https://www.digitalservice.metro.tokyo.lg.jp/information/press/2026
+    collector_type: list_page
+    source_category: digital_news
+    priority: low
+    enabled: false
+    link_selector: "li.widget-information-content_info-list-date-list-item a[href]"
+    content_selector: "main"
+    document_type_hints:
+      - 報道発表
+      - 実証
+    notes: デジタルサービス局の報道発表で、**個別ページが中継ページのため無効にする。**確認時点はraw・構造上有効・利用可能とも20件、保持は2026年5月18日から8月20日で、行政特化型国産AIモデルの共同研究、東京データプラットフォーム、スマートサービス実装、ドローン物流社会実装などトピックス以上に施策が並ぶ一覧である。**しかし個別ページはscriptとstyleを除くと81〜119文字しかない。**Tokyo Map正式版リリースが81文字、東京ポイントからPayPayポイントへの交換が119文字で、本文はwww.metro.tokyo.lg.jp/information/press/配下にある本体記事へのリンク1本だけである。200文字の下限を割るため候補にすると全件content抽出エラーになり、Failedが残る実行ではcollection stateも前進しない。**再確認条件は2つある。**本体側のwww.metro.tokyo.lg.jp/information/press/一覧を別Sourceとして登録できるか調べること、または短い中継ページでも添付や参照先から本文を取得できる仕組みが入った場合である。掲載日の構造はトピックスと同じで、liのtimeまでclosestが上がれないため候補ごとには取得できない。設定はそのまま使えるよう残す
+    last_verified_at: "2026-08-29"
+    verification_status: verified
+
+  - id: tokyo-tax-updates
+    organization_id: tokyo-prefecture
+    name: 主税局 更新情報
+    url: https://www.tax.metro.tokyo.lg.jp/information/update
+    collector_type: list_page
+    source_category: digital_news
+    priority: low
+    enabled: false
+    link_selector: "li.widget-information-content_info-list-date-list-item a[href]"
+    content_selector: "main"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+    notes: 主税局の更新情報で、**確認時点の対象密度が0だったため無効にする。**raw・構造上有効・利用可能とも20件、保持は2026年1月9日から7月31日で、年度別アーカイブが令和元年度まである。**20件の内訳は納税通知書の発送案内、税務統計年報の掲載、注意喚起、キャッシュレス納税のPR動画、都税収入見える化ダッシュボードの更新、宿泊税条例の改正案などで、情報提供依頼やRFIは1件も無い。**別調査が挙げた次期税務基幹システム構築に係るRFIとRPA導入のRFIは、確認時点の一覧には残っていない。**個別ページも短い。**都税収入見える化ダッシュボードの更新はscriptとstyleを除いて104文字で、200文字の下限を割るためcontent抽出に失敗する。1行の更新告知が多いこの一覧では同種の失敗が繰り返し発生し、collection stateも前進しない。**掲載日はトピックスと同じ構造で候補ごとには取得できない。**再確認条件は、次期税務基幹システムのような大型RFIがこの更新情報に掲載されることを確認できた場合である。案件規模が大きい分野なので設定はそのまま残す
+    last_verified_at: "2026-08-29"
     verification_status: verified
