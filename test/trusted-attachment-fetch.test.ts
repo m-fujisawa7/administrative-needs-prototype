@@ -3,12 +3,14 @@ import { fetchAndExtractDocument } from '../src/content-check/index.ts';
 import { fetchAndExtractPdf, type PdfFetcher } from '../src/pdf-check/index.ts';
 import { getTrustedAttachmentDomains } from '../src/source-registry/domains.ts';
 import type { Organization, Source } from '../src/source-registry/schema.ts';
-import { safeFetchBytes } from '../src/source-check/fetch.ts';
+import { safeFetchBytes, safeFetchText } from '../src/source-check/fetch.ts';
 import { analyzeListPage } from '../src/source-check/list-page-checker.ts';
 import { analyzeRss } from '../src/source-check/rss-checker.ts';
 
 const HATCH_DOMAIN = 'hatch-tech-nagoya.jp';
 const PARENT_DOMAIN = 'city.nagoya.jp';
+const WATERWORKS_DOMAIN = 'kumamoto-waterworks.jp';
+const WATERWORKS_PDF_HOST = '99ev2jtm.user.webaccel.jp';
 
 const NAGOYA_CITY: Organization = {
   id: 'nagoya-city',
@@ -32,6 +34,14 @@ const OSAKA_CITY: Organization = {
   name: '大阪市',
   organization_type: 'designated_city',
   official_domain: 'city.osaka.lg.jp',
+  enabled: true,
+};
+
+const KUMAMOTO_WATERWORKS: Organization = {
+  id: 'kumamoto-city-waterworks',
+  name: '熊本市',
+  organization_type: 'external_organization',
+  official_domain: WATERWORKS_DOMAIN,
   enabled: true,
 };
 
@@ -59,6 +69,18 @@ const OSAKA_SOURCE: Source = {
   enabled: true,
 };
 
+const WATERWORKS_SOURCE: Source = {
+  id: 'kumamoto-waterworks-procurement-rss',
+  organization_id: 'kumamoto-city-waterworks',
+  name: '熊本市上下水道局 事業者向け新着RSS',
+  url: `https://www.${WATERWORKS_DOMAIN}/article_cat/organizer/feed/`,
+  collector_type: 'rss',
+  source_category: 'procurement',
+  priority: 'medium',
+  enabled: true,
+  trusted_pdf_domains: [WATERWORKS_PDF_HOST],
+};
+
 const PUBLIC_RESOLVER = async () => [{ address: '8.8.8.8', family: 4 as const }];
 const PRIVATE_RESOLVER = async () => [{ address: '10.0.0.5', family: 4 as const }];
 const PDF_BYTES = new TextEncoder().encode('%PDF-1.7 dummy');
@@ -78,6 +100,7 @@ async function fetchPdfThroughRealPath(
   const trustedPdfDomains = getTrustedAttachmentDomains(REGISTRY, organization);
   const fetchPdf: PdfFetcher = async (request) => safeFetchBytes(request.url, {
     officialDomain: [request.officialDomain, ...request.trustedPdfDomains],
+    exactHostnames: request.trustedPdfHostnames,
     accept: 'application/pdf',
     resolveHost,
     fetchImpl: pdfResponse,
@@ -170,6 +193,48 @@ describe('添付PDF取得: 親組織ドメインの許可', () => {
   });
 });
 
+describe('添付PDF取得: Source固有hostの完全一致許可', () => {
+  it('trusted_pdf_domainsに完全一致するhostのPDFを取得できる', async () => {
+    await expect(fetchPdfThroughRealPath(
+      `https://${WATERWORKS_PDF_HOST}/document.pdf`,
+      KUMAMOTO_WATERWORKS,
+      WATERWORKS_SOURCE,
+    )).resolves.toBeUndefined();
+  });
+
+  it('trusted_pdf_domainsのサブドメインと別hostは引き続き拒否する', async () => {
+    await expect(fetchPdfThroughRealPath(
+      `https://sub.${WATERWORKS_PDF_HOST}/document.pdf`,
+      KUMAMOTO_WATERWORKS,
+      WATERWORKS_SOURCE,
+    )).rejects.toThrow('公式ドメイン');
+
+    await expect(fetchPdfThroughRealPath(
+      'https://other-cdn.example.jp/document.pdf',
+      KUMAMOTO_WATERWORKS,
+      WATERWORKS_SOURCE,
+    )).rejects.toThrow('公式ドメイン');
+  });
+
+  it('trusted_pdf_domainsを設定しても同hostの記事HTML取得は許可しない', async () => {
+    await expect(fetchAndExtractDocument({
+      source: WATERWORKS_SOURCE,
+      organization: KUMAMOTO_WATERWORKS,
+      url: `https://${WATERWORKS_PDF_HOST}/article.html`,
+    }, {
+      fetchDocument: async (request) => safeFetchText(request.url, {
+        officialDomain: request.officialDomain,
+        accept: 'text/html',
+        resolveHost: PUBLIC_RESOLVER,
+        fetchImpl: async () => new Response(`<main>${'あ'.repeat(300)}</main>`, {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        }),
+      }),
+    })).rejects.toThrow('公式ドメイン');
+  });
+});
+
 describe('添付PDF取得: SSRF対策の維持', () => {
   it('信頼済みドメインでも内部IPへ解決されたら拒否する', async () => {
     await expect(fetchPdfThroughRealPath(
@@ -193,6 +258,7 @@ describe('添付PDF取得: SSRF対策の維持', () => {
     const trustedPdfDomains = getTrustedAttachmentDomains(REGISTRY, HATCH);
     const fetchPdf: PdfFetcher = async (request) => safeFetchBytes(request.url, {
       officialDomain: [request.officialDomain, ...request.trustedPdfDomains],
+      exactHostnames: request.trustedPdfHostnames,
       accept: 'application/pdf',
       resolveHost: PUBLIC_RESOLVER,
       fetchImpl: async () => new Response(null, {
@@ -213,6 +279,7 @@ describe('添付PDF取得: SSRF対策の維持', () => {
     const trustedPdfDomains = getTrustedAttachmentDomains(REGISTRY, HATCH);
     const fetchPdf: PdfFetcher = async (request) => safeFetchBytes(request.url, {
       officialDomain: [request.officialDomain, ...request.trustedPdfDomains],
+      exactHostnames: request.trustedPdfHostnames,
       accept: 'application/pdf',
       resolveHost: PUBLIC_RESOLVER,
       fetchImpl: async () => new Response(null, {

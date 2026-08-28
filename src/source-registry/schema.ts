@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { z } from 'zod';
 
 export const ORGANIZATION_TYPES = [
@@ -56,6 +57,20 @@ const selectorSchema = z
   .min(1, 'CSSセレクターを空にすることはできません。')
   .refine((value) => !value.includes('\0'), 'CSSセレクターにNUL文字は使用できません。');
 
+const hostnameSchema = z
+  .string()
+  .trim()
+  .min(1, '信頼するPDFホスト名を空にすることはできません。')
+  .max(253, '信頼するPDFホスト名は253文字以内で指定してください。')
+  .refine(
+    (value) => isIP(value) === 0,
+    '信頼するPDF取得先にはIPアドレスではなくホスト名を指定してください。',
+  )
+  .refine(
+    (value) => /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?))*$/iu.test(value),
+    '信頼するPDF取得先はprotocol・port・pathを含まないホスト名だけで指定してください。',
+  );
+
 export const organizationSchema = z.strictObject({
   id: idSchema,
   name: z.string().trim().min(1, '組織名は必須です。'),
@@ -79,6 +94,8 @@ export const sourceSchema = z.strictObject({
   link_selector: selectorSchema.optional(),
   title_selector: selectorSchema.optional(),
   content_selector: selectorSchema.optional(),
+  /** 添付PDF取得時だけ、完全一致する追加hostを許可する。一覧・記事HTML取得には使わない。 */
+  trusted_pdf_domains: z.array(hostnameSchema).min(1).optional(),
   category_includes: z.array(z.string().trim().min(1)).optional(),
   /** 1件以上設定した場合、いずれかの語をタイトルに含む候補だけを残す。 */
   title_includes: z.array(z.string().trim().min(1)).optional(),

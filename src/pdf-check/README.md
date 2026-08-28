@@ -32,7 +32,7 @@ npm run pdf:check -- \
   --output
 ```
 
-`--source` と `--url` は必須で、それぞれ1回だけ指定します。`--source` は台帳の情報源を指定し、所属組織の `official_domain` をアクセス許可範囲として使います。外部ドメインのPDFは、台帳側で所属組織の公式ドメインとして明示的に管理されない限り取得しません。`--full` と `--output` は任意です。保存先を省略した `--output` は `data/logs/pdf-check/source-id.json` を使用します。独自の一時保存先が必要な場合だけ `--output path/to/result.json` と指定できます。
+`--source` と `--url` は必須で、それぞれ1回だけ指定します。`--source` は台帳の情報源を指定し、所属組織と親組織の `official_domain` をアクセス許可範囲として使います。公式記事が添付PDFだけを外部CDNから配信するSourceでは、台帳の`trusted_pdf_domains`に完全一致hostを明示した場合だけ、そのhostのPDFを追加取得できます。この追加許可は一覧・記事HTML取得には使いません。`--full` と `--output` は任意です。保存先を省略した `--output` は `data/logs/pdf-check/source-id.json` を使用します。独自の一時保存先が必要な場合だけ `--output path/to/result.json` と指定できます。
 
 ## 処理の範囲
 
@@ -58,7 +58,7 @@ npm run pdf:check -- \
 ## HTTP・解析の安全対策
 
 - `http` / `https` 以外、認証情報を含むURL、IPアドレス直接指定を拒否
-- 情報源の所属組織の `official_domain` とサブドメイン以外を拒否
+- 情報源の所属組織・親組織の `official_domain` とサブドメイン、およびSourceの`trusted_pdf_domains`に完全一致するhost以外を拒否
 - DNS解決結果の内部IP・予約済みIPを拒否し、リダイレクト先も再検証
 - HTTPタイムアウト30秒、リダイレクト最大5回、PDF最大20MB
 - HTTP 2xx以外、空応答、PDF以外のContent-TypeをError

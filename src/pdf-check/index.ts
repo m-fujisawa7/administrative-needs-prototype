@@ -34,6 +34,8 @@ export type PdfFetchRequest = {
   officialDomain: string;
   /** officialDomain に加えて許可するドメイン。 */
   trustedPdfDomains: readonly string[];
+  /** Source設定でPDF取得時だけ完全一致を許可するhost。 */
+  trustedPdfHostnames: readonly string[];
 };
 
 export type PdfFetcher = (request: PdfFetchRequest) => Promise<FetchedBytes>;
@@ -59,6 +61,7 @@ export async function fetchAndExtractPdf(
     url: removeFragment(input.url),
     officialDomain: input.organization.official_domain,
     trustedPdfDomains: input.trustedPdfDomains ?? [],
+    trustedPdfHostnames: input.source.trusted_pdf_domains ?? [],
   });
   const contentType = requirePdfContentType(fetched.contentType);
   const extraction = await extractPdf(fetched.bytes);
@@ -96,6 +99,7 @@ async function defaultFetchPdf(request: PdfFetchRequest): Promise<FetchedBytes> 
     // 添付PDFの取得だけ、組織自身に加えて親組織のドメインを許可する。
     // SSRF検査とリダイレクト各ホップの再検査は safeFetchBytes 側でそのまま行う。
     officialDomain: [request.officialDomain, ...request.trustedPdfDomains],
+    exactHostnames: request.trustedPdfHostnames,
     accept: 'application/pdf',
     timeoutMs: PDF_FETCH_TIMEOUT_MS,
     maxBytes: MAX_PDF_BYTES,

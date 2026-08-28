@@ -175,6 +175,42 @@ describe('title_selectorの検証', () => {
   });
 });
 
+describe('trusted_pdf_domainsの検証', () => {
+  it('hostname配列を受理してregistryに保持し、未指定は従来どおりundefinedにする', () => {
+    const configured = mutableRegistry();
+    configured.sources[0]!.trusted_pdf_domains = ['cdn.example.jp'];
+    expect(validateSourceRegistry(configured).sources[0]?.trusted_pdf_domains)
+      .toEqual(['cdn.example.jp']);
+
+    expect(validateSourceRegistry(mutableRegistry()).sources[0]?.trusted_pdf_domains)
+      .toBeUndefined();
+  });
+
+  it.each([
+    { value: [] },
+    { value: [''] },
+    { value: ['   '] },
+    { value: ['https://cdn.example.jp'] },
+    { value: ['cdn.example.jp/files/document.pdf'] },
+    { value: ['cdn.example.jp:443'] },
+    { value: ['127.0.0.1'] },
+    { value: ['*.example.jp'] },
+  ])('hostname以外の設定 $value を拒否する', ({ value }) => {
+    const registry = mutableRegistry();
+    registry.sources[0]!.trusted_pdf_domains = value;
+    expect(() => validateSourceRegistry(registry)).toThrow();
+  });
+
+  it('実台帳の熊本市上下水道局SourceでCDN hostを保持する', async () => {
+    const registry = await loadSourceRegistry();
+    const source = registry.sources.find(
+      ({ id }) => id === 'kumamoto-waterworks-procurement-rss',
+    );
+
+    expect(source?.trusted_pdf_domains).toEqual(['99ev2jtm.user.webaccel.jp']);
+  });
+});
+
 describe('allow_empty_candidatesの検証', () => {
   it('真偽値を受理し、未指定はundefinedのままにする', () => {
     expect(validateSourceRegistry(registryWithAllowEmpty(true)).sources[0]?.allow_empty_candidates)

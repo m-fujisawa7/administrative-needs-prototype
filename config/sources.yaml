@@ -585,6 +585,15 @@ organizations:
     enabled: true
     notes: 入札・企画提案、PFI・マーケットサウンディング、全庁新着RSSから、RFI、行政DX、実証、官民連携の行政ニーズを収集する政令指定都市。公式CMSの一覧はli.loadbox内に年付き更新日と案件リンクがあり、個別ページ本文は#mainShosaiに入る。入札一覧の全135件は「もっと見る」で動的取得する構造だが、現行collectorは初期HTMLの36件だけを取得する。全庁RSSはRSS 1.0でdc:dateを持ち、確認時点で約16か月分を保持する
 
+  - id: kumamoto-city-waterworks
+    name: 熊本市
+    organization_type: external_organization
+    prefecture: 熊本県
+    official_domain: kumamoto-waterworks.jp
+    enabled: true
+    parent_organization_id: kumamoto-city
+    notes: 熊本市上下水道局の独自公式ドメインを安全に取得するため、熊本市を親組織として分離した子組織。自治体名はNotionと公開一覧で熊本市として扱う
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6339,12 +6348,38 @@ sources:
     enabled: true
     link_selector: ".kijiArea ul.kijilist li.loadbox .title a[href]"
     content_selector: "#mainShosai"
+    title_excludes:
+      - 熊本北部流域関連公共下水道水質検査業務委託
+      - 熊本市下水道施設消化ガス成分分析業務委託
     document_type_hints:
       - 情報提供依頼
       - RFI
       - 公募型プロポーザル
       - 一般競争入札
-    notes: RFI、企画提案、一般競争入札を横断する熊本市の主力Source。**確認時点は初期HTMLのraw 36件、外部ドメイン1件を除く構造上有効・利用可能35件で、35件すべて年付き更新日をpublishedAtとして取得できる。**配置はA、表記例は「2026年8月28日更新」、意味はCMSの更新日で、共通開始日2026-07-01以降の初回期間対象も35件、既定--limit 5では最大5件ずつ7回に分かれる。**ページ上は全135件だが、初期HTMLには36件しかなく、残りは「もっと見る」の動的エンドポイントから取得するため現行collectorは追従しない。**初期表示は約1か月分を保持するため日次から数日おきの巡回を前提とする。候補は数値IDの案件固有URLで、確認した同種・再公告も別IDになっている。外部の熊本市上下水道局サイト1件はofficial_domain外として除外される。個別ページは#mainShosaiで907〜1,526文字を取得でき、RFI参加様式、仕様書等のPDF・Word添付も検出できる。実Write前は件数だけを理由にfilterを追加しない
+    notes: RFI、企画提案、一般競争入札を横断する熊本市の主力Source。**確認時点は初期HTMLのraw 36件、外部ドメイン1件を除く構造上有効35件で、上下水道局の中継ページ2件を除外した利用可能・共通開始日2026-07-01以降の初回期間対象は33件である。**35件すべて年付き更新日をpublishedAtとして取得でき、配置はA、表記例は「2026年8月28日更新」、意味はCMSの更新日である。既定--limit 5では最大5件ずつ7回に分かれる。**ページ上は全135件だが、初期HTMLには36件しかなく、残りは「もっと見る」の動的エンドポイントから取得するため現行collectorは追従しない。**初期表示は約1か月分を保持するため日次から数日おきの巡回を前提とする。候補は数値IDの案件固有URLで、確認した同種・再公告も別IDになっている。**熊本北部流域関連公共下水道水質検査業務委託と熊本市下水道施設消化ガス成分分析業務委託は、熊本市側が本文200文字未満の中継ページであり、上下水道局RSSの本体記事を取得するためSource固有タイトルで除外する。**外部の上下水道局記事1件はofficial_domain外として構造除外される。その他の個別ページは#mainShosaiで907〜1,526文字を取得でき、RFI参加様式、仕様書等のPDF・Word添付も検出できる
+    last_verified_at: "2026-08-28"
+    verification_status: verified
+
+  - id: kumamoto-waterworks-procurement-rss
+    organization_id: kumamoto-city-waterworks
+    name: 熊本市上下水道局 事業者向け新着RSS
+    url: https://www.kumamoto-waterworks.jp/article_cat/organizer/feed/
+    collector_type: rss
+    source_category: procurement
+    priority: medium
+    enabled: true
+    title_selector: ".detail > h3"
+    content_selector: ".detail"
+    trusted_pdf_domains:
+      - 99ev2jtm.user.webaccel.jp
+    title_excludes:
+      - 入札結果の公表
+    document_type_hints:
+      - 情報提供依頼
+      - 一般競争入札
+      - システム調達
+      - 官民連携
+    notes: 熊本市上下水道局の事業者さまへRSS。**RSSは直近10件を保持し、pubDateは年付きRFC822形式で取得できる。2026年8月28日確認時点はraw・構造上有効10件、全件が共通開始日2026-07-01以降で、「入札結果の公表」1件を除く利用可能・初回期間対象は9件である。**短期保持のため日次から数日おきの巡回を推奨する。個別記事本文は.detail、実タイトルは.detail > h3からfallbackなしで取得する。**PDF配信先として99ev2jtm.user.webaccel.jpを使用する。確認した事業者向け74固有記事のうちPDFあり62記事すべてが同hostを使い、利用確認範囲は2019年8月から2026年8月である。**同hostはSource固有trusted_pdf_domainsでPDF取得時だけ完全一致許可し、記事HTMLや候補取得の許可範囲は広げない。熊本北部流域関連公共下水道水質検査業務委託と熊本市下水道施設消化ガス成分分析業務委託を本体記事とCDN PDFから取得できる。元の熊本市SourceとはURLが異なるためURL duplicateでは重複排除できず、熊本市側の中継ページはSource固有title_excludesで除外する
     last_verified_at: "2026-08-28"
     verification_status: verified
 

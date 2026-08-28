@@ -170,8 +170,10 @@ describe('PDFエラー種別の判定', () => {
 describe('PDF取得', () => {
   it('台帳の公式ドメインを使い、無効情報源をWarningにする', async () => {
     let requestDomain: string | undefined;
-    const fetchPdf: PdfFetcher = async ({ url, officialDomain }) => {
+    let trustedPdfHostnames: readonly string[] | undefined;
+    const fetchPdf: PdfFetcher = async ({ url, officialDomain, trustedPdfHostnames: hosts }) => {
       requestDomain = officialDomain;
+      trustedPdfHostnames = hosts;
       return fetchedPdf(url, 'application/pdf; charset=binary');
     };
     const result = await fetchAndExtractPdf({
@@ -184,6 +186,7 @@ describe('PDF取得', () => {
     });
 
     expect(requestDomain).toBe(OFFICIAL_DOMAIN);
+    expect(trustedPdfHostnames).toEqual([]);
     expect(result.requestedUrl).toBe(`${PDF_URL}#page=2`);
     expect(result.url).toBe(PDF_URL);
     expect(result.warnings.map((warning) => warning.code)).toContain('source_disabled');

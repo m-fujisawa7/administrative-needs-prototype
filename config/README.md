@@ -107,6 +107,7 @@ sources:
 | `link_selector` | 一覧ページから個別ページへのリンクを抽出するCSSセレクター候補 |
 | `title_selector` | 個別ページのタイトルをSource固有の要素から取得するCSSセレクター |
 | `content_selector` | 個別ページの本文を抽出するCSSセレクター候補 |
+| `trusted_pdf_domains` | 添付PDF取得時だけ追加で許可する完全一致hostの配列 |
 | `category_includes` | RSSカテゴリの許可条件。`collector_type: rss` だけに適用 |
 | `title_includes` | 収集対象とするタイトルの条件。1件以上設定すると、いずれかの語を含む候補だけを残す。`rss` と `list_page` に適用 |
 | `title_excludes` | よくある質問など、明らかな対象外タイトルの除外条件。`rss` と `list_page` に適用 |
@@ -121,6 +122,8 @@ sources:
 `initial_since` は、過去分が非常に多く初回からすべてをAI解析したくない情報源で使います。省略した場合は共通の初回収集開始日（`2026-07-01`）を使います。初回の開始位置になるだけでなく自動収集の下限日でもあり、収集状態ができた後の通常巡回でも、前回成功日時の3日前がこの日より前になる場合はこの日へ丸めます。手動の`--since`だけはこの下限の対象外で、より前を指定できます。詳細は `../src/collection-run/README.md` を参照してください。
 
 `title_selector` は、ページ先頭の`h1`が共通ロゴなどで、個別ページの実タイトルを別の要素から取得する必要があるSourceだけに設定します。指定要素の表示テキストを空白正規化して使用します。セレクターが不正、一致0件、または表示テキストが空の場合は、汎用の`h1` / `title`へフォールバックせず本文抽出エラーにします。未設定の場合は従来どおり、空でない`h1`、`title`の順で取得します。
+
+`trusted_pdf_domains` は、公式記事が添付PDFだけを外部CDNから配信する場合に限って設定します。値はprotocol、port、pathを含まないhostnameだけを指定し、PDF取得時に完全一致したhostだけを追加許可します。一覧、RSS、個別記事HTML、外部リンクの候補化には使わず、所属組織と親組織の`official_domain`による既存の許可範囲も変更しません。
 
 `category_includes` は、RSS解析（`../src/source-check/rss-checker.ts`）だけが読み取ります。`list_page` など他の `collector_type` に設定しても無視され、台帳の検証もエラーにならないため、設定したつもりで効いていない状態になります。
 

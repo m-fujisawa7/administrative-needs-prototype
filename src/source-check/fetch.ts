@@ -20,6 +20,8 @@ export type SafeFetchOptions = {
    * 添付PDF取得で親組織のドメインを追加するときだけ配列を使う。
    */
   officialDomain: string | readonly string[];
+  /** officialDomainの配下判定とは別に、hostが完全一致する場合だけ許可する。 */
+  exactHostnames?: readonly string[];
   accept: string;
   timeoutMs?: number;
   maxBytes?: number;
@@ -65,7 +67,12 @@ export async function safeFetchBytes(
   let redirectCount = 0;
 
   while (true) {
-    await assertSafeUrl(currentUrl, options.officialDomain, resolveHost);
+    await assertSafeUrl(
+      currentUrl,
+      options.officialDomain,
+      resolveHost,
+      options.exactHostnames ?? [],
+    );
 
     let response: Response;
     try {
@@ -130,6 +137,7 @@ export async function assertSafeUrl(
   url: URL,
   officialDomain: string | readonly string[],
   resolveHost: HostResolver = defaultResolveHost,
+  exactHostnames: readonly string[] = [],
 ): Promise<void> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new SourceCheckFetchError('URLのスキームは http または https にしてください。');
@@ -137,8 +145,11 @@ export async function assertSafeUrl(
   if (url.username !== '' || url.password !== '') {
     throw new SourceCheckFetchError('ユーザー名やパスワードを含むURLにはアクセスできません。');
   }
-  if (!isHostnameAllowed(url.hostname, officialDomain)) {
-    const allowed = toDomainList(officialDomain).join(' / ');
+  if (
+    !isHostnameAllowed(url.hostname, officialDomain)
+    && !isHostnameExactlyAllowed(url.hostname, exactHostnames)
+  ) {
+    const allowed = [...toDomainList(officialDomain), ...exactHostnames].join(' / ');
     throw new SourceCheckFetchError(
       `アクセス先 ${url.hostname} は公式ドメイン ${allowed} の配下ではありません。`,
     );
@@ -178,6 +189,20 @@ export function isHostnameAllowed(
   return toDomainList(officialDomain).some((domain) => {
     const allowed = normalizeDomain(domain);
     return host === allowed || host.endsWith(`.${allowed}`);
+  });
+}
+
+/** Source固有の添付host向け。サブドメインへ許可を広げず完全一致だけを認める。 */
+export function isHostnameExactlyAllowed(
+  hostname: string,
+  exactHostnames: readonly string[],
+): boolean {
+  const host = normalizeDomain(hostname);
+  return exactHostnames.some((allowed) => {
+    const configured = allowed.trim().toLocaleLowerCase('en');
+    // protocol・port・path等を含む値を、URL parserでhostnameへ暗黙変換して許可しない。
+    if (!/^[a-z0-9.-]+$/u.test(configured)) return false;
+    return host === configured;
   });
 }
 
