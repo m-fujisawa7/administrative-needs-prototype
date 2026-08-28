@@ -610,6 +610,15 @@ organizations:
     enabled: true
     notes: デジタルサービス局のトピックスと教育委員会の契約・入札からRFIと共同調達を収集する対象都道府県。北海道や京都府と同じくIDはtokyo-prefectureに揃える。**official_domainはmetro.tokyo.lg.jpにする。**局ごとにサブドメインが分かれ、デジタルサービス局はwww.digitalservice、教育委員会はwww.kyoiku、主税局はwww.taxで、サブドメイン判定によりすべて許可される。**CMSは局共通のwidget型で、一覧はli.widget-information-content_info-list-date-list-item配下にp > time、ラベル、div > aが並ぶ。**掲載日はli内のtimeにdatetime属性付きで存在するが、**アンカーがdiv.widget-information-content_info-list-link-wrapperに包まれており、closestがこのdivで止まるためliのtimeまで上がれない。**そのため候補ごとの掲載日は取得できず、佐賀県・長崎県と同じdiv停止型である。タイトル側に日付が無いので誤取得は発生せず、ignore_list_published_atは不要である。**本文セレクタはmainを使う。**[role=main]と同じ本文を返し、article・#contents・#tmp_contents・.widget-article-bodyはいずれも存在しない。個別ページはscriptとstyleを除くと教育委員会が451〜1,708文字、トピックスが262〜1,336文字で、いずれもtime要素から更新日を取得できる。**デジタルサービス局の報道発表は中継ページなので登録しない。**/information/press/2026配下の記事はscriptとstyleを除くと81〜119文字しかなく、本文はwww.metro.tokyo.lg.jp/information/press/配下へのリンク1本だけである。200文字の下限を割るため候補にすると全件content抽出エラーになり、collection stateも前進しない。**主税局の更新情報も登録しない。**確認時点の20件は納税通知書の発送、税務統計年報、注意喚起、ダッシュボード更新が中心でRFIは0件、個別ページも104文字で抽出できない。過去の次期税務基幹システムRFIは既に一覧から落ちている
 
+  - id: govtech-tokyo
+    name: GovTech東京
+    organization_type: external_organization
+    prefecture: 東京都
+    official_domain: govtechtokyo.or.jp
+    enabled: true
+    parent_organization_id: tokyo-prefecture
+    notes: 一般財団法人GovTech東京の独自公式ドメインを安全に取得するため、東京都を親組織として分離した子組織。東京都本体とは別organizationとして管理し、公開一覧では親組織の東京都へ集約する
+
 sources:
   - id: osaka-digital-rss
     organization_id: osaka-city
@@ -6555,6 +6564,28 @@ sources:
       - 共同調達
     notes: デジタルサービス局のトピックスで、東京都で最も自社領域と重なる情報源。**確認時点はraw 20・構造上有効 20で外部ドメインや重複は0件だが、title_excludesで6件を除くため利用可能は14件になる。**保持は2024年4月26日から2026年8月19日の20件で回転が遅く、一覧下部に「もっと見る」と年月別アーカイブがあるが現行collectorは初期表示の20件だけを見る。**掲載日は候補ごとに取得できない。**li内にtime[datetime]があるのに、アンカーがdiv.widget-information-content_info-list-link-wrapperに包まれていてclosestがそのdivで止まる。タイトル側に日付が無いため誤取得は0件で、除外後の14件がすべて掲載日不明として期間フィルタを通り初回対象も14件、既定--limit 5では3回に分かれる。**内容は東京デジタルファースト推進計画の進捗、行政手続デジタルクオリティマップ、民間アセット開放事業説明会、西新宿スマートシティラボ、高齢者のデジタルデバイド解消に向けた電気通信事業者の募集で、過去にはTokyo Tokyo Point（仮称）に関わる情報提供依頼（RFI）が掲載された。****20件のうち角括弧付きの事後段階マーカー3件を、実ページを確認したうえで除外する。**【選定結果公表】1件、【結果公表】1件、【終了しました】1件で、いずれも本文で選定完了・受付終了・検証終了を確認し、誤除外は0件だった。公表・結果・終了・募集のような広い語は使わない。公表だけで進捗公表3件を巻き込むなど、DX施策の進捗公表や募集中の案件まで落とすためである。**【選定結果公表】と【結果公表】は、募集ページが結果公表後も同一URLのまま改題される型である。**URLと記事IDは募集開始日のままで更新日だけが後になる。募集期間中に取得できていればduplicate-firstで保持されるため影響は無く、初回確認が結果公表後だった場合は除外されるが、営業機会としては終了済みなので許容する。**2024年の3ページは本文が200文字未満でcontent_extractがFailedになる。**main本文はICT職トークイベントが91文字、GovTech東京Meetup⑤が89文字、GovTech東京による共同調達が75文字で、いずれもフォールバックでも200文字に届かない。後ろ2件はGovTech東京本体への中継ページである。3件ともinitial_since相当の共通開始日2026-07-01より古いが、一覧の掲載日を取得できないため期間フィルタで落ちず初回候補へ混入する。**そのため3件は実タイトルの完全一致だけで個別に除外する。**GovTech東京・外部サイトに移動します・ICT職を単独の除外語にはしない。共同調達もdocument_type_hintsに入る対象語なので除外語には使わない。**GovTech東京の中継2件については、本体側を別Source候補として今後調査する。**
     last_verified_at: "2026-08-29"
+    verification_status: verified
+
+  - id: govtech-tokyo-procurement-news
+    organization_id: govtech-tokyo
+    name: GovTech東京 公募・調達
+    url: https://www.govtechtokyo.or.jp/news/news-recruit/
+    collector_type: list_page
+    source_category: procurement
+    priority: high
+    enabled: true
+    link_selector: "article.cardNews a.card__link[href]"
+    title_selector: "article.article h1"
+    content_selector: "article.article"
+    document_type_hints:
+      - 情報提供依頼
+      - RFI
+      - 共同調達
+      - AI
+      - システム調達
+      - 実証
+    notes: GovTech東京のニュースのうち公募・調達だけを掲載する専用一覧で、RFI、共同調達、行政DX・AI・クラウド等の調達を早期検知する主力Source。**確認時点の1ページ目はraw・構造上有効・利用可能とも10件で、共通開始日2026-07-01以降は5件、既定--limit 5なら1回で処理できる。**一覧はarticle.cardNewsごとにtime[datetime]、タイトル、記事リンクが同じdiv.card__bodyへ入り、アンカーのclosestがこのdivになるため候補ごとの公開日を取得できる。掲載日はA・年あり・公開日で、確認5記事では一覧日と個別記事の公開日が一致した。**全7ページ・66件だが現行collectorは1ページ目だけを見る。**1ページ目だけで2026年3月2日から8月19日まで約5か月半を保持し、10件ごとのページャで2ページ目以降へ遡れる構造である。日次から数日おきの通常巡回では1ページ目で十分だが、更新頻度が大きく増えた場合は保持期間を再確認する。**個別記事はarticle.articleを本文に使う。**1ページ目10件で219〜1,935文字をfallbackなしで取得でき、実タイトルはarticle.article h1から取得する。ページ上部に共通ナビゲーションのh1「ホーム」があるためtitle_selectorを省略しない。一覧のリンク文字列には「の記事を詳しく見る」が付くが、後続の案件名は個別記事のtitle_selectorで正規化される。PDFは10件中1件に4件あり、残り9件は0件。外部リンクはビジネスチャンス・ナビと申込フォームへの案内で、候補URLには外部ドメイン0件だった。**「（終了しました）」は除外しない。**RFI・公募の本体記事が終了後も同一URLのまま改題される運用で、全66件中52件に付く。結果・落札・選定の独立ページは66件中0件で、安全な事後専用除外語は確認できなかった。共同調達案件一覧は2026年度RFI10件の名称を掲載するが個別ページへのa[href]が0件で、現行Collectorでは案件単位に候補化できないため別Sourceとして登録していない
+    last_verified_at: "2026-08-28"
     verification_status: verified
 
   - id: tokyo-education-contract-rfi
