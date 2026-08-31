@@ -1554,15 +1554,15 @@ sources:
     url: https://www.pref.yamagata.jp/sangyo/jigyousha/nyuusatsu.xml
     collector_type: rss
     source_category: procurement
-    priority: high
+    priority: low
     enabled: true
     initial_since: "2026-08-01"
     content_selector: "#tmp_contents"
     document_type_hints:
       - 入札
       - 公募型プロポーザル
-    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。RSS 1.0対応の実データ検証を目的に有効化した最初のRSS 1.0情報源。初回の対象を絞るためinitial_sinceを設定している。dc:subjectが全件「県政情報」の1種類でcategory_includesによる分野の絞り込みには使えないため設定していない。同じ場所にshinchaku.xmlもあり同形式である。
-    last_verified_at: "2026-08-12"
+    notes: 事業者向け情報の入札情報を配信するRSS。山形県は注目情報、新着情報、報道発表、分野別、警察署別まで多数のRSSを配信しており、いずれもRSS 1.0（RDF）でルートがrdf:RDF、公開日がdc:date、カテゴリがdc:subjectである。RSS 1.0対応の実データ検証を目的に有効化した最初のRSS 1.0情報源。初回の対象を絞るためinitial_sinceを設定している。dc:subjectが全件「県政情報」の1種類でcategory_includesによる分野の絞り込みには使えないため設定していない。同じ場所にshinchaku.xmlもあり同形式である。**2026-08-31にRSS全10件と個別ページを実査し、priorityをhighからlowへ下げた。**RSS 1.0で保持は10件だけの全部局横断Sourceである。10件の内訳はA相当2件、B1件、C7件で、低シグナルの通常調達が約70%を占めた。A相当2件のうち公募型プロポーザル1件はyamagata-proposalとURLが完全一致して重複しており、RSSとしての独自価値は無い。**一方、山形県給与等システム改修業務（職員制度改正対応）のようなIT・システム系の一般競争入札はRSS固有で、プロポーザル専用のyamagata-proposalでは構造上取得できない。**山形県の業務委託と物品調達の入札は県庁・村山・最上・置賜・庄内・病院事業局の6ページに分散しており、このRSSが全部局横断の唯一の集約点である。そのためdisableせず低優先度で継続する。**安全なfilterは現時点で作れないため、title_includesもtitle_excludesもcategory_includesも設定しない。**positive filterはプロポーザル・企画提案・システム・DX・実証・デジタル・構築・運用・調査・検討・支援業務を実測したが、10件しか保持しないため該当0件の週があり得る。適用後0件はallow_empty_candidatesでも救済されないErrorなので、取りこぼしとstate停滞のリスクに対して利得が小さい。negative filterは保存水・自動車・スノーポール・清掃・機械警備・除排雪といった個別品名しか無く反復性が無い。入札・調達・業務委託のような広い語を除外するとRSS固有の有用なIT一般競争入札まで失う。dc:subjectは県政情報の1種類でcategory_includesに使えず、所管課が入るdc:creatorは現行collectorがcategoryへマップしていない。**10件しか保持せず約1週間で全件入れ替わるため、lowでも長期間放置すると取りこぼす。**目安として5〜6日程度、少なくとも週1回程度の巡回が望ましい
+    last_verified_at: "2026-08-31"
     verification_status: verified
 
   - id: sapporo-news-rss
