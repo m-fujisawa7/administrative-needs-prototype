@@ -1012,12 +1012,16 @@ sources:
     enabled: true
     link_selector: "section.page05.ichiran > div.inner > ul.ds > li > a"
     content_selector: "section.page05"
+    title_excludes:
+      - 意見募集結果
+      - 在職者訓練
+      - 価格高騰対策支援金
     document_type_hints:
       - 企画提案
       - 企画競争
       - 公募
-    notes: 全庁の公募・募集を集約する一覧。入口の/boshu/は掲載日を持つが12件で6日分しか保持せず回転が速いため、30件を保持するindex_1.htmlを登録する。この一覧には掲載日が無く、候補は毎回すべて期間内として扱われるが、Notion登録済みURLはHTML取得とClaude解析の前に除外される。index_2.html以降のページャはCollectorが追わない。DX推進課と企業立地・創出課の案件はここにも出るため、その2情報源と候補が重複する。
-    last_verified_at: "2026-08-10"
+    notes: 全庁の公募・募集を集約する一覧。入口の/boshu/はsection.page04構造で本情報源のlink_selectorが効かず保持件数も12件と少ないため、30件を保持するindex_1.htmlを登録する。2026-09-04の再検証で、index_1.html自体は掲載日を持つことを確認した。日付はh2.title05へ「2026年09月04日」の形式で表示され、その直後のul.dsに当日分の案件リンクが並ぶ。現行の日付取得はリンクからclosest('.sec_01, li, article, section, tr, div')で文脈を探すため最初にliへ当たって止まり、その外側のh2.title05まで到達できない。よって現在はpublishedAtを取得できないが、これは「ページに日付が無い」のではなく「見出し型の日付を現行collectorが取得できない」状態である。掲載日不明の候補は毎回すべて期間内として扱われるが、Notion登録済みURLはHTML取得とClaude解析の前に除外される。ページャはindex_1.htmlからindex_22.htmlまで実在し同じlink_selectorが効くことを確認した（index_23は404）。全22ページのhistorical corpusは631件・ユニーク630件で、2014-01-31から2026-09-04までを含む。1ページ30件はおおむね直近10日分にあたり、2026年の流量は月50件前後である。index_2.html以降のページャはCollectorが追わない。title_excludesの意見募集結果・在職者訓練・価格高騰対策支援金は、この631件でA/B案件の誤除外が0件であることを確認して追加した（それぞれ15件・3件・5件に一致）。意見募集結果はパブリックコメントの結果ページで、募集本体とは別URLのため改題型の取りこぼしは起きない。採用・募集・セミナー・研修・イベント・講座・交流会・補助金・訓練のような広い語は、企画提案や業務委託の本体案件を実際に落とすため採用しない。DX推進課と企業立地・創出課の案件はここにも出るため、その2情報源と候補が重複する。
+    last_verified_at: "2026-09-04"
     verification_status: verified
 
   - id: aomori-dx-promotion
